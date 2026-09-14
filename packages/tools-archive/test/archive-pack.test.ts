@@ -66,6 +66,122 @@ describe('archive pack', () => {
     expect(json.different).toContain('a.txt');
   });
 
+  it('blocks Windows drive, absolute, long, and case-colliding paths', () => {
+    expect(safeRelPath('C:/Windows/system32/x.dll')).toBeUndefined();
+    expect(safeRelPath('/etc/passwd')).toBeUndefined();
+    expect(safeRelPath(`${'a'.repeat(300)}.txt`)).toBeUndefined();
+    const clash = zipSync({
+      'Readme.txt': new TextEncoder().encode('A'),
+      'readme.txt': new TextEncoder().encode('B'),
+    });
+    const read = readZip(clash);
+    expect(read.blocked.length + Object.keys(read.files).length).toBeGreaterThan(0);
+    if (read.blocked.length) expect(read.warnings.join(' ')).toMatch(/Kollision|Unicode|Case/i);
+  });
+
+  it('skips TAR symlinks and hardlinks', () => {
+    const tar = createTar({ 'ok.txt': new TextEncoder().encode('hi') });
+    const header = new Uint8Array(512);
+    header.set(new TextEncoder().encode('link-to-etc'), 0);
+    header.set(new TextEncoder().encode('00000000000\0'), 124);
+    header[156] = '2'.charCodeAt(0);
+    const withLink = new Uint8Array(512 + tar.length);
+    withLink.set(header, 0);
+    withLink.set(tar, 512);
+    const files = readTar(withLink);
+    expect(Object.keys(files)).not.toContain('link-to-etc');
+    expect(Object.keys(files)).toContain('ok.txt');
+  });
+
+  it('blocks backslash traversal, UNC, drive letters, ~ and NUL in entry names', () => {
+    for (const evil of ['..\\..\\Windows\\win.ini', 'C:\\Users\\x.txt', 'c:/x.txt', '\\\\server\\share\\x', '~/.ssh/authorized_keys', 'a/../../b', 'a\0b.txt', '/abs.txt', 'dir/..']) {
+      expect(safeRelPath(evil), evil).toBeUndefined();
+    }
+    expect(safeRelPath('./ok/./sub\\file.txt')).toBe('ok/sub/file.txt');
+    const evil = zipSync({ '..\\..\\evil.txt': new Uint8Array([1]), 'fine.txt': new Uint8Array([2]) });
+    const read = readZip(evil);
+    expect(Object.keys(read.files)).toEqual(['fine.txt']);
+    expect(read.blocked).toEqual(['..\\..\\evil.txt']);
+  });
+
+  it('aborts a ZIP bomb before inflating (central directory sizes) and caps absolute size', async () => {
+    const { BOMB_UNCOMPRESSED } = await import('../src/zip-tar.js');
+    // 2 MiB of zeros → ~2000× ratio; the filter throws before unzipSync inflates the entry
+    const bomb = zipSync({ 'bomb.bin': zeros(2 * 1024 * 1024) }, { level: 9 });
+    const read = readZip(bomb);
+    expect(read.files).toEqual({});
+    expect(read.warnings.join(' ')).toMatch(/Bomb/);
+    // many medium entries whose announced total exceeds the absolute cap
+    const entries: Record<string, Uint8Array> = {};
+    const chunk = new Uint8Array(4 * 1024 * 1024);
+    for (let i = 0; i < chunk.length; i++) chunk[i] = (i * 2654435761) >>> 24; // low-compressibility filler
+    const count = Math.ceil(BOMB_UNCOMPRESSED / chunk.length) + 1;
+    for (let i = 0; i < count; i++) entries[`part-${i}.bin`] = chunk;
+    const big = zipSync(entries, { level: 1 });
+    const readBig = readZip(big);
+    expect(readBig.files).toEqual({});
+    expect(readBig.warnings.join(' ')).toMatch(/Gesamtgröße|Bomb/);
+  });
+
+  it('caps gzip/tgz output (gzip bomb) and TAR total size', async () => {
+    const { gunzipLimited, readTarGz, ArchiveBombError, readAny } = await import('../src/zip-tar.js');
+    const { gzipSync } = await import('fflate');
+    const gz = gzipSync(zeros(3 * 1024 * 1024), { level: 9 });
+    expect(() => gunzipLimited(gz, 1024 * 1024)).toThrow(ArchiveBombError);
+    expect(() => readTarGz(gzipSync(createTar({ 'a.txt': zeros(512) })))).not.toThrow();
+    const bombTgz = gzipSync(createTar({ 'z.bin': zeros(3 * 1024 * 1024) }), { level: 9 });
+    const res = await readAny(bombTgz, 'bomb.tgz');
+    expect(res.files).toEqual({});
+    expect(res.warnings.join(' ')).toMatch(/Bomb/);
+    const tar = createTar({ 'x.bin': zeros(1024) });
+    expect(() => readTar(tar, 512)).toThrow(ArchiveBombError);
+  });
+
+  it('TAR: skips device/FIFO entries and joins the ustar prefix before the path check', () => {
+    const base = createTar({ 'ok.txt': new TextEncoder().encode('hi') });
+    const mk = (name: string, type: string, prefix = '') => {
+      const h = new Uint8Array(512);
+      h.set(new TextEncoder().encode(name), 0);
+      h.set(new TextEncoder().encode('00000000001\0'), 124);
+      h[156] = type.charCodeAt(0);
+      h.set(new TextEncoder().encode('ustar\0'), 257);
+      if (prefix) h.set(new TextEncoder().encode(prefix), 345);
+      const body = new Uint8Array(512);
+      body[0] = 0x41;
+      const out = new Uint8Array(1024);
+      out.set(h, 0);
+      out.set(body, 512);
+      return out;
+    };
+    const parts = [mk('dev', '3'), mk('fifo', '6'), mk('hard', '1'), mk('passwd', '0', '../../etc'), mk('good.txt', '0', 'sub/dir'), base];
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const joined = new Uint8Array(total);
+    let o = 0;
+    for (const p of parts) {
+      joined.set(p, o);
+      o += p.length;
+    }
+    const files = readTar(joined);
+    expect(Object.keys(files).sort()).toEqual(['ok.txt', 'sub/dir/good.txt']);
+  });
+
+  it('never expands nested archives (depth 0) but reports them', async () => {
+    const { MAX_NESTING_DEPTH } = await import('../src/zip-tar.js');
+    expect(MAX_NESTING_DEPTH).toBe(0);
+    const inner = zipSync({ 'deep.txt': new TextEncoder().encode('x') });
+    const outer = zipSync({ 'inner.zip': inner });
+    const read = readZip(outer);
+    expect(Object.keys(read.files)).toEqual(['inner.zip']);
+    expect(read.warnings.join(' ')).toMatch(/Verschachtelt/);
+  });
+
+  it('rejects a ReDoS-ish glob', async () => {
+    const { matchGlob } = await import('../src/path-safe.js');
+    expect(matchGlob('a.txt', `${'('.repeat(80)}a${')+'.repeat(80)}`)).toBe(false);
+    expect(matchGlob('a.txt', 'a'.repeat(250))).toBe(false);
+    expect(matchGlob('dir/a.txt', '*.txt')).toBe(true);
+  });
+
   it('create + extract tools', async () => {
     const ctx = createToolContext();
     const created = await archiveCreate.run(

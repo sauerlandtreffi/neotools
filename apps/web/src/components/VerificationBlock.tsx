@@ -13,9 +13,14 @@ interface Props {
 }
 
 export default function VerificationBlock({ locale, report }: Props) {
-  const verification = report?.verification as { passed?: boolean; checks?: Check[] } | undefined;
+  const verification = report?.verification as {
+    passed?: boolean;
+    checks?: Check[];
+    warnings?: string[];
+  } | undefined;
   if (!verification || !Array.isArray(verification.checks)) return null;
-  const passed = Boolean(verification.passed);
+  const warnings = verification.warnings ?? [];
+  const passed = Boolean(verification.passed) && warnings.length === 0;
   const bg = passed ? 'color-mix(in oklab, #1b7f4e 18%, var(--card))' : 'color-mix(in oklab, #c45c26 16%, var(--card))';
   const fg = passed ? '#1b7f4e' : '#c45c26';
 
@@ -25,6 +30,14 @@ export default function VerificationBlock({ locale, report }: Props) {
         {t(locale, 'verification')} · {passed ? t(locale, 'verifyPass') : t(locale, 'verifyFail')}
       </h2>
       <ul class="grid gap-1 text-sm">
+        {warnings.map((w) => (
+          <li key={w} class="flex gap-2" data-verify-warning>
+            <span class="mono" style={{ color: '#c45c26' }}>
+              WARN
+            </span>
+            <span>{w}</span>
+          </li>
+        ))}
         {verification.checks.map((c) => (
           <li key={c.id} class="flex gap-2">
             <span class="mono" style={{ color: c.passed ? '#1b7f4e' : '#c45c26' }}>

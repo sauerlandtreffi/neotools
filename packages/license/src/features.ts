@@ -1,7 +1,12 @@
 import { COMMUNITY_LICENSE, type GatedFeature, type LicensePayload, type LicenseVerifyResult } from './types.js';
 
+/**
+ * Fail-closed: only `ok === true` (which already covers the 14-day grace window)
+ * yields the signed payload. A failed verify that still carries a payload
+ * (bad signature, expired, future issuedAt) is always Community.
+ */
 export function payloadFromResult(result: LicenseVerifyResult | undefined): LicensePayload {
-  if (result?.payload) return result.payload;
+  if (result?.ok === true) return result.payload ?? COMMUNITY_LICENSE;
   return COMMUNITY_LICENSE;
 }
 
@@ -9,12 +14,12 @@ export function hasFeature(
   feature: GatedFeature,
   license?: LicensePayload | LicenseVerifyResult | null,
 ): boolean {
-  const payload =
-    license && 'ok' in license ? payloadFromResult(license) : (license ?? COMMUNITY_LICENSE);
-  if (!license || ('ok' in license && !license.ok && !license.grace)) {
-    if (license && 'ok' in license && !license.ok) return false;
+  if (!license || typeof license !== 'object') return false;
+  if ('ok' in license) {
+    if (license.ok !== true) return false;
+    return payloadFromResult(license).features.includes(feature);
   }
-  return payload.features.includes(feature);
+  return Array.isArray(license.features) && license.features.includes(feature);
 }
 
 export function communityPromiseDe(): string {

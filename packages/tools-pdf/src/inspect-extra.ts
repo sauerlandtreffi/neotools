@@ -9,6 +9,8 @@ import {
   PDFHexString,
 } from 'pdf-lib';
 
+const RICH_SUBTYPES = new Set(['RichMedia', '3D', 'Sound', 'Movie', 'Screen']);
+
 export interface PdfExtraInspection {
   pageMetadataStreams: number;
   xobjectMetadataStreams: number;
@@ -19,6 +21,8 @@ export interface PdfExtraInspection {
   hiddenOcgCount: number;
   hiddenOcgNames: string[];
   fileAttachmentAnnots: number;
+  richMediaAnnots: number;
+  pageAA: number;
 }
 
 function nameOf(n: PDFName): string {
@@ -67,12 +71,15 @@ export function inspectExtra(doc: PDFDocument): PdfExtraInspection {
   let pieceInfo = catalog.has(PDFName.of('PieceInfo'));
   let thumbnailCount = 0;
   let fileAttachmentAnnots = 0;
+  let richMediaAnnots = 0;
+  let pageAA = 0;
   const seen = new Set<PDFDict>();
 
   for (const page of doc.getPages()) {
     if (page.node.has(PDFName.of('Metadata'))) pageMetadataStreams += 1;
     if (page.node.has(PDFName.of('PieceInfo'))) pieceInfo = true;
     if (page.node.has(PDFName.of('Thumb'))) thumbnailCount += 1;
+    if (page.node.has(PDFName.of('AA'))) pageAA += 1;
     const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
     if (annots) {
       for (let i = 0; i < annots.size(); i++) {
@@ -81,6 +88,9 @@ export function inspectExtra(doc: PDFDocument): PdfExtraInspection {
         const subtype = annot.get(PDFName.of('Subtype'));
         if (subtype instanceof PDFName && nameOf(subtype) === 'FileAttachment') {
           fileAttachmentAnnots += 1;
+        }
+        if (subtype instanceof PDFName && RICH_SUBTYPES.has(nameOf(subtype))) {
+          richMediaAnnots += 1;
         }
       }
     }
@@ -118,6 +128,8 @@ export function inspectExtra(doc: PDFDocument): PdfExtraInspection {
     hiddenOcgCount: hiddenOcgNames.length,
     hiddenOcgNames,
     fileAttachmentAnnots,
+    richMediaAnnots,
+    pageAA,
   };
 }
 
@@ -176,12 +188,70 @@ export function stripStructTree(doc: PDFDocument): boolean {
   return true;
 }
 
+const STRUCT_TEXT_KEYS = new Set(['ActualText', 'Alt', 'E']);
+
+export function clearStructPlaintext(doc: PDFDocument): number {
+  const root = doc.catalog.lookupMaybe(PDFName.of('StructTreeRoot'), PDFDict);
+  if (!root) return 0;
+  const seen = new Set<PDFDict>();
+  let cleared = 0;
+  const walk = (dict: PDFDict) => {
+    if (seen.has(dict)) return;
+    seen.add(dict);
+    for (const key of dict.keys()) {
+      const name = nameOf(key);
+      const value = dict.lookup(key);
+      if (STRUCT_TEXT_KEYS.has(name) && (value instanceof PDFString || value instanceof PDFHexString)) {
+        dict.set(key, PDFString.of(''));
+        cleared += 1;
+      }
+      if (value instanceof PDFDict) walk(value);
+      else if (value instanceof PDFArray) {
+        for (let i = 0; i < value.size(); i++) {
+          const item = value.lookup(i);
+          if (item instanceof PDFDict) walk(item);
+        }
+      }
+    }
+  };
+  walk(root);
+  return cleared;
+}
+
 export function stripOcProperties(doc: PDFDocument): string[] {
   const extra = inspectExtra(doc);
   if (doc.catalog.has(PDFName.of('OCProperties'))) {
     doc.catalog.delete(PDFName.of('OCProperties'));
   }
   return extra.hiddenOcgNames;
+}
+
+export function stripRichMediaAnnots(doc: PDFDocument): number {
+  let removed = 0;
+  for (const page of doc.getPages()) {
+    const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annots) continue;
+    const keep: ReturnType<PDFArray['get']>[] = [];
+    for (let i = 0; i < annots.size(); i++) {
+      const ref = annots.get(i);
+      const annot = annots.lookup(i);
+      if (annot instanceof PDFDict) {
+        const subtype = annot.get(PDFName.of('Subtype'));
+        if (subtype instanceof PDFName && RICH_SUBTYPES.has(nameOf(subtype))) {
+          removed += 1;
+          continue;
+        }
+        annot.delete(PDFName.of('A'));
+        annot.delete(PDFName.of('AA'));
+      }
+      keep.push(ref);
+    }
+    if (removed > 0) {
+      if (keep.length === 0) page.node.delete(PDFName.of('Annots'));
+      else page.node.set(PDFName.of('Annots'), doc.context.obj(keep));
+    }
+  }
+  return removed;
 }
 
 export function stripFileAttachmentAnnots(doc: PDFDocument): number {

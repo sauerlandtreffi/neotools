@@ -125,6 +125,14 @@ export class HistoryStore {
   async clear(): Promise<void> {
     await this.deps.blobs.clear();
     await this.deps.meta.clear();
+    if (typeof indexedDB !== 'undefined') {
+      try {
+        indexedDB.deleteDatabase('neotools-history');
+        indexedDB.deleteDatabase('neotools-history-blobs');
+      } catch {
+        // ignore
+      }
+    }
   }
 
   async purgeExpired(now = (this.deps.now ?? Date.now)()): Promise<number> {

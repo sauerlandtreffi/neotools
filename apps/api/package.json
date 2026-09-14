@@ -28,6 +28,7 @@
     "@neotools/tools-image": "workspace:*",
     "@neotools/tools-image-ai": "workspace:*",
     "@neotools/tools-media": "workspace:*",
+    "@neotools/tools-creator": "workspace:*",
     "@neotools/tools-office": "workspace:*",
     "@neotools/tools-pdf": "workspace:*",
     "@neotools/tools-speech": "workspace:*",

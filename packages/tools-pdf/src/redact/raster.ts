@@ -135,7 +135,7 @@ export async function sampleBoxMeans(
   const pdf = await openPdfjsDocument(data);
   const out: Array<{ page: number; mean: number }> = [];
   try {
-    const pages = [...new Set(hits.map((h) => h.page))];
+    const pages = [...new Set(hits.map((h) => h.page))].filter((p) => p >= 1 && p <= pdf.numPages);
     for (const pageNo of pages) {
       const page = await pdf.getPage(pageNo);
       const scale = 1.5;

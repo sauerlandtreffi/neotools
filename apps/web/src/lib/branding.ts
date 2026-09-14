@@ -12,6 +12,42 @@ export interface BrandingFooterLink {
   label: { de: string; en: string };
 }
 
+export interface BrandingLegal {
+  operator: string;
+  address: string;
+  email: string;
+  phone: string;
+  vatId: string;
+  register: string;
+  responsible: string;
+  updated: string;
+}
+
+export interface BrandingPlanPrice {
+  yearly: string;
+  monthly: string;
+}
+
+export interface BrandingPricing {
+  pro: BrandingPlanPrice;
+  enterprise: BrandingPlanPrice;
+}
+
+export interface BrandingContact {
+  email: string;
+  github: string;
+}
+
+export interface BrandingHosting {
+  provider: string;
+  region: string;
+}
+
+export interface BrandingDesktop {
+  updateCheck: boolean;
+  releasesUrl: string;
+}
+
 export interface Branding {
   name: string;
   tagline: { de: string; en: string };
@@ -27,7 +63,27 @@ export interface Branding {
   licensePubkey?: string;
   presetsPath?: string;
   showPoweredBy?: boolean;
+  legal: BrandingLegal;
+  pricing: BrandingPricing;
+  contact: BrandingContact;
+  hosting: BrandingHosting;
+  desktop: BrandingDesktop;
 }
+
+const ON_REQUEST = 'auf Anfrage';
+
+const FALLBACK_LEGAL: BrandingLegal = {
+  operator: '',
+  address: '',
+  email: '',
+  phone: '',
+  vatId: '',
+  register: '',
+  responsible: '',
+  updated: '2026-09-14',
+};
+
+const FALLBACK_PLAN: BrandingPlanPrice = { yearly: ON_REQUEST, monthly: ON_REQUEST };
 
 const FALLBACK: Branding = {
   name: 'NeoTools',
@@ -37,9 +93,8 @@ const FALLBACK: Branding = {
   },
   logo: '/logo.svg',
   colors: { primary: '#10221c', accent: '#3ee0b4', ink: '#e8efe9' },
-  impressum: 'TODO: Impressumsangaben ergänzen (Name, Anschrift, Kontakt).',
-  privacy:
-    'TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking.',
+  impressum: 'TODO: Impressumsangaben über legal.* in branding.json setzen.',
+  privacy: 'TODO: Datenschutz über legal.*, hosting.* und desktop.* in branding.json setzen.',
   hiddenTools: [],
   defaultLocale: 'de',
   footerLinks: [],
@@ -47,20 +102,66 @@ const FALLBACK: Branding = {
   licensePubkey: '',
   presetsPath: '',
   showPoweredBy: true,
+  legal: FALLBACK_LEGAL,
+  pricing: { pro: { ...FALLBACK_PLAN }, enterprise: { ...FALLBACK_PLAN } },
+  contact: { email: '', github: 'https://github.com/neotools/neotools' },
+  hosting: { provider: '', region: '' },
+  desktop: {
+    updateCheck: true,
+    releasesUrl: 'https://github.com/neotools/neotools/releases?q=desktop-v',
+  },
 };
 
-function normalize(parsed: Partial<Branding> & { colors?: Partial<BrandingColors> }): Branding {
+function mergePlan(parsed: Partial<BrandingPlanPrice> | undefined): BrandingPlanPrice {
+  const yearly = parsed?.yearly?.trim() || ON_REQUEST;
+  const monthly = parsed?.monthly?.trim() || ON_REQUEST;
+  return { yearly, monthly };
+}
+
+function normalize(
+  parsed: Partial<Branding> & {
+    colors?: Partial<BrandingColors>;
+    legal?: Partial<BrandingLegal>;
+    pricing?: { pro?: Partial<BrandingPlanPrice>; enterprise?: Partial<BrandingPlanPrice> };
+    contact?: Partial<BrandingContact>;
+    hosting?: Partial<BrandingHosting>;
+    desktop?: Partial<BrandingDesktop>;
+  },
+): Branding {
+  const legal = { ...FALLBACK_LEGAL, ...parsed.legal };
+  const contact = { ...FALLBACK.contact, ...parsed.contact };
+  if (!contact.email.trim() && legal.email.trim()) contact.email = legal.email;
   return {
     ...FALLBACK,
     ...parsed,
-    colors: { ...FALLBACK.colors, ...parsed.colors },
+    colors: {
+      primary: safeCssColor(parsed.colors?.primary ?? FALLBACK.colors.primary, FALLBACK.colors.primary),
+      accent: safeCssColor(parsed.colors?.accent ?? FALLBACK.colors.accent, FALLBACK.colors.accent),
+      ink: safeCssColor(parsed.colors?.ink ?? FALLBACK.colors.ink, FALLBACK.colors.ink),
+    },
+    logo: safeAssetUrl(parsed.logo ?? FALLBACK.logo, FALLBACK.logo),
     hiddenTools: parsed.hiddenTools ?? FALLBACK.hiddenTools,
     defaultLocale: parsed.defaultLocale === 'en' ? 'en' : 'de',
     footerLinks: parsed.footerLinks ?? FALLBACK.footerLinks,
     license: process.env.NEOTOOLS_LICENSE || parsed.license || FALLBACK.license,
-    licensePubkey: process.env.NEOTOOLS_LICENSE_PUBKEY || parsed.licensePubkey || loadPubkeyFile() || FALLBACK.licensePubkey,
+    licensePubkey:
+      process.env.NEOTOOLS_LICENSE_PUBKEY ||
+      parsed.licensePubkey ||
+      loadPubkeyFile() ||
+      FALLBACK.licensePubkey,
     presetsPath: process.env.NEOTOOLS_PRESETS || parsed.presetsPath || FALLBACK.presetsPath,
     showPoweredBy: parsed.showPoweredBy ?? FALLBACK.showPoweredBy,
+    legal,
+    pricing: {
+      pro: mergePlan(parsed.pricing?.pro),
+      enterprise: mergePlan(parsed.pricing?.enterprise),
+    },
+    contact,
+    hosting: { ...FALLBACK.hosting, ...parsed.hosting },
+    desktop: {
+      updateCheck: parsed.desktop?.updateCheck ?? FALLBACK.desktop.updateCheck,
+      releasesUrl: parsed.desktop?.releasesUrl?.trim() || FALLBACK.desktop.releasesUrl,
+    },
   };
 }
 
@@ -72,7 +173,10 @@ function loadPubkeyFile(): string {
   ];
   for (const file of candidates) {
     try {
-      const parsed = JSON.parse(readFileSync(file, 'utf8')) as { publicKeyHex?: string; publicKey?: string };
+      const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+        publicKeyHex?: string;
+        publicKey?: string;
+      };
       return parsed.publicKeyHex || parsed.publicKey || '';
     } catch {
       // next
@@ -104,4 +208,42 @@ export function isHiddenTool(id: string, branding: Branding = loadBranding()): b
   return branding.hiddenTools.includes(id);
 }
 
+/** Empty branding fields stay visible as template slots (no invented legal data). */
+export function brandingSlot(value: string | undefined, slot: string): string {
+  const trimmed = value?.trim() ?? '';
+  return trimmed || slot;
+}
+
+export function brandingContactEmail(branding: Branding = loadBranding()): string {
+  return branding.contact.email.trim() || branding.legal.email.trim();
+}
+
+export function brandingPrice(value: string | undefined, locale: 'de' | 'en'): string {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed || trimmed === ON_REQUEST) return locale === 'de' ? 'auf Anfrage' : 'on request';
+  return trimmed;
+}
+
 export const branding = loadBranding();
+
+export function safeCssColor(value: string | undefined, fallback: string): string {
+  const v = (value ?? '').trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v;
+  if (/^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\)$/.test(v)) return v;
+  return fallback;
+}
+
+export function safeAssetUrl(value: string | undefined, fallback: string): string {
+  const v = (value ?? '').trim();
+  if (v.startsWith('/') && !v.startsWith('//') && !v.includes('\\')) return v;
+  return fallback;
+}
+
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

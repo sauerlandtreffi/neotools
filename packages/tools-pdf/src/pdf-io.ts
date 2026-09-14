@@ -27,3 +27,40 @@ export function stem(name: string): string {
 export function padPage(n: number, width = 3): string {
   return String(n).padStart(width, '0');
 }
+
+/**
+ * Write a brand-new PDF (no incremental xref, no leftover unused objects).
+ * Copies only live pages from `doc` into a fresh document.
+ */
+export async function savePdfRewritten(doc: PDFDocument, name: string): Promise<NeoFile> {
+  const out = await PDFDocument.create();
+  const count = doc.getPageCount();
+  if (count > 0) {
+    const pages = await out.copyPages(doc, doc.getPageIndices());
+    for (const page of pages) out.addPage(page);
+  }
+  const bytes = await out.save({
+    useObjectStreams: false,
+    addDefaultPage: false,
+    updateFieldAppearances: false,
+  });
+  return neoFileFromBytes(name, bytes, MIME.pdf);
+}
+
+/** True when the file has more than one `%%EOF` (incremental update leftover). */
+export function hasIncrementalEof(bytes: Uint8Array): boolean {
+  const needle = new TextEncoder().encode('%%EOF');
+  let count = 0;
+  for (let i = 0; i <= bytes.length - needle.length; i++) {
+    let ok = true;
+    for (let j = 0; j < needle.length; j++) {
+      if (bytes[i + j] !== needle[j]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) count += 1;
+    if (count > 1) return true;
+  }
+  return false;
+}

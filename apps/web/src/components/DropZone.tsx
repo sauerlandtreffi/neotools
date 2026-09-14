@@ -135,7 +135,7 @@ export default function DropZone({
             <li key={`${f.name}-${i}`}>
               {f.name} · {(f.data.byteLength / 1024).toFixed(1)} KB
               {assess && assess.severity !== 'ok' && (
-                <span class="ml-2 mono text-xs" style={{ color: '#c45c26' }}>
+                <span class="ml-2 mono text-xs" style={{ color: '#c45c26' }} data-assess-warn>
                   {assess.severity}
                 </span>
               )}

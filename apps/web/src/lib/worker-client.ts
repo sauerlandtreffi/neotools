@@ -16,12 +16,17 @@ export function createToolWorker() {
   };
 }
 
+export function safeDownloadName(name: string): string {
+  const base = name.replace(/\\/g, '/').split('/').pop() ?? 'download';
+  return base.replace(/[^\w.\- ()[\]]+/g, '_').replace(/^\.+/, '').slice(0, 180) || 'download.bin';
+}
+
 export function downloadBytes(name: string, data: Uint8Array, mime: string) {
   const blob = bytesToBlob(data, mime);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = name;
+  a.download = safeDownloadName(name);
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -29,7 +34,10 @@ export function downloadBytes(name: string, data: Uint8Array, mime: string) {
 export async function zipDownload(files: WorkerFile[], zipName = 'neotools.zip') {
   const { zipSync } = await import('fflate');
   const entries: Record<string, Uint8Array> = {};
-  for (const file of files) entries[file.name] = file.data;
+  for (const file of files) {
+    const name = safeDownloadName(file.name);
+    if (!name.includes('..')) entries[name] = file.data;
+  }
   const zipped = zipSync(entries);
-  downloadBytes(zipName, zipped, 'application/zip');
+  downloadBytes(safeDownloadName(zipName), zipped, 'application/zip');
 }

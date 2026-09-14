@@ -3,6 +3,7 @@ import {
   PDFDict,
   PDFDocument,
   PDFName,
+  PDFObject,
   PDFPage,
   PDFRawStream,
   PDFStream,
@@ -10,6 +11,7 @@ import {
 } from 'pdf-lib';
 import type { RedactHit } from './types.js';
 import { boxesOverlap } from './text-map.js';
+import { normalizeWs } from './patterns.js';
 
 const latin1 = new TextDecoder('latin1');
 const latin1Enc = new TextEncoder();
@@ -295,10 +297,10 @@ function blankToken(t: Token): Token {
 
 function shouldBlank(text: string, needles: string[]): boolean {
   if (!text) return false;
-  const compact = text.replace(/\s+/g, '').toLowerCase();
+  const compact = normalizeWs(text);
   if (!compact) return false;
   for (const n of needles) {
-    const c = n.replace(/\s+/g, '').toLowerCase();
+    const c = normalizeWs(n);
     if (c.length >= 3 && (compact.includes(c) || c.includes(compact))) return true;
   }
   return false;
@@ -336,10 +338,17 @@ export function rewriteTokens(
   let inText = false;
   let tm: Matrix = IDENTITY;
   let fontSize = 12;
+  let charSpacing = 0;
+  let wordSpacing = 0;
+  let horizScale = 1;
+  let renderMode = 0;
   let blanked = 0;
   let hard = false;
   const imageDos: RewriteResult['imageDos'] = [];
   const out = tokens.slice();
+
+  const textWidth = (text: string) =>
+    Math.max(text.length * fontSize * 0.45 * horizScale + text.length * charSpacing + (text.split(' ').length - 1) * wordSpacing, 2);
 
   const markText = (text: string, idx: number, widthHint: number) => {
     const [x, y] = apply(mul(tm, ctm), 0, 0);
@@ -385,12 +394,30 @@ export function rewriteTokens(
     } else if (op === 'Tf') {
       const size = out[i - 1];
       if (size?.kind === 'num') fontSize = size.value;
+    } else if (op === 'Tc') {
+      const n = out[i - 1];
+      if (n?.kind === 'num') charSpacing = n.value;
+    } else if (op === 'Tw') {
+      const n = out[i - 1];
+      if (n?.kind === 'num') wordSpacing = n.value;
+    } else if (op === 'Tz') {
+      const n = out[i - 1];
+      if (n?.kind === 'num') horizScale = n.value / 100;
+    } else if (op === 'Ts') {
+      // rise — position only; needles still match
+    } else if (op === 'Tr') {
+      const n = out[i - 1];
+      if (n?.kind === 'num') {
+        renderMode = n.value;
+        // 4–7 clip the path; glyphs stay in the stream and must be blanked + raster-checked
+        if (renderMode >= 4) hard = true;
+      }
     } else if (op === 'Tj' || op === "'" || op === '"') {
       if (op === "'") tm = mul([1, 0, 0, 1, 0, -fontSize], tm);
       const offset = op === '"' ? 3 : 1;
       const sTok = out[i - offset];
       const text = asString(sTok);
-      if (text !== null) markText(text, i - offset, text.length * fontSize * 0.5);
+      if (text !== null) markText(text, i - offset, textWidth(text));
       else hard = true;
     } else if (op === 'TJ') {
       let j = i - 1;
@@ -402,9 +429,16 @@ export function rewriteTokens(
           j -= 1;
         }
       }
+      parts.reverse();
+      const joined = parts.map((p) => asString(out[p]) ?? '').join('');
+      const joinHit = shouldBlank(joined, needles);
       for (const p of parts) {
         const text = asString(out[p]) ?? '';
-        markText(text, p, text.length * fontSize * 0.5);
+        markText(text, p, textWidth(text) || textWidth(joined));
+        if (joinHit && out[p] && (out[p]!.kind === 'str' || out[p]!.kind === 'hex')) {
+          out[p] = blankToken(out[p]!);
+          blanked += 1;
+        }
       }
     } else if (op === 'Do') {
       const name = out[i - 1];
@@ -509,18 +543,93 @@ function rewriteXObjectForms(
     const rewritten = rewriteTokens(tokenizeContent(inner), needles, boxes);
     blanked += rewritten.blanked;
     hard = hard || rewritten.hard;
-    const fresh = doc.context.flateStream(rewritten.bytes, {
-      Type: 'XObject',
-      Subtype: 'Form',
-      BBox: stream.dict.get(PDFName.of('BBox')),
-      Resources: stream.dict.get(PDFName.of('Resources')),
-      Matrix: stream.dict.get(PDFName.of('Matrix')),
-    });
+    const fresh = doc.context.flateStream(rewritten.bytes, copyStreamDict(stream.dict));
     xobj.set(key, doc.context.register(fresh));
     const innerRes = stream.dict.lookupMaybe(PDFName.of('Resources'), PDFDict);
     const nested = rewriteXObjectForms(doc, innerRes, needles, boxes, seen);
     blanked += nested.blanked;
     hard = hard || nested.hard;
+    if (hasType3Font(innerRes)) hard = true;
+  }
+  return { blanked, hard };
+}
+
+function hasType3Font(resources: PDFDict | undefined): boolean {
+  if (!resources) return false;
+  const fonts = resources.lookupMaybe(PDFName.of('Font'), PDFDict);
+  if (!fonts) return false;
+  for (const key of fonts.keys()) {
+    const font = fonts.lookup(key);
+    const dict = font instanceof PDFDict ? font : font && typeof font === 'object' && 'dict' in font ? (font as { dict: PDFDict }).dict : undefined;
+    const subtype = dict?.lookup(PDFName.of('Subtype'));
+    if (subtype instanceof PDFName && subtype.toString() === '/Type3') return true;
+  }
+  return false;
+}
+
+function rewriteAppearanceDict(
+  doc: PDFDocument,
+  dict: PDFDict | undefined,
+  needles: string[],
+  boxes: Array<{ x: number; y: number; w: number; h: number }>,
+): { blanked: number; hard: boolean } {
+  let blanked = 0;
+  let hard = false;
+  if (!dict) return { blanked, hard };
+  for (const key of dict.keys()) {
+    const child = dict.lookup(key);
+    if (child instanceof PDFDict) {
+      const inner = rewriteAppearanceDict(doc, child, needles, boxes);
+      blanked += inner.blanked;
+      hard = hard || inner.hard;
+      continue;
+    }
+    const stream = child instanceof PDFRawStream || child instanceof PDFStream ? child : null;
+    if (!stream) continue;
+    const inner = decodeStreamBytes(stream);
+    const rewritten = rewriteTokens(tokenizeContent(inner), needles, boxes);
+    blanked += rewritten.blanked;
+    hard = hard || rewritten.hard;
+    const fresh = doc.context.flateStream(rewritten.bytes, copyStreamDict(stream.dict));
+    dict.set(key, doc.context.register(fresh));
+    const innerRes = stream.dict.lookupMaybe(PDFName.of('Resources'), PDFDict);
+    const nested = rewriteXObjectForms(doc, innerRes, needles, boxes, new Set());
+    blanked += nested.blanked;
+    hard = hard || nested.hard || hasType3Font(innerRes);
+  }
+  return { blanked, hard };
+}
+
+const STREAM_CODING_KEYS = new Set(['/Length', '/Filter', '/DecodeParms', '/DL']);
+
+/** Keep BBox/Matrix/Resources/Subtype/FormType/Group… but drop encoding keys (flateStream sets its own). */
+function copyStreamDict(src: PDFDict): Parameters<PDFDocument['context']['flateStream']>[1] {
+  const out: Record<string, PDFObject> = {};
+  for (const key of src.keys()) {
+    const name = key.toString();
+    if (STREAM_CODING_KEYS.has(name)) continue;
+    const value = src.get(key);
+    if (value) out[name.replace(/^\//, '')] = value;
+  }
+  return out;
+}
+
+export function rewriteAnnotationAppearances(
+  page: PDFPage,
+  needles: string[],
+  boxes: Array<{ x: number; y: number; w: number; h: number }>,
+): { blanked: number; hard: boolean } {
+  let blanked = 0;
+  let hard = false;
+  const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+  if (!annots) return { blanked, hard };
+  for (let i = 0; i < annots.size(); i++) {
+    const annot = annots.lookup(i);
+    if (!(annot instanceof PDFDict)) continue;
+    const ap = annot.lookupMaybe(PDFName.of('AP'), PDFDict);
+    const next = rewriteAppearanceDict(page.doc, ap, needles, boxes);
+    blanked += next.blanked;
+    hard = hard || next.hard;
   }
   return { blanked, hard };
 }
@@ -532,15 +641,18 @@ export function rewritePageContent(
 ): { blanked: number; hard: boolean; imageDos: RewriteResult['imageDos'] } {
   const pageHits = hits.filter((h) => h.page === pageNumber);
   const needles = pageHits.map((h) => h.text).filter((t) => t.trim().length >= 2);
-  const boxes = pageHits.map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h }));
+  // zero-size boxes come from metadata/annotation hits — they only drive string blanking
+  const boxes = pageHits.filter((h) => h.w > 0 && h.h > 0).map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h }));
   const bytes = pageContentBytes(page);
   const rewritten = rewriteTokens(tokenizeContent(bytes), needles, boxes);
   setPageContents(page, rewritten.bytes);
   const resources = page.node.lookupMaybe(PDFName.of('Resources'), PDFDict);
   const forms = rewriteXObjectForms(page.doc, resources, needles, boxes, new Set());
+  const apps = rewriteAnnotationAppearances(page, needles, boxes);
+  const type3 = hasType3Font(resources);
   return {
-    blanked: rewritten.blanked + forms.blanked,
-    hard: rewritten.hard || forms.hard,
+    blanked: rewritten.blanked + forms.blanked + apps.blanked,
+    hard: rewritten.hard || forms.hard || apps.hard || type3,
     imageDos: rewritten.imageDos,
   };
 }

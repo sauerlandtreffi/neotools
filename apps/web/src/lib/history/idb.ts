@@ -59,8 +59,9 @@ export function idbMetaStore(): HistoryMetaStore {
     },
     async clear() {
       const db = await openDb();
-      const tx = db.transaction('runs', 'readwrite');
+      const tx = db.transaction(['runs', 'settings'], 'readwrite');
       tx.objectStore('runs').clear();
+      tx.objectStore('settings').clear();
       await new Promise<void>((resolve, reject) => {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);

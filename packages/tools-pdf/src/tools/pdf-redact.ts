@@ -10,13 +10,13 @@ import {
 import type { NeoFile, ToolContext, VerificationReport } from '@neotools/engine';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { PDF_LICENSES } from '../licenses.js';
-import { loadPdf, savePdf, stem } from '../pdf-io.js';
+import { loadPdf, savePdfRewritten, stem } from '../pdf-io.js';
 import { DEFAULT_PATTERNS } from '../redact/patterns.js';
 import { collectHits } from '../redact/find.js';
 import { rewritePageContent } from '../redact/content-stream.js';
 import { blackoutOverlappingImages } from '../redact/images.js';
 import { fillRgb, replacePagesWithRaster } from '../redact/raster.js';
-import { scrubMetadata } from '../redact/metadata.js';
+import { collectMetaHits, scrubMetadata } from '../redact/metadata.js';
 import { leftoverPages, verifyRedactedPdf } from '../redact/verify.js';
 import type { RedactFileReport, RedactHit } from '../redact/types.js';
 
@@ -118,6 +118,14 @@ async function redactOne(
   const fill = fillRgb(opts.fillColor);
 
   let doc = await loadPdf(file);
+  if (opts.mode !== 'manual') {
+    // Info/XMP/Outline/StructTree/Annotations/AP streams are invisible to pdf.js text extraction
+    const metaHits = collectMetaHits(doc, opts.patterns, opts.customRegex ?? []);
+    if (metaHits.length) {
+      hits.push(...metaHits);
+      warnings.push(`${metaHits.length} Treffer in Metadaten/Annotationen entfernt`);
+    }
+  }
   scrubMetadata(doc, hits);
   const font = await doc.embedFont(StandardFonts.Helvetica);
 
@@ -128,12 +136,13 @@ async function redactOne(
     const page = doc.getPage(i);
     const rewritten = rewritePageContent(page, pageHits, pageNo);
     if (rewritten.hard) hardPages.add(pageNo);
-    const imgWarn = await blackoutOverlappingImages(doc, page, rewritten.imageDos, pageHits);
+    const visible = pageHits.filter((h) => h.w > 0 && h.h > 0);
+    const imgWarn = await blackoutOverlappingImages(doc, page, rewritten.imageDos, visible);
     warnings.push(...imgWarn);
-    drawBoxes(page, pageHits, fill, opts.label, font);
+    drawBoxes(page, visible, fill, opts.label, font);
   }
 
-  let pdfFile = await savePdf(doc, `${stem(file.name)}-redacted.pdf`);
+  let pdfFile = await savePdfRewritten(doc, `${stem(file.name)}-redacted.pdf`);
   let bytes = await pdfFile.bytes();
   const needles = hits.map((h) => h.text).filter((t) => t.trim().length >= 3);
   const leftover = await leftoverPages(bytes, needles, opts.mode === 'manual' ? [] : opts.patterns, opts.customRegex ?? []);
@@ -148,7 +157,7 @@ async function redactOne(
       rasterized.push(...replaced.rasterized);
       for (const p of replaced.rasterized) warnings.push(`Seite ${p} gerastert`);
       for (const p of replaced.skipped) warnings.push(`Seite ${p}: Rasterisierung nicht möglich`);
-      pdfFile = await savePdf(doc, `${stem(file.name)}-redacted.pdf`);
+      pdfFile = await savePdfRewritten(doc, `${stem(file.name)}-redacted.pdf`);
       bytes = await pdfFile.bytes();
     } else {
       for (const p of leftover) warnings.push(`Seite ${p}: Textreste nach Stream-Rewrite`);

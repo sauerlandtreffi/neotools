@@ -114,7 +114,16 @@ export function maskSecret(text: string, pattern: RedactPatternId): string {
 }
 
 export function normalizeWs(text: string): string {
-  return text.replace(/\s+/g, '').toLowerCase();
+  return stripInvisible(text).replace(/\s+/g, '').toLowerCase();
+}
+
+/** Drop bidi marks, zero-width, soft hyphen; NFKC so ligatures (ﬁ) fold to ASCII. */
+export function stripInvisible(text: string): string {
+  return text
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF\u2060\u00AD]/g, '')
+    .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '')
+    .replace(/[\u00A0\u202F\u2007\u2009\u200A]/g, ' ');
 }
 
 interface PatternSpec {
@@ -186,7 +195,7 @@ export function findPatternMatches(
   };
 
   if (allow.has('iban')) {
-    for (const ib of findIbansInCompact(text.replace(/\s+/g, '').toUpperCase())) {
+    for (const ib of findIbansInCompact(stripInvisible(text).replace(/\s+/g, '').toUpperCase())) {
       add({
         pattern: 'iban',
         text: ib.text,
@@ -197,7 +206,7 @@ export function findPatternMatches(
   }
 
   if (allow.has('steuer-id')) {
-    const compact = text.replace(/\s+/g, '');
+    const compact = stripInvisible(text).replace(/\s+/g, '');
     for (let i = 0; i <= compact.length - 11; i++) {
       const cand = compact.slice(i, i + 11);
       if (isValidSteuerId(cand)) {

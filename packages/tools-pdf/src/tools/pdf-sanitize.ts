@@ -24,10 +24,13 @@ import {
   stripOcProperties,
   stripPageAndXObjectMetadata,
   stripPieceInfo,
+  stripRichMediaAnnots,
   stripStructTree,
+  clearStructPlaintext,
   stripThumbnails,
 } from '../inspect-extra.js';
-import { loadPdf, savePdf, stem } from '../pdf-io.js';
+import { findSanitizeKeywordsOutsideStreams } from '../redact/byte-scan.js';
+import { hasIncrementalEof, loadPdf, savePdfRewritten, stem } from '../pdf-io.js';
 
 const options = z.object({
   removeAnnotations: z.boolean().default(true),
@@ -48,6 +51,12 @@ function diffInspect(before: PdfInspection, after: PdfInspection) {
     'hasAA',
     'hasAcroForm',
     'hasLaunchActions',
+    'hasUriActions',
+    'hasSubmitForm',
+    'hasImportData',
+    'hasGoToR',
+    'hasXfa',
+    'hasEncrypt',
   ];
   for (const key of flags) {
     if (before[key]) found.push(key);
@@ -116,7 +125,9 @@ export const pdfSanitize = defineTool({
       const piece = stripPieceInfo(doc);
       const thumbs = stripThumbnails(doc);
       const hiddenOcgs = stripOcProperties(doc);
+      const rich = stripRichMediaAnnots(doc);
       let struct = false;
+      const structText = clearStructPlaintext(doc);
       if (parsed.stripStructTree) struct = stripStructTree(doc);
       let annots = 0;
       if (parsed.removeAnnotations) annots = stripAnnotations(doc);
@@ -133,9 +144,9 @@ export const pdfSanitize = defineTool({
       const after = inspectPdf(doc);
       const verification = {
         ...diffInspect(before, after),
-        extra: { extraMeta, piece, thumbs, hiddenOcgs, struct },
+        extra: { extraMeta, piece, thumbs, hiddenOcgs, struct, structText, rich },
       };
-      const pdf = await savePdf(doc, `${stem(file.name)}-sanitized.pdf`);
+      const pdf = await savePdfRewritten(doc, `${stem(file.name)}-sanitized.pdf`);
       const json = neoFileFromBytes(
         `${stem(file.name)}-sanitize-report.json`,
         new TextEncoder().encode(
@@ -163,6 +174,7 @@ export const pdfSanitize = defineTool({
         ignoreEncryption: true,
         updateMetadata: false,
       });
+      const bytes = await file.bytes();
       const after = inspectPdf(doc);
       const extra = inspectExtra(doc);
       const flag = (id: string, passed: boolean, detail?: string) => {
@@ -176,6 +188,16 @@ export const pdfSanitize = defineTool({
       flag('fileAttachment', extra.fileAttachmentAnnots === 0);
       flag('pieceInfo', !extra.pieceInfo);
       flag('thumbnails', extra.thumbnailCount === 0);
+      flag('launch', !after.hasLaunchActions);
+      flag('uriAction', !after.hasUriActions);
+      flag('submitForm', !after.hasSubmitForm);
+      flag('importData', !after.hasImportData);
+      flag('gotoR', !after.hasGoToR);
+      flag('xfa', !after.hasXfa);
+      flag('encrypt', !after.hasEncrypt);
+      flag('trailerId', !after.hasTrailerId, after.hasTrailerId ? 'Trailer /ID (Dokument-Fingerabdruck) vorhanden' : undefined);
+      flag('richMedia', extra.richMediaAnnots === 0);
+      flag('pageAA', extra.pageAA === 0);
       flag(
         'hiddenOcg',
         extra.hiddenOcgCount === 0,
@@ -184,6 +206,13 @@ export const pdfSanitize = defineTool({
       if (parsed.removeAnnotations) flag('annotations', after.annotationCount === 0);
       if (parsed.flattenForms) flag('acroForm', !after.hasAcroForm);
       if (parsed.stripStructTree) flag('structTree', !extra.hasStructTree);
+      const rawHits = findSanitizeKeywordsOutsideStreams(bytes);
+      flag(
+        'rawKeywords',
+        rawHits.length === 0,
+        rawHits.length ? `Rohbytes außerhalb Streams: ${rawHits.join(', ')}` : 'Keine gefährlichen Namen außerhalb von Streams.',
+      );
+      flag('incremental', !hasIncrementalEof(bytes), hasIncrementalEof(bytes) ? 'Mehrere %%EOF' : undefined);
     }
     if (!checks.length) checks.push({ id: 'no-pdf', passed: true });
     return { passed: checks.every((c) => c.passed), checks };

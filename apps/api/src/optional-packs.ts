@@ -5,6 +5,7 @@ const OPTIONAL: ReadonlyArray<readonly [string, string]> = [
   ['@neotools/tools-speech', 'registerSpeechTools'],
   ['@neotools/tools-office', 'registerOfficeTools'],
   ['@neotools/tools-archive', 'registerArchiveTools'],
+  ['@neotools/tools-creator', 'registerCreatorTools'],
 ];
 
 export async function registerOptionalPacks(registry: Registry): Promise<Registry> {

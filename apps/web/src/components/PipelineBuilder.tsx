@@ -4,6 +4,7 @@ import ZodForm from './ZodForm';
 import { localePath, t, type Locale } from '../lib/i18n';
 import { createToolWorker, downloadBytes, type WorkerFile } from '../lib/worker-client';
 import { getBrowserHistoryStore } from '../lib/history';
+import { decodePipelineHash, sanitizePipelineSteps } from '../lib/pipeline-import';
 
 export interface CatalogTool {
   id: string;
@@ -107,15 +108,15 @@ export default function PipelineBuilder({ locale, catalogJson, libraryJson, requ
   useEffect(() => {
     if (!location.hash.startsWith('#p=')) return;
     try {
-      const raw = location.hash.slice(3);
-      const padded = raw.replace(/-/g, '+').replace(/_/g, '/');
-      const pad = padded.length % 4 === 0 ? '' : '='.repeat(4 - (padded.length % 4));
-      const json = JSON.parse(atob(padded + pad)) as { steps?: StepState[] };
-      if (Array.isArray(json.steps)) setSteps(json.steps);
+      const json = decodePipelineHash(location.hash.slice(3)) as { steps?: unknown } | undefined;
+      if (!json || typeof json !== 'object') return;
+      const known = new Set(catalog.map((c) => c.id));
+      const next = sanitizePipelineSteps(json.steps, known);
+      if (next.length) setSteps(next);
     } catch {
       // ignore
     }
-  }, []);
+  }, [catalog]);
 
   const addStep = (toolId: string) => {
     const tool = catalog.find((c) => c.id === toolId);
@@ -344,8 +345,9 @@ export default function PipelineBuilder({ locale, catalogJson, libraryJson, requ
               if (!file) return;
               try {
                 const parsed = JSON.parse(await file.text()) as { steps?: StepState[]; pipeline?: { steps?: StepState[] } };
-                const next = parsed.steps ?? parsed.pipeline?.steps;
-                if (Array.isArray(next)) setSteps(next);
+                const known = new Set(catalog.map((c) => c.id));
+                const next = sanitizePipelineSteps(parsed.steps ?? parsed.pipeline?.steps, known);
+                if (next.length) setSteps(next);
               } catch (err) {
                 setError(err instanceof Error ? err.message : String(err));
               }

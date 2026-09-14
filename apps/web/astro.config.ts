@@ -26,6 +26,7 @@ const webLlmStub = fileURLToPath(new URL('./src/stubs/web-llm.ts', import.meta.u
 const toolsOffice = fileURLToPath(new URL('../../packages/tools-office/src/index.ts', import.meta.url));
 const toolsMedia = fileURLToPath(new URL('../../packages/tools-media/src/index.ts', import.meta.url));
 const toolsArchive = fileURLToPath(new URL('../../packages/tools-archive/src/index.ts', import.meta.url));
+const toolsCreator = fileURLToPath(new URL('../../packages/tools-creator/src/index.ts', import.meta.url));
 const licensePkg = fileURLToPath(new URL('../../packages/license/src/index.ts', import.meta.url));
 const ffmpegBrowser = join(
   dirname(createRequire(fileURLToPath(new URL('../../packages/tools-media/package.json', import.meta.url))).resolve('@ffmpeg/ffmpeg')),
@@ -65,6 +66,7 @@ const srcPackageAliases = {
   '@neotools/tools-office': toolsOffice,
   '@neotools/tools-media': toolsMedia,
   '@neotools/tools-archive': toolsArchive,
+  '@neotools/tools-creator': toolsCreator,
   '@neotools/license': licensePkg,
   '@neotools/models': modelsPkg,
   '@neotools/parsers': parsers,
@@ -181,6 +183,7 @@ export default defineConfig({
         '@neotools/tools-office',
         '@neotools/tools-media',
         '@neotools/tools-archive',
+        '@neotools/tools-creator',
         '@neotools/license',
         '@neotools/models',
         '@neotools/parsers',

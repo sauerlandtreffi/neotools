@@ -19,7 +19,7 @@ export function decodeLicenseToken(token: string): { payload: LicensePayload; si
   const payload = parsePayload(JSON.parse(json));
   const canonical = canonicalizePayload(payload);
   if (canonical !== json) {
-    // Accept non-canonical encoding as long as fields parse; re-sign verify uses original bytes.
+    throw new Error('Lizenz-Payload ist nicht kanonisch (Key-Reihenfolge/Felder).');
   }
   return { payload, signature, message };
 }
@@ -40,12 +40,31 @@ export async function verifyLicense(
   }
   if (!publicKey || (typeof publicKey === 'string' && !publicKey.trim())) {
     return {
-      ok: false,
+      ok: true,
+      payload: COMMUNITY_LICENSE,
       grace: false,
-      warnings: [],
+      warnings: ['Token ignoriert: kein Public Key — Community, niemals Pro.'],
       expired: false,
-      error: 'Kein Public Key konfiguriert — Token kann nicht geprüft werden.',
     };
+  }
+
+  const dots = token.trim().split('.');
+  if (dots.length >= 3) {
+    try {
+      const header = JSON.parse(new TextDecoder().decode(base64UrlToBytes(dots[0]!))) as { alg?: unknown };
+      const alg = typeof header.alg === 'string' ? header.alg.toLowerCase() : '';
+      if (alg && alg !== 'ed25519' && alg !== 'eddsa') {
+        return {
+          ok: false,
+          grace: false,
+          warnings: [],
+          expired: false,
+          error: `Algorithmus-Confusion: ${alg} wird nicht akzeptiert (nur Ed25519).`,
+        };
+      }
+    } catch {
+      // not a JWT header — fall through to payload.sig
+    }
   }
 
   let decoded: ReturnType<typeof decodeLicenseToken>;
@@ -77,9 +96,15 @@ export async function verifyLicense(
   const warnings: string[] = [];
   const issued = Date.parse(decoded.payload.issuedAt);
   if (Number.isFinite(issued) && issued - now.getTime() > CLOCK_SKEW_WARN_MS) {
-    warnings.push(
-      'issuedAt liegt in der Zukunft — mögliche Uhr-Manipulation. Nur Hinweis, Prüfung läuft weiter.',
-    );
+    warnings.push('issuedAt liegt in der Zukunft — mögliche Uhr-Rückstellung.');
+    return {
+      ok: false,
+      payload: COMMUNITY_LICENSE,
+      grace: false,
+      warnings,
+      expired: false,
+      error: 'issuedAt zu weit in der Zukunft — Token abgelehnt (Community).',
+    };
   }
 
   const until = Date.parse(decoded.payload.validUntil);

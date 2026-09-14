@@ -15,6 +15,7 @@ export interface ApiConfig {
   inlineWorkers: boolean;
   auditPath?: string;
   requireApiFeature: boolean;
+  corsOrigins: Set<string>;
 }
 
 function parseKeys(raw: string | undefined): Set<string> {
@@ -68,6 +69,12 @@ export function loadApiConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     inlineWorkers: process.env.NEOTOOLS_API_INLINE === '1',
     auditPath: process.env.NEOTOOLS_AUDIT_LOG,
     requireApiFeature: process.env.NEOTOOLS_API_ALLOW_COMMUNITY !== '1',
+    corsOrigins: new Set(
+      (process.env.NEOTOOLS_CORS_ORIGINS ?? '')
+        .split(/[\n,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
     ...overrides,
   };
 }

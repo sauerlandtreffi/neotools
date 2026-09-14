@@ -9,6 +9,7 @@ import {
   type ToolResult,
 } from '@neotools/engine';
 import { nodePlatformReady } from '@neotools/engine/platform/node';
+import { newJobId } from './hash.js';
 
 export type JobKind = 'run' | 'pipeline';
 
@@ -24,10 +25,12 @@ export interface JobRequest {
   spec?: { steps: Array<{ toolId: string; options: unknown; whenMime?: string[] }> };
   options?: unknown;
   files: JobFile[];
+  ownerKeyHash?: string;
 }
 
 export interface JobRecord {
   id: string;
+  ownerKeyHash?: string;
   status: 'queued' | 'running' | 'done' | 'error' | 'cancelled';
   createdAt: number;
   startedAt?: number;
@@ -51,18 +54,55 @@ export class JobQueue {
     private readonly maxParallel: number,
     private readonly timeoutMs: number,
     private readonly inline: boolean,
+    /** Finished job records (incl. output bytes) are dropped after this long. */
+    private readonly retentionMs = 10 * 60 * 1000,
+    /** Hard cap on records kept in memory; oldest finished jobs are evicted first. */
+    private readonly maxJobs = 1000,
   ) {}
 
   enqueue(req: JobRequest): JobRecord {
-    const id = `job_${Date.now().toString(36)}_${(this.seq += 1).toString(36)}`;
-    const job: JobRecord = { id, status: 'queued', createdAt: Date.now() };
+    this.seq += 1;
+    this.evict();
+    const id = newJobId();
+    const job: JobRecord = { id, ownerKeyHash: req.ownerKeyHash, status: 'queued', createdAt: Date.now() };
     this.jobs.set(id, job);
     void this.pump(id, req);
     return job;
   }
 
-  get(id: string): JobRecord | undefined {
-    return this.jobs.get(id);
+  /** Owner-bound lookup: a job without owner or a caller without key never matches. */
+  get(id: string, ownerKeyHash?: string): JobRecord | undefined {
+    const job = this.jobs.get(id);
+    if (!job) return undefined;
+    if (!job.ownerKeyHash || !ownerKeyHash || job.ownerKeyHash !== ownerKeyHash) return undefined;
+    return job;
+  }
+
+  get size(): number {
+    return this.jobs.size;
+  }
+
+  /** Drop finished records older than `retentionMs` and enforce `maxJobs`. */
+  evict(now = Date.now()): number {
+    let removed = 0;
+    const finished: JobRecord[] = [];
+    for (const job of this.jobs.values()) {
+      if (job.status === 'queued' || job.status === 'running') continue;
+      const end = job.finishedAt ?? job.createdAt;
+      if (now - end >= this.retentionMs) {
+        this.jobs.delete(job.id);
+        removed += 1;
+      } else finished.push(job);
+    }
+    if (this.jobs.size >= this.maxJobs) {
+      finished.sort((a, b) => (a.finishedAt ?? a.createdAt) - (b.finishedAt ?? b.createdAt));
+      for (const job of finished) {
+        if (this.jobs.size < this.maxJobs) break;
+        this.jobs.delete(job.id);
+        removed += 1;
+      }
+    }
+    return removed;
   }
 
   wait(id: string, timeoutMs = this.timeoutMs): Promise<JobRecord> {
@@ -74,7 +114,9 @@ export class JobQueue {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.cancel(id, 'timeout');
-        reject(new Error('Job-Timeout'));
+        const err = new Error('Job-Timeout') as Error & { statusCode?: number };
+        err.statusCode = 504;
+        reject(err);
       }, timeoutMs);
       const list = this.waiters.get(id) ?? [];
       list.push((job) => {

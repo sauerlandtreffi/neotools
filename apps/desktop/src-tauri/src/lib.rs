@@ -1,5 +1,6 @@
 mod args;
 
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -16,6 +17,7 @@ pub use args::parse_open_path;
 pub struct OpenedState {
     path: Mutex<Option<String>>,
     recent: Mutex<Vec<String>>,
+    allowed: Mutex<HashSet<String>>,
 }
 
 #[derive(Serialize, Clone)]
@@ -39,7 +41,62 @@ fn file_name(path: &str) -> String {
         .to_string()
 }
 
+fn canon_loose(path: &str) -> String {
+    let p = Path::new(path);
+    if let Ok(c) = p.canonicalize() {
+        return c.to_string_lossy().into_owned();
+    }
+    if let Some(parent) = p.parent() {
+        if let Ok(c) = parent.canonicalize() {
+            return c
+                .join(p.file_name().unwrap_or_default())
+                .to_string_lossy()
+                .into_owned();
+        }
+    }
+    path.replace('\\', "/")
+}
+
+fn allow_path(state: &OpenedState, path: &str) {
+    let key = canon_loose(path);
+    if let Ok(mut allowed) = state.allowed.lock() {
+        allowed.insert(key);
+    }
+}
+
+fn path_allowed(state: &OpenedState, path: &str) -> bool {
+    let key = canon_loose(path);
+    state
+        .allowed
+        .lock()
+        .map(|g| g.contains(&key) || g.contains(&path.replace('\\', "/")))
+        .unwrap_or(false)
+}
+
+pub fn valid_deep_link(raw: &str) -> bool {
+    let s = raw.trim();
+    let body = if let Some(rest) = s.strip_prefix("neotools://") {
+        rest
+    } else if let Some(rest) = s.strip_prefix("neotools:") {
+        rest
+    } else {
+        return false;
+    };
+    let path = body.split(['?', '#']).next().unwrap_or("");
+    if path.is_empty() || path == "open" {
+        return true;
+    }
+    if let Some(id) = path.strip_prefix("tool/") {
+        return !id.is_empty()
+            && id
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-');
+    }
+    false
+}
+
 fn set_pending(state: &OpenedState, path: String) {
+    allow_path(state, &path);
     if let Ok(mut guard) = state.path.lock() {
         *guard = Some(path.clone());
     }
@@ -73,7 +130,7 @@ fn handle_startup_args(app: &tauri::AppHandle, args: &[String]) {
         return;
     }
     for arg in args.iter().skip(1) {
-        if arg.starts_with("neotools:") {
+        if arg.starts_with("neotools:") && valid_deep_link(arg) {
             let _ = app.emit("open-deep-link", arg);
         }
     }
@@ -89,7 +146,10 @@ fn read_path(path: String) -> Result<OpenedFile, String> {
 }
 
 #[tauri::command]
-fn read_file(path: String) -> Result<OpenedFile, String> {
+fn read_file(state: State<'_, OpenedState>, path: String) -> Result<OpenedFile, String> {
+    if !path_allowed(&state, &path) {
+        return Err("Pfad nicht erlaubt (nur Nutzer-Dialog oder Argument-Datei).".into());
+    }
     read_path(path)
 }
 
@@ -105,7 +165,10 @@ fn read_opened_file(state: State<'_, OpenedState>) -> Result<OpenedFile, String>
 }
 
 #[tauri::command]
-fn save_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
+fn save_file(state: State<'_, OpenedState>, path: String, bytes: Vec<u8>) -> Result<(), String> {
+    if !path_allowed(&state, &path) {
+        return Err("Pfad nicht erlaubt (nur Nutzer-Dialog).".into());
+    }
     if let Some(parent) = Path::new(&path).parent() {
         if !parent.as_os_str().is_empty() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -121,18 +184,31 @@ fn pick_save_path(app: tauri::AppHandle, default_name: Option<String>) -> Result
         dialog = dialog.set_file_name(name);
     }
     let picked = dialog.blocking_save_file();
-    Ok(picked.map(|p| p.to_string()))
+    Ok(picked.map(|p| {
+        let s = p.to_string();
+        if let Some(state) = app.try_state::<OpenedState>() {
+            allow_path(state.inner(), &s);
+        }
+        s
+    }))
 }
 
 #[tauri::command]
-fn read_text_file(path: String) -> Result<String, String> {
+fn read_text_file(state: State<'_, OpenedState>, path: String) -> Result<String, String> {
+    if !path_allowed(&state, &path) {
+        return Err("Pfad nicht erlaubt (nur Nutzer-Dialog).".into());
+    }
     std::fs::read_to_string(path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn pick_open_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let picked = app.dialog().file().add_filter("All", &["*"]).blocking_pick_file();
-    Ok(picked.map(|p| p.to_string()))
+    Ok(picked.map(|p| {
+        let s = p.to_string();
+        allow_path(app.state::<OpenedState>().inner(), &s);
+        s
+    }))
 }
 
 #[tauri::command]
@@ -250,7 +326,10 @@ pub fn run() {
                 let handle = handle.clone();
                 move |event| {
                     for url in event.urls() {
-                        let _ = handle.emit("open-deep-link", url.to_string());
+                        let raw = url.to_string();
+                        if valid_deep_link(&raw) {
+                            let _ = handle.emit("open-deep-link", raw);
+                        }
                     }
                 }
             });
@@ -278,7 +357,9 @@ fn handle_macos_opened(app: &tauri::AppHandle, event: &tauri::RunEvent) {
         for url in urls {
             let raw = url.to_string();
             if raw.starts_with("neotools:") {
-                let _ = app.emit("open-deep-link", raw);
+                if valid_deep_link(&raw) {
+                    let _ = app.emit("open-deep-link", raw);
+                }
                 continue;
             }
             if let Ok(path) = url.to_file_path() {
@@ -287,5 +368,25 @@ fn handle_macos_opened(app: &tauri::AppHandle, event: &tauri::RunEvent) {
                 apply_open_path(app, path);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod security_tests {
+    use super::valid_deep_link;
+
+    #[test]
+    fn accepts_tool_deep_links() {
+        assert!(valid_deep_link("neotools://tool/pdf-redact"));
+        assert!(valid_deep_link("neotools:tool/pdf-merge?pipeline=abc"));
+        assert!(valid_deep_link("neotools://open"));
+    }
+
+    #[test]
+    fn rejects_foreign_and_path_traversal_links() {
+        assert!(!valid_deep_link("https://evil.example/tool/pdf-redact"));
+        assert!(!valid_deep_link("neotools://tool/../etc/passwd"));
+        assert!(!valid_deep_link("neotools://tool/PDF_REDACT"));
+        assert!(!valid_deep_link("javascript:alert(1)"));
     }
 }

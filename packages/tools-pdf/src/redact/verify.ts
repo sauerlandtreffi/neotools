@@ -3,8 +3,11 @@ import { MIME } from '@neotools/engine';
 import { PDFDocument } from 'pdf-lib';
 import { findPatternMatches, normalizeWs, type PatternMatch } from './patterns.js';
 import { extractAllText, extractPageMaps } from './text-map.js';
-import { collectMetaStrings } from './metadata.js';
+import { collectMetaStrings, collectStructPlaintext, isTechnicalPdfMeta } from './metadata.js';
 import { sampleBoxMeans } from './raster.js';
+import { findNeedlesInPdfBytes } from './byte-scan.js';
+import { pagesMissingToUnicode } from './fonts.js';
+import { hasIncrementalEof } from '../pdf-io.js';
 import type { RedactHit, RedactMode, RedactPatternId } from './types.js';
 
 export interface VerifyRedactOptions {
@@ -14,15 +17,6 @@ export interface VerifyRedactOptions {
   strings?: string[];
   hits?: RedactHit[];
   fillColor?: string;
-}
-
-/** pdf-lib Info dates / producer look like phone numbers or Steuer-IDs if scanned raw. */
-function isTechnicalPdfMeta(value: string): boolean {
-  const s = value.trim();
-  if (/^D:\d{8,}/.test(s)) return true;
-  if (/^pdf-lib/i.test(s)) return true;
-  if (/^Adobe/i.test(s) && /PDF/.test(s)) return true;
-  return false;
 }
 
 function leftoverInText(text: string, needles: string[], patterns: RedactPatternId[], custom: string[]): PatternMatch[] {
@@ -38,15 +32,19 @@ function leftoverInText(text: string, needles: string[], patterns: RedactPattern
   return extras;
 }
 
-async function pixelSample(data: Uint8Array, hits: RedactHit[]): Promise<VerificationCheck[]> {
+async function pixelSample(data: Uint8Array, allHits: RedactHit[]): Promise<VerificationCheck[]> {
   const checks: VerificationCheck[] = [];
+  // Metadata/annotation hits carry page 0 and a zero-size box — nothing to sample visually.
+  const hits = allHits.filter((h) => h.page >= 1 && h.w > 0 && h.h > 0);
   if (!hits.length) return checks;
   const samples = await sampleBoxMeans(data, hits);
   if (!samples) {
     checks.push({
       id: 'pixel-sample',
-      passed: true,
-      detail: 'Pixel-Stichprobe übersprungen (kein Canvas).',
+      passed: false,
+      advisory: true,
+      detail:
+        'Pixel-Stichprobe nicht möglich (kein Canvas). Text- und Byte-Prüfung gelten; Seite gilt nicht als visuell bestätigt.',
     });
     return checks;
   }
@@ -69,6 +67,7 @@ export async function verifyRedactedPdf(
   options: VerifyRedactOptions,
 ): Promise<VerificationReport> {
   const checks: VerificationCheck[] = [];
+  const warnings: string[] = [];
   const needles = [
     ...(options.strings ?? []),
     ...(options.hits ?? []).map((h) => h.text),
@@ -92,22 +91,75 @@ export async function verifyRedactedPdf(
               .join(', ')}`,
     });
 
+    const rawHits = findNeedlesInPdfBytes(data, needles);
+    checks.push({
+      id: `${file.name}:bytes`,
+      passed: rawHits.length === 0,
+      detail:
+        rawHits.length === 0
+          ? 'Kein geschwärzter String in den gespeicherten Bytes.'
+          : `Rohbytes enthalten noch: ${rawHits[0]!.slice(0, 32)}`,
+    });
+
+    if (hasIncrementalEof(data)) {
+      checks.push({
+        id: `${file.name}:incremental`,
+        passed: false,
+        detail: 'Mehrere %%EOF — inkrementelles Update, alte Objektgenerationen können Klartext halten.',
+      });
+    } else {
+      checks.push({
+        id: `${file.name}:incremental`,
+        passed: true,
+        detail: 'Eine %%EOF-Marke — Datei ist vollständig neu geschrieben.',
+      });
+    }
+
     const doc = await PDFDocument.load(data, { ignoreEncryption: true, updateMetadata: false });
     const meta = collectMetaStrings(doc).filter((s) => !isTechnicalPdfMeta(s));
-    const metaHit = leftoverInText(meta.join('\n'), needles, scanPatterns, options.customRegex ?? []);
+    const struct = collectStructPlaintext(doc);
+    const metaHit = leftoverInText([...meta, ...struct].join('\n'), needles, scanPatterns, options.customRegex ?? []);
     checks.push({
       id: `${file.name}:meta`,
       passed: metaHit.length === 0,
-      detail: metaHit.length === 0 ? 'Info/Annotationen/Outline ohne Treffer.' : `Metadaten: ${metaHit[0]?.text}`,
+      detail:
+        metaHit.length === 0
+          ? 'Info/XMP/Annotationen/Outline/StructTree ohne Treffer.'
+          : `Metadaten: ${metaHit[0]?.text}`,
     });
 
-    if (ctx.platform.capabilities.canvas) {
-      checks.push(...(await pixelSample(data, options.hits ?? [])));
+    const noToUnicode = pagesMissingToUnicode(doc);
+    if (noToUnicode.length) {
+      const msg =
+        `Seiten ${noToUnicode.join(', ')}: Font ohne ToUnicode — Glyph-Codes können Klartext halten, pdf.js sieht ihn nicht. Nicht shared-safe.`;
+      warnings.push(msg);
+      checks.push({
+        id: `${file.name}:tounicode`,
+        passed: false,
+        detail: msg,
+      });
     } else {
       checks.push({
-        id: `${file.name}:pixel`,
+        id: `${file.name}:tounicode`,
         passed: true,
-        detail: 'Pixel-Stichprobe übersprungen (platform.capabilities.canvas=false).',
+        detail: 'Keine nicht-Standard-Fonts ohne ToUnicode.',
+      });
+    }
+
+    if (ctx.platform.capabilities.canvas) {
+      const pixels = await pixelSample(data, options.hits ?? []);
+      checks.push(...pixels);
+      for (const p of pixels) {
+        if (!p.passed && p.advisory) warnings.push(p.detail ?? p.id);
+      }
+    } else if ((options.hits ?? []).length) {
+      const msg = 'Pixel-Stichprobe übersprungen (platform.capabilities.canvas=false). Visuell nicht bestätigt.';
+      warnings.push(msg);
+      checks.push({
+        id: `${file.name}:pixel`,
+        passed: false,
+        advisory: true,
+        detail: msg,
       });
     }
   }
@@ -116,7 +168,12 @@ export async function verifyRedactedPdf(
     checks.push({ id: 'no-pdf-output', passed: true, detail: 'Keine PDF-Ausgabe zu prüfen.' });
   }
 
-  return { passed: checks.every((c) => c.passed), checks };
+  const blocking = checks.filter((c) => !c.passed && !c.advisory);
+  return {
+    passed: blocking.length === 0,
+    checks,
+    warnings,
+  };
 }
 
 export async function leftoverPages(

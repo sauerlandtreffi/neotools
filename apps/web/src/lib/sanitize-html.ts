@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify';
 
-type PurifyLike = { sanitize: (dirty: string) => string };
+type PurifyLike = { sanitize: (dirty: string, cfg?: Record<string, unknown>) => string };
 
 function resolvePurify(): PurifyLike | undefined {
   const mod = DOMPurify as unknown as PurifyLike & { default?: PurifyLike };
@@ -13,5 +13,12 @@ function resolvePurify(): PurifyLike | undefined {
 export function sanitizeHtml(raw: string): string {
   if (typeof window === 'undefined') return '';
   const purify = resolvePurify();
-  return purify ? purify.sanitize(raw) : '';
+  return purify
+    ? purify.sanitize(raw, {
+        FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'style', 'base', 'svg', 'math', 'template'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style', 'srcdoc', 'formaction', 'target'],
+        ALLOW_DATA_ATTR: false,
+        ALLOW_UNKNOWN_PROTOCOLS: false,
+      })
+    : '';
 }

@@ -29,6 +29,8 @@ function packForTool(toolId: string): string {
   ) {
     return 'speech';
   }
+  if (toolId.startsWith('creator-') && toolId !== 'creator-export-pack') return 'creator';
+  if (toolId.startsWith('a11y-')) return 'image-ai';
   if (toolId.startsWith('video-') || toolId.startsWith('audio-') || toolId === 'gif-to-video') return 'media';
   if (toolId.startsWith('archive-') || toolId.startsWith('files-')) return 'archive';
   if (
@@ -103,6 +105,11 @@ async function ensurePack(pack: string): Promise<void> {
     case 'archive': {
       const { registerArchiveTools } = await import('@neotools/tools-archive');
       registry = registerArchiveTools(registry);
+      break;
+    }
+    case 'creator': {
+      const { registerCreatorTools } = await import('@neotools/tools-creator');
+      registry = registerCreatorTools(registry);
       break;
     }
     default:
