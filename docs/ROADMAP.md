@@ -1,332 +1,335 @@
+🇬🇧 English · [🇩🇪 Deutsch](./ROADMAP.de.md)
+
 # NeoTools Roadmap
 
-Verwandt: [BACKLOG.md](./BACKLOG.md) · [ARCHITECTURE.md](./ARCHITECTURE.md)
+Related: [BACKLOG.md](./BACKLOG.md) · [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-Phasen entsprechen `docs/BACKLOG.md`. Ein anderer Agent besitzt das Code-Gerüst; diese Datei ist die Abarbeitungsordnung.
+Phases correspond to `docs/BACKLOG.md`. Another agent owns the code scaffolding; this file is the order of execution.
 
-## Überblick
+## Overview
 
-| Phase | Ziel | Tools (ohne Community) | Abhängigkeit |
+| Phase | Goal | Tools (excluding community) | Dependency |
 |---|---|---|---|
-| 1 | Kern + PDF + Schwärzung + Forensik-Basis + Web/CLI/Docker/Tauri | 38 | — |
-| 2 | Bild-Kern + Archiv + Export-Pack + Screenshot-Werkstatt | 69 | Phase-1-Engine |
-| 3 | FFmpeg-Kern Video+Audio, Presets, OPFS-Streaming | 76 | Phase-1-Engine; Bild-UI wiederverwenden |
-| 4 | Whisper/WebGPU, Office, DACH-Vertiefung, WebLLM | 64 | Modelle im Cache Storage; PDF/OCR aus 1 |
-| 5 | Creator-Rest, KI-Showcases, Exotik, Community | 11 (+5 Plugins) | Nutzungsdaten vor Exotik-Formaten |
+| 1 | Core + PDF + redaction + forensics basics + web/CLI/Docker/Tauri | 38 | — |
+| 2 | Image core + archives + export pack + screenshot studio | 69 | phase 1 engine |
+| 3 | FFmpeg core video+audio, presets, OPFS streaming | 76 | phase 1 engine; reuse image UI |
+| 4 | Whisper/WebGPU, office, DACH deepening, WebLLM | 64 | models in Cache Storage; PDF/OCR from 1 |
+| 5 | Remaining creator tools, AI showcases, exotic formats, community | 11 (+5 plugins) | usage data before exotic formats |
 
 ---
 
-## Phase 1 — Kern, PDF, Privacy, Gerüst
+## Phase 1 — Core, PDF, privacy, scaffolding
 
-**Meilenstein M1:** Nutzer kann lokal im Browser, per CLI und im Docker-Image PDFs mergen, schwärzen (Klick + Muster + NER) mit Verifikation, sanitizen und eine beA/ERV-Prüfung fahren. Tauri öffnet `.pdf`. Kein Upload, kein CDN, kein Tracking.
+**Milestone M1:** the user can merge PDFs locally in the browser, via CLI and in the Docker image, redact (click + pattern + NER) with verification, sanitize and run a beA/ERV check. Tauri opens `.pdf`. No upload, no CDN, no tracking.
 
-### Definition of Done Phase 1
+### Definition of Done phase 1
 
-- [ ] `pnpm` Monorepo, TypeScript `strict`, Pakete wie in `ARCHITECTURE.md`
-- [ ] `defineTool` + Registry + ein vollständiges Referenz-Tool `pdf-merge`
-- [ ] Worker-Pool (Comlink), Cancel, Progress, Fehlerprotokoll ohne Dateiinhalte
-- [ ] `Platform`-Adapter Browser und Node
-- [ ] Pipeline: JSON + URL-Hash, mindestens `pdf-merge` → `pdf-sanitize`
-- [ ] OPFS + IndexedDB + Cache Storage verdrahtet (auch wenn Verlauf-UI noch stub)
-- [ ] `privacySensitive`-Hook + `forensics-verify` nach Redact/Sanitize
-- [ ] Provenance-JSON optional am Output
-- [ ] `apps/web`: Astro, i18n de/en, statische Tool-Seiten aus Registry
+- [ ] `pnpm` monorepo, TypeScript `strict`, packages as in `ARCHITECTURE.md`
+- [ ] `defineTool` + registry + one complete reference tool `pdf-merge`
+- [ ] worker pool (Comlink), cancel, progress, error protocol without file contents
+- [ ] `Platform` adapters browser and Node
+- [ ] pipeline: JSON + URL hash, at least `pdf-merge` → `pdf-sanitize`
+- [ ] OPFS + IndexedDB + Cache Storage wired (even if the history UI is still a stub)
+- [ ] `privacySensitive` hook + `forensics-verify` after redact/sanitize
+- [ ] provenance JSON optionally attached to the output
+- [ ] `apps/web`: Astro, i18n de/en, static tool pages from the registry
 - [ ] `apps/cli`: `run`, `pipeline`
 - [ ] `deploy/docker`: nginx, COOP/COEP/CSP, `/licenses`, `branding.json`
-- [ ] `apps/desktop`: Tauri 2 startet, `.pdf`-Dateizuordnung, Deep-Link-Schema registriert
+- [ ] `apps/desktop`: Tauri 2 starts, `.pdf` file association, deep-link scheme registered
 - [ ] PWA: `file_handlers`, `share_target`, `shortcuts`
-- [ ] Format-KB: Schema + Eintrag `pdf` + eine `/formats/pdf`-Seite
-- [ ] Vitest Engine grün; Playwright-Smoke: merge, redact+verify, share-safe
-- [ ] Golden-Files für `pdf-merge`, `pdf-split`
-- [ ] Keine AGPL-Abhängigkeit, keine CDN-Runtime, Lizenzseite listet pdf-lib/pdfjs/qpdf
-- [ ] Alle Phase-1-Tool-IDs aus dem Backlog sind registriert (UI darf für XL-Tools „Beta“ zeigen, `run()` muss existieren)
+- [ ] format KB: schema + entry `pdf` + one `/formats/pdf` page
+- [ ] Vitest engine green; Playwright smoke: merge, redact+verify, share-safe
+- [ ] golden files for `pdf-merge`, `pdf-split`
+- [ ] no AGPL dependency, no CDN runtime, license page lists pdf-lib/pdfjs/qpdf
+- [ ] all phase 1 tool IDs from the backlog are registered (UI may show "Beta" for XL tools, `run()` must exist)
 
-### Welle 1 — Arbeitspakete (1–3 Tage, parallelisierbar)
+### Wave 1 — work packages (1–3 days, parallelizable)
 
-Jedes WP: eigener Branch, DoD am Ende des Blocks, kein „halb in einem anderen WP“. Aufwand = Kalendertage einer Person.
+Each WP: own branch, DoD at the end of the block, no "half in another WP". Effort = calendar days of one person.
 
-#### Fundament (Engine)
+#### Foundation (engine)
 
-| ID | Arbeitspaket | Tage | Ergebnis |
+| ID | Work package | Days | Result |
 |---|---|---|---|
-| WP-01 | Monorepo, `pnpm-workspace`, `tsconfig.base` strict, leere Pakete `engine` / `tools-pdf` / `format-kb` / `apps/web` / `apps/cli` / `apps/desktop` / `deploy/docker` | 1 | `pnpm -r build` läuft (Stub-Exporte) |
-| WP-02 | `defineTool`, Zod-Options, Registry, Pack-Manifest-Typ, `registerPack` | 1–2 | Unit-Test: Duplikat-ID wirft; `listTools()` sortiert |
-| WP-03 | `Platform`-Interface + Browser-Adapter (Blob/OPFS) + Node-Adapter (`fs`) | 2 | Dieselben 3 Tests auf beiden Adaptern grün |
-| WP-04 | Worker-Pool Comlink, Progress, Cancel (`AbortController` + `terminate`), Transferables / OPFS-Pfad | 2–3 | Test: Cancel während Fake-Loop bricht ab; zweiter Job startet auf frischem Worker |
-| WP-05 | Fehlerprotokoll (Schema, schreiben, JSON-Export, keine Bytes im Log) | 1 | Test mit absichtlich kaputtem PDF |
-| WP-06 | Pipeline-Modell: Schritte, MIME-Bindung, JSON laden/speichern, URL-Hash encode/decode | 2 | Test: inkompatible Bindung wird abgelehnt |
-| WP-07 | Provenance-Builder + optionales Manifest am Output | 1 | Hash-Kette Input→Output in JSON |
-| WP-08 | Privacy-Verify-Hook in der Engine (noch ohne echte OCR): Interface, Pflicht nach `privacySensitive` | 1–2 | Tool ohne Verify-Callback darf bei Flag nicht `shared-safe` setzen |
+| WP-01 | Monorepo, `pnpm-workspace`, `tsconfig.base` strict, empty packages `engine` / `tools-pdf` / `format-kb` / `apps/web` / `apps/cli` / `apps/desktop` / `deploy/docker` | 1 | `pnpm -r build` runs (stub exports) |
+| WP-02 | `defineTool`, Zod options, registry, pack manifest type, `registerPack` | 1–2 | unit test: duplicate ID throws; `listTools()` sorted |
+| WP-03 | `Platform` interface + browser adapter (Blob/OPFS) + Node adapter (`fs`) | 2 | the same 3 tests green on both adapters |
+| WP-04 | worker pool Comlink, progress, cancel (`AbortController` + `terminate`), transferables / OPFS path | 2–3 | test: cancel during fake loop aborts; second job starts on a fresh worker |
+| WP-05 | error protocol (schema, write, JSON export, no bytes in the log) | 1 | test with a deliberately broken PDF |
+| WP-06 | pipeline model: steps, MIME binding, load/save JSON, URL hash encode/decode | 2 | test: incompatible binding is rejected |
+| WP-07 | provenance builder + optional manifest at the output | 1 | hash chain input→output in JSON |
+| WP-08 | privacy verify hook in the engine (without real OCR yet): interface, mandatory after `privacySensitive` | 1–2 | a tool without a verify callback must not set `shared-safe` when flagged |
 
-#### Oberflächen
+#### Surfaces
 
-| ID | Arbeitspaket | Tage | Ergebnis |
+| ID | Work package | Days | Result |
 |---|---|---|---|
-| WP-09 | Astro-App: Layout, i18n de/en, Tool-Seite aus Registry (Preact-Insel: Datei-Input, Options-Form aus Zod, Progress, Download) | 3 | `/de/tools/pdf-merge` und `/en/tools/pdf-merge` prerendered |
-| WP-10 | SEO-Generator: `getStaticPaths` aus `seo.path` + `hreflang` | 1 | Jedes registrierte Tool hat genau eine Canonical-URL je Locale |
-| WP-11 | Format-KB Schema, Eintrag `pdf`, Seite `/formats/pdf`, Stub `/convert` (noch ohne Matrix) | 2 | KB-JSON validiert gegen Zod |
-| WP-12 | CLI: `neotools run <tool> [zod-flags] files…`, `neotools pipeline file.json`, `neotools list` | 2 | `run pdf-merge a.pdf b.pdf` schreibt `merged.pdf` |
-| WP-13 | Docker: nginx, statische Assets, Header COOP/COEP/CSP, Volume `/assets` | 1–2 | `curl -I` zeigt COOP/COEP; `/` 200 |
-| WP-14 | `branding.json` lesen + White-Label-Platzhalter (Name, Logo, Farbe); Ed25519-Lizenzcheck als **Stub** (Key optional, Community-Default) | 2 | Ohne Key startet Community-Branding |
-| WP-15 | PWA-Manifest: `file_handlers` (.pdf), `share_target`, `shortcuts` (merge, redact, share-safe); Service-Worker Shell | 2 | Lighthouse PWA-Basis; Share-Route nimmt File entgegen |
-| WP-16 | Tauri 2 Shell, Fenster lädt Web-Dist, Deep-Link `neotools://`, Dateizuordnung `.pdf` (Linux `.desktop` + Windows-Stub) | 3 | App startet; Doppelklick-PDF öffnet Reader-Route |
-| WP-17 | Lizenzseite `/licenses` aus Pack-Manifesten; CI-Skript `licenses:check` (AGPL-Fail) | 1 | Seite nennt pdf-lib, pdfjs, qpdf; Ghostscript kommt nicht vor |
+| WP-09 | Astro app: layout, i18n de/en, tool page from the registry (Preact island: file input, options form from Zod, progress, download) | 3 | `/de/tools/pdf-merge` and `/en/tools/pdf-merge` prerendered |
+| WP-10 | SEO generator: `getStaticPaths` from `seo.path` + `hreflang` | 1 | every registered tool has exactly one canonical URL per locale |
+| WP-11 | format KB schema, entry `pdf`, page `/formats/pdf`, stub `/convert` (without matrix yet) | 2 | KB JSON validates against Zod |
+| WP-12 | CLI: `neotools run <tool> [zod-flags] files…`, `neotools pipeline file.json`, `neotools list` | 2 | `run pdf-merge a.pdf b.pdf` writes `merged.pdf` |
+| WP-13 | Docker: nginx, static assets, headers COOP/COEP/CSP, volume `/assets` | 1–2 | `curl -I` shows COOP/COEP; `/` 200 |
+| WP-14 | read `branding.json` + white-label placeholders (name, logo, color); Ed25519 license check as a **stub** (key optional, Community default) | 2 | without a key, Community branding starts |
+| WP-15 | PWA manifest: `file_handlers` (.pdf), `share_target`, `shortcuts` (merge, redact, share-safe); service worker shell | 2 | Lighthouse PWA basics; share route accepts a file |
+| WP-16 | Tauri 2 shell, window loads web dist, deep link `neotools://`, file association `.pdf` (Linux `.desktop` + Windows stub) | 3 | app starts; double-clicking a PDF opens the reader route |
+| WP-17 | license page `/licenses` from pack manifests; CI script `licenses:check` (AGPL fail) | 1 | page lists pdf-lib, pdfjs, qpdf; Ghostscript does not appear |
 
-#### PDF-Welle
+#### PDF wave
 
-| ID | Arbeitspaket | Tage | Ergebnis |
+| ID | Work package | Days | Result |
 |---|---|---|---|
-| WP-18 | `pdf-merge`, `pdf-split`, `pdf-rotate`, `pdf-reorder` | 2 | Goldens merge+split; CLI+Web |
-| WP-19 | `pdf-compress`, `pdf-to-images`, `images-to-pdf` | 2–3 | dpi/Qualität als Zod-Optionen |
-| WP-20 | qpdf-WASM: `pdf-lock` (Encrypt/Decrypt, Permissions), Linearize als Option | 2 | Passwort-Roundtrip-Test |
-| WP-21 | `pdf-watermark` (Text/Bild) + `pdf-forms` (lesen, füllen, flatten) | 2–3 | Flatten entfernt AcroForm |
-| WP-22 | `pdf-redact` Klick-Rechtecke + Textsuche + Muster (IBAN, Steuer-ID, SV-Nr, Ausweisnr., Kennzeichen, E-Mail, Telefon) | 3 | Pixel **und** Text-Objekt weg; Extract enthält Treffer nicht mehr |
-| WP-23 | Auto-NER (Transformers.js, kleines lokales Modell) für Namen + Verifikations-UI (Checkliste Fundstellen) | 3 | Verify failt, wenn Box noch Text-OCR liefert |
-| WP-24 | `pdf-sanitize` + `forensics-share-safe` (Orchestrierung) | 2–3 | JS, Anhänge, Metadaten, Hidden-Layer im Report |
-| WP-25 | `pdf-ocr` Tesseract.js deu+eng, Text-Layer | 2–3 | Durchsuchbares PDF, Modell aus `/assets` |
-| WP-26 | `pdf-a` konvertieren + validieren **ohne** Ghostscript/MuPDF (pdf-lib + Validator-WASM oder eigener Regelkern v1: Version, Einbettung, Annotationen) | 3 | Report listet Verletzungen; v1 darf „nicht PDF/A“ ehrlich sagen statt falsch-grün |
-| WP-27 | `pdf-aktenbundler`: Merge + Outline + Bates + Inhaltsverzeichnis-Seite | 2–3 | Bates auf jeder Seite, Outline je Quelle |
-| WP-28 | `pdf-compare`: Text-Diff-PDF + Pixel-Diff-Preset (`vertrag`) | 3 | Zwei nahe Texte, Diff-Seite erzeugt |
-| WP-29 | `pdf-sign`: Signatur **prüfen** (Browser) + PKCS#12 **erstellen** (CLI/Tauri, nicht zwingend Web) | 3 | Fixtures: gültig / abgelaufen / gebrochen |
+| WP-18 | `pdf-merge`, `pdf-split`, `pdf-rotate`, `pdf-reorder` | 2 | goldens merge+split; CLI+web |
+| WP-19 | `pdf-compress`, `pdf-to-images`, `images-to-pdf` | 2–3 | dpi/quality as Zod options |
+| WP-20 | qpdf WASM: `pdf-lock` (encrypt/decrypt, permissions), linearize as an option | 2 | password round-trip test |
+| WP-21 | `pdf-watermark` (text/image) + `pdf-forms` (read, fill, flatten) | 2–3 | flatten removes AcroForm |
+| WP-22 | `pdf-redact` click rectangles + text search + patterns (IBAN, tax ID, social security no., ID card no., license plate, e-mail, phone) | 3 | pixels **and** text object gone; extract no longer contains hits |
+| WP-23 | auto-NER (Transformers.js, small local model) for names + verification UI (checklist of hits) | 3 | verify fails if the box still yields OCR text |
+| WP-24 | `pdf-sanitize` + `forensics-share-safe` (orchestration) | 2–3 | JS, attachments, metadata, hidden layers in the report |
+| WP-25 | `pdf-ocr` Tesseract.js deu+eng, text layer | 2–3 | searchable PDF, model from `/assets` |
+| WP-26 | `pdf-a` convert + validate **without** Ghostscript/MuPDF (pdf-lib + validator WASM or own rule core v1: version, embedding, annotations) | 3 | report lists violations; v1 may honestly say "not PDF/A" instead of false green |
+| WP-27 | `pdf-aktenbundler` (case-file bundler): merge + outline + Bates + table-of-contents page | 2–3 | Bates on every page, outline per source |
+| WP-28 | `pdf-compare`: text diff PDF + pixel diff preset (`vertrag`) | 3 | two similar texts, diff page produced |
+| WP-29 | `pdf-sign`: **verify** signature (browser) + **create** PKCS#12 (CLI/Tauri, not necessarily web) | 3 | fixtures: valid / expired / broken |
 
-#### DACH / Forensik-Basis
+#### DACH / forensics basics
 
-| ID | Arbeitspaket | Tage | Ergebnis |
+| ID | Work package | Days | Result |
 |---|---|---|---|
-| WP-30 | `dach-bea-erv` Regelwerk v1 (Größe, PDF-Version, JS, Encrypt, Schriften, Anlagen) als JSON + Report | 2 | Fixture „beA-untauglich“ wird rot |
-| WP-31 | `dach-hash-timestamp`: SHA-256 + RFC-3161-Client (TSA-URL konfigurierbar, Timeout, Token beilegen) | 2 | Ohne Netz: nur Hash; mit TSA-Mock: Token vorhanden |
-| WP-32 | `forensics-identify`, `forensics-autopsy`, `forensics-bytes-compare`, `forensics-hash` | 2 | PDF vs. umbenanntes ZIP erkannt |
-| WP-33 | `forensics-hidden-data` + `forensics-fake-ext` | 2–3 | ZIP-after-JPEG und PDF-Attachment schlagen an |
-| WP-34 | `forensics-watermark-find` (nur Erkennung) + `forensics-fingerprint` | 2 | Kein Entfernen-Button im UI |
-| WP-35 | `forensics-verify` echt (Re-Extract, Muster, OCR-Stichprobe) an WP-08 anschließen | 2 | Pflichtpfad nach Redact/Sanitize |
+| WP-30 | `dach-bea-erv` rule set v1 (size, PDF version, JS, encrypt, fonts, attachments) as JSON + report | 2 | fixture "unsuitable for beA" turns red |
+| WP-31 | `dach-hash-timestamp`: SHA-256 + RFC 3161 client (TSA URL configurable, timeout, attach token) | 2 | without network: hash only; with TSA mock: token present |
+| WP-32 | `forensics-identify`, `forensics-autopsy`, `forensics-bytes-compare`, `forensics-hash` | 2 | PDF vs. renamed ZIP detected |
+| WP-33 | `forensics-hidden-data` + `forensics-fake-ext` | 2–3 | ZIP-after-JPEG and PDF attachment trigger |
+| WP-34 | `forensics-watermark-find` (detection only) + `forensics-fingerprint` | 2 | no "remove" button in the UI |
+| WP-35 | real `forensics-verify` (re-extract, patterns, OCR sample) connected to WP-08 | 2 | mandatory path after redact/sanitize |
 
-#### Qualität / Desktop-Reader
+#### Quality / desktop reader
 
-| ID | Arbeitspaket | Tage | Ergebnis |
+| ID | Work package | Days | Result |
 |---|---|---|---|
-| WP-36 | Vitest-Harness + Golden-Update-Flag; Goldens für merge/split/lock | 1–2 | CI ohne `GOLDEN_UPDATE` |
-| WP-37 | Playwright: drei Smokes (merge, redact+verify, share-safe), i18n-Switch | 2 | Läuft headless im CI |
-| WP-38 | Desktop-Reader-Schnitt Phase 1: Anzeige (pdfjs), Suche, Speichern, Sprung in `pdf-redact` | 3 | Geöffnetes `.pdf` ist durchsuchbar, Speichern schreibt lokal |
-| WP-39 | Fehlerprotokoll-UI + OPFS-Verlauf-Stub (Liste + Download letztes Output, noch ohne Undo) | 2 | Journal exportierbar |
+| WP-36 | Vitest harness + golden update flag; goldens for merge/split/lock | 1–2 | CI without `GOLDEN_UPDATE` |
+| WP-37 | Playwright: three smokes (merge, redact+verify, share-safe), i18n switch | 2 | runs headless in CI |
+| WP-38 | desktop reader cut phase 1: display (pdfjs), search, save, jump to `pdf-redact` | 3 | opened `.pdf` is searchable, save writes locally |
+| WP-39 | error protocol UI + OPFS history stub (list + download last output, no undo yet) | 2 | journal exportable |
 
-**Reihenfolge-Hinweis:** WP-01→08 vor Tool-WPs. WP-09 kann parallel zu WP-04 starten (Mock-`run`). WP-16/38 nach WP-09. WP-23 braucht WP-22. WP-35 nach WP-23/24.
+**Ordering note:** WP-01→08 before tool WPs. WP-09 can start in parallel with WP-04 (mock `run`). WP-16/38 after WP-09. WP-23 needs WP-22. WP-35 after WP-23/24.
 
-**Nicht in Welle 1:** Formular-Mailmerge, PDF-UA-Reparatur, E-Rechnung, REST-API, WebLLM, FFmpeg, Bild-Packs.
+**Not in wave 1:** form mail merge, PDF/UA repair, E-Rechnung, REST API, WebLLM, FFmpeg, image packs.
 
 ---
 
-## Phase 2 — Bild, Archiv, Export, Screenshot
+## Phase 2 — Image, archives, export, screenshot
 
-**Meilenstein M2:** Bildkonverter (Welle-2-Formate), Dokument-Foto-Reparatur, Screenshot-Werkstatt, Export-Pack-Presets, Archiv-Rundgang. Alles lokal, jSquash/heic/UTIF self-hosted.
+**Milestone M2:** image converter (wave 2 formats), document photo repair, screenshot studio, export pack presets, archive round-trip. All local, jSquash/heic/UTIF self-hosted.
 
-### Definition of Done Phase 2
+### Definition of Done phase 2
 
-- [ ] `packages/tools-image` und `tools-archive` lazy geladen
-- [ ] `image-convert` für die in Backlog genannten Welle-2-Formate (ohne PSD/EXR/DDS/XWD/JP2/RAW-Entwicklung)
-- [ ] `image-doc-repair` mit Presets scanner / whiteboard / kinderzeichnung / moire / notiz-ocr
-- [ ] `image-screenshot-studio` mit allen acht Presets
-- [ ] `creator-export-pack` liest Größen aus Format-KB
-- [ ] OpenCV.js nur lazy auf der Dokument-Foto-Seite
-- [ ] Archiv create/extract/inspect für ZIP + mindestens ein 7z/TAR-Pfad
-- [ ] `platform-folder-convert` + `platform-watch` (FSA und CLI)
-- [ ] OPFS-Verlauf mit Undo (ein Schritt)
+- [ ] `packages/tools-image` and `tools-archive` lazily loaded
+- [ ] `image-convert` for the wave 2 formats named in the backlog (without PSD/EXR/DDS/XWD/JP2/RAW development)
+- [ ] `image-doc-repair` with presets scanner / whiteboard / kinderzeichnung (child's drawing) / moire / notiz-ocr
+- [ ] `image-screenshot-studio` with all eight presets
+- [ ] `creator-export-pack` reads sizes from the format KB
+- [ ] OpenCV.js only lazily on the document photo page
+- [ ] archive create/extract/inspect for ZIP + at least one 7z/TAR path
+- [ ] `platform-folder-convert` + `platform-watch` (FSA and CLI)
+- [ ] OPFS history with undo (one step)
 - [ ] Playwright: convert PNG→WebP, doc-repair, export-pack favicon
-- [ ] Keine Exotik-Formate im UI außer Hinweis „nicht unterstützt“
+- [ ] no exotic formats in the UI except a "not supported" hint
 
-### Meilensteine Phase 2 (keine 1-Tage-WPs, grob)
+### Milestones phase 2 (no 1-day WPs, rough)
 
-1. Bild-I/O + Compress/Resize/Crop/Adjust/Metadaten  
-2. Doc-Repair + Screenshot-Studio + Auto-Blur + Verify  
-3. Export-Pack + Spec-Check + Sticker-Set  
-4. Archiv-Suite + Sidecar-Zuordnung (ohne RAW-Develop)  
-5. Folder-Convert, Watch, Undo  
-
----
-
-## Phase 3 — FFmpeg (Video + Audio)
-
-**Meilenstein M3:** Ein LGPL-ffmpeg.wasm im Cache Storage; Video- und Audio-Convert; einfache Filter nur als Presets am Kern; große Dateien über OPFS gestreamt. H.264-Encode nur via WebCodecs, sonst VP9/AV1 oder klare Verweigerung.
-
-### Definition of Done Phase 3
-
-- [ ] ffmpeg.wasm **LGPL-Build** im Repo dokumentiert (Configure-Flags, kein x264/x265)
-- [ ] `video-convert`, `video-edit`, `audio-convert`, `audio-edit` als einzige Filter-Träger
-- [ ] Alle 18 Backlog-FFmpeg-Presets als Preset-IDs, nicht als eigene Routen
-- [ ] `media-fit` Binärsuche Zielgröße
-- [ ] `platform-stream-opfs` für Dateien über der RAM-Schwelle
-- [ ] `/licenses` nennt LGPL-FFmpeg + Hinweis H.264/WebCodecs
-- [ ] Playwright: Trim + Remux (wo Fixture klein genug)
-- [ ] Whisper-abhängige Video-Tools existieren **noch nicht** (Phase 4)
-
-### Meilensteine Phase 3
-
-1. WASM-Build, Loader, OPFS-Streaming  
-2. Video-I/O + Remux/Trim/Concat/Extract  
-3. Filterkern + Preset-Tabelle  
-4. Audio-I/O + Normalize/Join/Silence  
-5. Repair, HDR-Presets, Scene-Detect, Epilepsie-Report  
+1. Image I/O + compress/resize/crop/adjust/metadata  
+2. Doc repair + screenshot studio + auto-blur + verify  
+3. Export pack + spec check + sticker set  
+4. Archive suite + sidecar matching (without RAW develop)  
+5. Folder convert, watch, undo  
 
 ---
 
-## Phase 4 — Sprache, Office, DACH-Vertiefung
+## Phase 3 — FFmpeg (video + audio)
 
-**Meilenstein M4:** Whisper lokal (WebGPU), Untertitel-Kette, E-Rechnung prüfen/erzeugen, PDF-UA-Check, Team-Presets, optionale REST-API, WebLLM-Chat gegen lokale PDFs.
+**Milestone M3:** an LGPL ffmpeg.wasm in Cache Storage; video and audio convert; simple filters only as presets on the core; large files streamed via OPFS. H.264 encoding only via WebCodecs, otherwise VP9/AV1 or a clear refusal.
 
-### Definition of Done Phase 4
+### Definition of Done phase 3
 
-- [ ] `speech-transcribe` mit wählbarem Modell; Modelle same-origin
-- [ ] Jump-Cut / Auto-Kapitel / OCR-Subs hängen an Whisper, keine zweite Engine
-- [ ] Office: DOCX, XLSX (**SheetJS Community**), EPUB-Unpack
+- [ ] ffmpeg.wasm **LGPL build** documented in the repo (configure flags, no x264/x265)
+- [ ] `video-convert`, `video-edit`, `audio-convert`, `audio-edit` as the only filter carriers
+- [ ] all 18 backlog FFmpeg presets as preset IDs, not as separate routes
+- [ ] `media-fit` binary search for target size
+- [ ] `platform-stream-opfs` for files above the RAM threshold
+- [ ] `/licenses` lists LGPL FFmpeg + note on H.264/WebCodecs
+- [ ] Playwright: trim + remux (where the fixture is small enough)
+- [ ] Whisper-dependent video tools do **not** exist yet (phase 4)
+
+### Milestones phase 3
+
+1. WASM build, loader, OPFS streaming  
+2. Video I/O + remux/trim/concat/extract  
+3. Filter core + preset table  
+4. Audio I/O + normalize/join/silence  
+5. Repair, HDR presets, scene detect, epilepsy report  
+
+---
+
+## Phase 4 — Speech, office, DACH deepening
+
+**Milestone M4:** Whisper locally (WebGPU), subtitle chain, validate/generate E-Rechnung, PDF/UA check, team presets, optional REST API, WebLLM chat against local PDFs.
+
+### Definition of Done phase 4
+
+- [ ] `speech-transcribe` with selectable model; models same-origin
+- [ ] jump cut / auto chapters / OCR subs hang off Whisper, no second engine
+- [ ] office: DOCX, XLSX (**SheetJS Community**), EPUB unpack
 - [ ] `dach-erechnung-validate` + `generate` (ZUGFeRD/XRechnung/Factur-X)
-- [ ] `pdf-ua` prüft; Reparatur best-effort, kein falsch-grün
-- [ ] `platform-rest-api` Sidecar nur im Docker-Compose-Profil `api`
-- [ ] `platform-fulltext` über OPFS (FlexSearch oder SQLite-WASM)
-- [ ] WebLLM hinter `speech-chat-doc`, Default-Modell dokumentiert
-- [ ] Team-Presets JSON sperrt Tools / setzt Defaults
-- [ ] Benchmark **nicht** nötig (Phase 5)
+- [ ] `pdf-ua` checks; repair best-effort, no false green
+- [ ] `platform-rest-api` sidecar only in the Docker Compose profile `api`
+- [ ] `platform-fulltext` via OPFS (FlexSearch or SQLite WASM)
+- [ ] WebLLM behind `speech-chat-doc`, default model documented
+- [ ] team presets JSON locks tools / sets defaults
+- [ ] benchmark **not** needed (phase 5)
 
-### Meilensteine Phase 4
+### Milestones phase 4
 
-1. Whisper + Subtitle-Edit + Translate  
-2. Speech-abhängige Video/Audio-Tools  
-3. Office-Pack  
-4. E-Rechnung + Belege + GoBD + GiroCode  
-5. PDF-UA, Mailmerge, Posteingang-Pipeline, API, Volltext, WebLLM  
-
----
-
-## Phase 5 — Creator, Showcases, Community
-
-**Meilenstein M5:** Plugin-Loader, zwei Showcases (Super-Res, Denoise) klar als Demo gekennzeichnet, Extension optional, Exotik-Formate nur wenn Telemetrie/Nutzungsdaten (self-hosted counts) Bedarf zeigen.
-
-### Definition of Done Phase 5
-
-- [ ] Community-Manifest-Loader, Sandbox: kein `platform` außer deklarierten Caps
-- [ ] `image-superres` und `image-denoise` je eine Seite, Banner „Showcase“
-- [ ] `community-exotic` hinter Feature-Flag, Default aus
-- [ ] Keine ROM-Header-, Inpainting-Wasserzeichen- oder CLIP-Tools im Kern
-- [ ] `platform-benchmark` misst Worker/WASM/WebGPU auf einer internen Seite
-- [ ] Browser-Extension teilt Registry, keine zweite Tool-Implementierung
+1. Whisper + subtitle edit + translate  
+2. Speech-dependent video/audio tools  
+3. Office pack  
+4. E-Rechnung + receipts + GoBD + GiroCode  
+5. PDF/UA, mail merge, inbox pipeline, API, full text, WebLLM  
 
 ---
 
-## Querschnitt (alle Phasen)
+## Phase 5 — Creator, showcases, community
 
-| Thema | Regel |
+**Milestone M5:** plugin loader, two showcases (super-resolution, denoise) clearly labelled as demos, extension optional, exotic formats only if telemetry/usage data (self-hosted counts) show demand.
+
+### Definition of Done phase 5
+
+- [ ] community manifest loader, sandbox: no `platform` except declared caps
+- [ ] `image-superres` and `image-denoise` one page each, banner "Showcase"
+- [ ] `community-exotic` behind a feature flag, default off
+- [ ] no ROM header, inpainting watermark or CLIP tools in the core
+- [ ] `platform-benchmark` measures worker/WASM/WebGPU on an internal page
+- [ ] browser extension shares the registry, no second tool implementation
+
+---
+
+## Cross-cutting (all phases)
+
+| Topic | Rule |
 |---|---|
-| Lizenz | Jedes neue Pack aktualisiert Manifest + `/licenses` im selben PR |
-| i18n | Kein hardcodiertes UI-Deutsch ohne `en`-Pendant |
-| Tests | Neues Tool: mindestens 1 Vitest + Golden oder explizite Begründung (lossy → Metrikband) |
-| SEO | Keine `/convert/a-to-b`-Seite ohne KB-Kante und Tool |
-| Privacy | Neue Privacy-Ops am Verify-Hook anmelden |
-| Modelle | Dateiname enthält Content-Hash; Service Worker cache bustet darüber |
+| License | every new pack updates manifest + `/licenses` in the same PR |
+| i18n | no hard-coded German UI text without an `en` counterpart |
+| Tests | new tool: at least 1 Vitest + golden, or explicit justification (lossy → metric band) |
+| SEO | no `/convert/a-to-b` page without a KB edge and a tool |
+| Privacy | register new privacy ops with the verify hook |
+| Models | file name contains the content hash; the service worker cache-busts on it |
 
 ---
 
-## Welle-1-Liste (Kopiervorlage)
+## Wave 1 list (copy template)
 
-1. WP-01 Monorepo + leere Pakete  
-2. WP-02 Tool-Schema + Registry  
-3. WP-03 Platform Browser/Node  
-4. WP-04 Worker-Pool + Cancel + Progress  
-5. WP-05 Fehlerprotokoll  
-6. WP-06 Pipeline + URL-Hash  
-7. WP-07 Provenance  
-8. WP-08 Verify-Hook (Interface)  
-9. WP-09 Astro + i18n + Tool-Insel  
-10. WP-10 SEO-Pfade  
-11. WP-11 Format-KB + `/formats/pdf`  
+1. WP-01 monorepo + empty packages  
+2. WP-02 tool schema + registry  
+3. WP-03 platform browser/Node  
+4. WP-04 worker pool + cancel + progress  
+5. WP-05 error protocol  
+6. WP-06 pipeline + URL hash  
+7. WP-07 provenance  
+8. WP-08 verify hook (interface)  
+9. WP-09 Astro + i18n + tool island  
+10. WP-10 SEO paths  
+11. WP-11 format KB + `/formats/pdf`  
 12. WP-12 CLI `run` / `pipeline` / `list`  
-13. WP-13 Docker nginx + Header  
-14. WP-14 Branding + Lizenz-Stub  
-15. WP-15 PWA-Manifest + SW  
-16. WP-16 Tauri 2 + Dateizuordnung + Deep-Link  
-17. WP-17 Lizenzseite + AGPL-CI  
+13. WP-13 Docker nginx + headers  
+14. WP-14 branding + license stub  
+15. WP-15 PWA manifest + SW  
+16. WP-16 Tauri 2 + file association + deep link  
+17. WP-17 license page + AGPL CI  
 18. WP-18 pdf-merge/split/rotate/reorder  
 19. WP-19 compress + raster I/O  
 20. WP-20 qpdf lock/unlock  
 21. WP-21 watermark + forms  
-22. WP-22 redact Klick + Muster  
-23. WP-23 NER + Verifikations-UI  
+22. WP-22 redact click + patterns  
+23. WP-23 NER + verification UI  
 24. WP-24 sanitize + share-safe  
 25. WP-25 OCR deu+eng  
-26. WP-26 PDF/A ohne AGPL  
-27. WP-27 Aktenbundler  
-28. WP-28 Vergleich Text+Pixel  
-29. WP-29 PAdES prüfen / PKCS#12 (CLI/Desktop)  
+26. WP-26 PDF/A without AGPL  
+27. WP-27 case-file bundler (Aktenbundler)  
+28. WP-28 compare text+pixels  
+29. WP-29 verify PAdES / PKCS#12 (CLI/desktop)  
 30. WP-30 beA/ERV v1  
-31. WP-31 Hash + RFC-3161  
+31. WP-31 hash + RFC 3161  
 32. WP-32 identify / autopsy / bytes / hash  
-33. WP-33 Hidden-Data + Fake-Ext  
-34. WP-34 Watermark-Find + Fingerprint  
-35. WP-35 Verify echt verdrahten  
-36. WP-36 Vitest + Goldens  
-37. WP-37 Playwright-Smokes  
-38. WP-38 Desktop-Reader Anzeige/Suche/Speichern  
-39. WP-39 Journal-UI + Verlauf-Stub  
+33. WP-33 hidden data + fake ext  
+34. WP-34 watermark find + fingerprint  
+35. WP-35 wire verify for real  
+36. WP-36 Vitest + goldens  
+37. WP-37 Playwright smokes  
+38. WP-38 desktop reader display/search/save  
+39. WP-39 journal UI + history stub  
 
-Wellen 1–3 (WP-16–38, Packs pdf/forensics/image/image-ai, Format-KB, Desktop-Reader, QA) sind in den Commits bis `f99d54f`/`97c3ffa`/`2f43d07`/`626240d` enthalten.
+Waves 1–3 (WP-16–38, packs pdf/forensics/image/image-ai, format KB, desktop reader, QA) are contained in the commits up to `f99d54f`/`97c3ffa`/`2f43d07`/`626240d`.
 
-## Stand nach Welle 4
+## State after wave 4
 
-Welle-4-Packs und Plattform sind verdrahtet. **187 Tools** (Web-Grid 186 — `audio-stems` registriert, aber ausgeblendet). Vorherige WP-Statusblöcke sind hier zusammengeführt.
+Wave 4 packs and platform are wired. **187 tools** (web grid 186 — `audio-stems` registered but hidden). Previous WP status blocks are merged here.
 
-| Pack | Tools | Hinweis |
+| Pack | Tools | Note |
 |---|---|---|
-| pdf | 24 | inkl. Mailmerge, UA, Attachment-Stamp |
-| forensics | 10 | Phase 1 vollständig |
-| image | 17 | jSquash, HEIC dynamisch LGPL |
-| image-ai | 7 | ONNX/Transformers, Showcases ohne Qualitätsversprechen |
-| dach | 12 | E-Rechnung TS-Regeln, GoBD, Team-Presets-Tool |
-| office | 32 | kein LibreOffice-WASM; OFL-Fonts |
-| media | 62 | `video-cutlist` neu; Browser lädt FFmpeg-Core in-process (kein Nested-Worker). WASM-Core **GPL temporär** — Docker-LGPL-Build scheiterte (`EM_TOOLCHAIN_FILE`); GH-Workflow `ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs` |
-| speech | 12 | Whisper lokal; `transcript-edits` → `video-cutlist`, Bleep-Liste → `audio-bleep` |
-| archive | 11 | ZIP/TAR nativ; 7z-wasm LGPL dynamisch |
+| pdf | 24 | incl. mail merge, UA, attachment stamp |
+| forensics | 10 | phase 1 complete |
+| image | 17 | jSquash, HEIC dynamic LGPL |
+| image-ai | 7 | ONNX/Transformers, showcases without quality promise |
+| dach | 12 | E-Rechnung TS rules, GoBD, team presets tool |
+| office | 32 | no LibreOffice WASM; OFL fonts |
+| media | 62 | `video-cutlist` new; browser loads the FFmpeg core in-process (no nested worker). WASM core **GPL temporarily** — Docker LGPL build failed (`EM_TOOLCHAIN_FILE`); GH workflow `ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs` |
+| speech | 12 | Whisper locally; `transcript-edits` → `video-cutlist`, bleep list → `audio-bleep` |
+| archive | 11 | ZIP/TAR native; 7z-wasm LGPL dynamic |
 
-**Plattform:** REST-API (`apps/api`), Offline-Lizenz (`@neotools/license`, Gates nur api/watch/presets/whitelabel/audit), Team-Presets in Web/CLI/API, Watch CLI+`/watch`, Pipeline-Builder mit fünf Bibliotheks-Presets, Desktop Updater/Deep-Link/Menü, `docs/DEPLOYMENT.md`.
+**Platform:** REST API (`apps/api`), offline license (`@neotools/license`, gates only api/watch/presets/whitelabel/audit), team presets in web/CLI/API, watch CLI+`/watch`, pipeline builder with five library presets, desktop updater/deep link/menu, `docs/DEPLOYMENT.md`.
 
-Pack-Commits: `bd5d049` office, `21d6a16` speech, `4d3b6b1` media, `53761f3` dach/pdf/archive.
+Pack commits: `bd5d049` office, `21d6a16` speech, `4d3b6b1` media, `53761f3` dach/pdf/archive.
 
-**Offen für Welle 5**
+**Open for wave 5**
 
-- LGPL-FFmpeg-WASM-Artefakt aus Docker/GH-Release einsetzen (Core > 2 MB, gitignored); bis dahin Quellcode-Angebot + GPL-Hinweis auf `/lizenzen`.
-- `audio-stems`: kein kompaktes MIT/Apache-ONNX.
-- HEIC-Decode in Node ohne optionales libheif; SVG-Raster ohne `@resvg` bleibt Browser-only.
-- PDF/A ehrliche Teilmenge (kein veraPDF); PDF-UA ohne echte MCIDs; PAdES-TSA nur bei URL.
-- WebLLM/`speech-chat-doc`, Volltext-OPFS, Super-Res/Denoise bleiben Showcases.
-- Desktop-Updater-Pubkey und signierte Bundles sind Platzhalter (`createUpdaterArtifacts` aus).
+- Use the LGPL FFmpeg WASM artifact from Docker/GH release (core > 2 MB, gitignored); until then source-code offer + GPL note on `/lizenzen`.
+- `audio-stems`: no compact MIT/Apache ONNX model.
+- HEIC decode in Node without optional libheif; SVG raster without `@resvg` stays browser-only.
+- PDF/A honest subset (no veraPDF); PDF/UA without real MCIDs; PAdES TSA only with a URL.
+- WebLLM/`speech-chat-doc`, full-text OPFS, super-resolution/denoise remain showcases.
+- Desktop updater pubkey and signed bundles are placeholders (`createUpdaterArtifacts` off).
 
-## Stand nach Welle 5 (2026-09-14)
+## State after wave 5 (2026-09-14)
 
-Welle 5 = Security-Review mit Fixes, Creator-Pack, Bild-/Medien-Lücken, LGPL-FFmpeg-Build, Launch-Seiten. **235 Tools** in zehn logischen Packs (Registry `node apps/cli/dist/cli.js list --json`; Web-Grid ohne `audio-stems`).
+Wave 5 = security review with fixes, creator pack, image/media gaps, LGPL FFmpeg build, launch pages. **235 tools** in ten logical packs (registry `node apps/cli/dist/cli.js list --json`; web grid without `audio-stems`).
 
-| Pack | Tools | Neu in Welle 5 |
+| Pack | Tools | New in wave 5 |
 |---|---|---|
-| pdf | 24 | Redact/Verify-Härtung (Form-XObjects, TJ, AP-Streams, Outline/XMP/StructTree, Neu-Schreiben), Sanitize-Härtung |
+| pdf | 24 | redact/verify hardening (form XObjects, TJ, AP streams, outline/XMP/StructTree, rewrite), sanitize hardening |
 | forensics | 10 | — |
-| image | 40 | +23: burst-best, color-transfer, film-scan, geotag-export, hdr-tonemap, hidden-layer-check, icc, line-art, live-photo, lut, normal-map, passport, pixel-art, red-eye, scopes, seamless-texture, sort-by-date, to-svg … |
-| a11y | 4 | `a11y-easy-read`, `a11y-sign-friendly` |
-| creator | 23 | eigenes Paket `packages/tools-creator` (22) + `creator-export-pack` aus `tools-image`; Kategorie „Creator & Social“ |
+| image | 35 | burst-best, color-transfer, film-scan, geotag-export, hdr-tonemap, hidden-layer-check, icc, line-art, live-photo, lut, normal-map, passport, pixel-art, red-eye, scopes, seamless-texture, sort-by-date, to-svg … |
+| image-ai | 9 | `a11y-easy-read`, `a11y-sign-friendly` (plus background removal, face blur, object detection, alt text, super-res/denoise showcases) |
+| creator | 22 | own package `packages/tools-creator`; category "Creator & Social" |
 | dach | 12 | — |
 | office | 32 | — |
-| media | 68 | +6: audio-click-track, audio-spatial-flatten, video-360-reframe, video-chroma-key, video-highlight-reel, video-smart-reframe; **LGPL-Core** (eigener Build) |
-| speech | 11 | — |
-| archive | 11 | Zip-Slip/Bomb-Härtung |
+| media | 68 | +6: audio-click-track, audio-spatial-flatten, video-360-reframe, video-chroma-key, video-highlight-reel, video-smart-reframe; **LGPL core** (own build) |
+| speech | 12 | — |
+| archive | 11 | zip-slip/bomb hardening |
 
-**LGPL-FFmpeg:** `packages/tools-media/Dockerfile.ffmpeg-lgpl` (abgeleitet von ffmpegwasm/ffmpeg.wasm v0.12.10, ohne `--enable-gpl`/x264/x265; libvpx, opus, vorbis, lame, libass+freetype+fribidi+harfbuzz, zlib, native AAC/FLAC/PCM, 436 LGPL-Filter; Patch `-sSTACK_SIZE=5MB` gegen VP9-Stack-Overflow). Artefakt `vendor/ffmpeg-lgpl/{ffmpeg-core.js,ffmpeg-core.wasm,BUILD-INFO.json,LICENSE.txt}` (gitignored, ~23,7 MB), Kopie nach `apps/web/public/assets/ffmpeg/lgpl/`. Loader bevorzugt LGPL-Core (Node: Vendor-Pfad, Browser: `/assets/ffmpeg/lgpl/`), Fallback `@ffmpeg/core` mit Kennzeichnung `GPL-2.0-or-later (temporär)`. CI: `.github/workflows/ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs`.
+**LGPL FFmpeg:** `packages/tools-media/Dockerfile.ffmpeg-lgpl` (derived from ffmpegwasm/ffmpeg.wasm v0.12.10, without `--enable-gpl`/x264/x265; libvpx, opus, vorbis, lame, libass+freetype+fribidi+harfbuzz, zlib, native AAC/FLAC/PCM, 436 LGPL filters; patch `-sSTACK_SIZE=5MB` against VP9 stack overflow). Artifact `vendor/ffmpeg-lgpl/{ffmpeg-core.js,ffmpeg-core.wasm,BUILD-INFO.json,LICENSE.txt}` (gitignored, ~23.7 MB), copied to `apps/web/public/assets/ffmpeg/lgpl/`. Loader prefers the LGPL core (Node: vendor path, browser: `/assets/ffmpeg/lgpl/`), fallback `@ffmpeg/core` labelled `GPL-2.0-or-later (temporary)`. CI: `.github/workflows/ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs`.
 
-**Security:** `docs/SECURITY-REVIEW.md` — Findings F1 ff. mit Fix/Grenze; adversariale Vitest-Suites für Redact, Sanitize, License, API, Archive, Web; Playwright-Netzwerk-Whitelist über alle statischen und Tool-Seiten; Redact-Angriffsfall (Form-XObject) im E2E.
+**Security:** `docs/SECURITY-REVIEW.md` — findings F1 ff. with fix/limit; adversarial Vitest suites for redact, sanitize, license, API, archives, web; Playwright network whitelist across all static and tool pages; redact attack case (form XObject) in E2E.
 
-**Launch:** Startseite (Zähler aus Registry, Packs, Desktop, Self-Hosting), `/preise` · `/en/pricing`, `/vergleich/{ilovepdf,smallpdf,adobe-acrobat,ihatepdf}` · `/en/compare/*` (Stand-Datum in `LandingCompareData.ts`), `/ueber` · `/en/about`, `/impressum` · `/datenschutz` als Vorlagen aus `branding.json` `legal.*` (§ 5 DDG / § 18 MStV, „keine Rechtsberatung“), 24 Guides de+en, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/PLUGINS.md`, `docs/BRANDING.md`, `.github/workflows/release.yml`, `scripts/check-i18n.mjs`.
+**Launch:** start page (counter from the registry, packs, desktop, self-hosting), `/preise` · `/en/pricing`, `/vergleich/{ilovepdf,smallpdf,adobe-acrobat}` · `/en/compare/*` (as-of date in `LandingCompareData.ts`), `/ueber` · `/en/about`, `/impressum` · `/datenschutz` as templates from `branding.json` `legal.*` (§ 5 DDG / § 18 MStV, "not legal advice"), 24 guides de+en, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/PLUGINS.md`, `docs/BRANDING.md`, `.github/workflows/release.yml`, `scripts/check-i18n.mjs`.
 
-**Community:** `packages/plugins/3d-lite` als Plugin-Beispiel (Manifest, Caps, Lizenzen) — ohne Laufzeit-Loader.
+**Community:** `packages/plugins/3d-lite` as a plugin example (manifest, caps, licenses) — without a runtime loader.
 
-### Offen nach Welle 5
+### Open after wave 5
 
-- Community-Plugin-Loader + Sandbox (DoD Phase 5), `community-exotic` hinter Feature-Flag.
-- `audio-stems` ausgeblendet (kein lizenzsauberes kompaktes Modell); WebLLM/`speech-chat-doc`, Super-Res/Denoise bleiben Showcases.
-- LGPL-Core: MT-Variante (`FFMPEG_MT`) nicht gebaut; GPL-Filter (`hqdn3d`, `cropdetect`, `eq`, `boxblur`, `delogo`, `mpdecimate`) und H.264-Encoder fehlen (H.264 im Browser über WebCodecs).
-- Redact-Grenzen: CID-Fonts ohne ToUnicode (Verify meldet rot), Type3/Clip-Text nur per Raster-Fallback, OCR nur über `ocrScanned`.
-- Lizenz: keine vertrauenswürdige Uhr (Grace 24 h), Desktop-Updater-Pubkey Platzhalter.
-- Vergleichsseiten: Fakten zum Stand-Datum, jährlich prüfen. Rechtstexte: Vorlagen, vor Launch juristisch prüfen.
-- `docs/BACKLOG.md` Spalte *Status*: 164 Zeilen `offen` (viele sind Presets/Zusammenlegungen unter anderer ID).
+- `/app` workspace (drop zone, history, pipeline builder in one view) — in progress.
+- Community plugin loader + sandbox (DoD phase 5), `community-exotic` behind a feature flag.
+- `audio-stems` hidden (no license-clean compact model); WebLLM/`speech-chat-doc`, super-resolution/denoise remain showcases.
+- LGPL core: MT variant (`FFMPEG_MT`) not built; GPL filters (`hqdn3d`, `cropdetect`, `eq`, `boxblur`, `delogo`, `mpdecimate`) and H.264 encoder missing (H.264 in the browser via WebCodecs).
+- Redact limits: CID fonts without ToUnicode (verify reports red), Type3/clipped text only via raster fallback, OCR only via `ocrScanned`.
+- License: no trusted clock (grace 24 h), desktop updater pubkey placeholder.
+- Comparison pages: facts as of the stated date, review yearly. Legal texts: templates, have them legally reviewed before launch.
+- `docs/BACKLOG.md` column *Status*: 164 rows `open` (many are presets/merges under another ID).
