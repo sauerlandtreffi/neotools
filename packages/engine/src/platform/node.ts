@@ -41,9 +41,14 @@ export function nodePlatform(): Platform {
       workers: typeof process !== 'undefined',
       qpdf: true,
       ocr: true,
+      webgpu: false,
+      onnx: true,
     },
     async encodeRaster(req: RenderPageRequest) {
       return tryNapiEncode(req);
+    },
+    assets: {
+      ...(process.env.NEOTOOLS_MODELS ? { modelBase: process.env.NEOTOOLS_MODELS } : {}),
     },
   };
 }

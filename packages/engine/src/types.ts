@@ -36,11 +36,19 @@ export interface PlatformCapabilities {
   workers: boolean;
   qpdf: boolean;
   ocr: boolean;
+  /** WebGPU available for ONNX / Transformers.js. */
+  webgpu?: boolean;
+  /** ONNX Runtime (web or node) may be used. */
+  onnx?: boolean;
 }
 
 export interface PlatformAssets {
   nerModel?: string;
   ocrLangPath?: string;
+  /** Same-origin or filesystem base for ONNX/Transformers models (no CDN). */
+  modelBase?: string;
+  /** Same-origin or filesystem base for onnxruntime WASM files. */
+  onnxWasmBase?: string;
 }
 
 export interface Platform {
@@ -164,6 +172,14 @@ export const MIME = {
   pdf: 'application/pdf',
   png: 'image/png',
   jpeg: 'image/jpeg',
+  webp: 'image/webp',
   txt: 'text/plain',
   json: 'application/json',
+  md: 'text/markdown',
+  gif: 'image/gif',
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  tiff: 'image/tiff',
+  svg: 'image/svg+xml',
+  ico: 'image/x-icon',
 } as const;

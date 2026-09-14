@@ -38,8 +38,14 @@ export function browserPlatform(): Platform {
       workers: typeof Worker !== 'undefined',
       qpdf: true,
       ocr: true,
+      webgpu: typeof navigator !== 'undefined' && 'gpu' in navigator,
+      onnx: true,
     },
     encodeRaster,
+    assets: {
+      modelBase: '/assets/models',
+      onnxWasmBase: '/assets/onnx',
+    },
   };
 }
 

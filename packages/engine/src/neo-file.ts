@@ -9,6 +9,16 @@ const EXT_MIME: Record<string, string> = {
   '.txt': MIME.txt,
   '.json': MIME.json,
   '.webp': 'image/webp',
+  '.md': MIME.md,
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+  '.bmp': 'image/bmp',
+  '.tif': 'image/tiff',
+  '.tiff': 'image/tiff',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.heic': 'image/heic',
+  '.jxl': 'image/jxl',
 };
 
 export function mimeFromName(name: string): string {

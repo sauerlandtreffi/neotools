@@ -22,6 +22,11 @@ Felder:
 | `logo` | Öffentlicher Pfad (z. B. `/logo.svg`) |
 | `colors.primary` / `accent` / `ink` | Theme |
 | `impressum` / `privacy` | Texte für `/impressum` und `/datenschutz` |
+| `hiddenTools` | Tool-IDs, die aus Grid, Suche, Sitemap und Command-Palette verschwinden. Routen werden nicht generiert. |
+| `defaultLocale` | `de` oder `en` — steuert Manifest-`lang`, nicht das URL-Schema (Deutsch bleibt ohne Prefix). |
+| `footerLinks` | Zusätzliche Footer-Links: `{ "href": "/docs", "label": { "de": "Docs", "en": "Docs" } }` |
+
+Header, Footer, Theme-Color, Manifest-Name/Farben und das OG-Image (`/og.svg`) lesen dieselbe Datei. `hiddenTools` wirkt zur Build-Zeit.
 
 ## Start
 

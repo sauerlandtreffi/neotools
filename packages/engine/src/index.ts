@@ -19,6 +19,12 @@ export { collectLicenses, PLATFORM_LICENSES } from './licenses.js';
 export { zodObjectFields, kebab } from './zod-fields.js';
 export type { FormField, FieldKind } from './zod-fields.js';
 export { ENGINE_VERSION, MIME } from './types.js';
+export {
+  bytesToBase64Url,
+  base64UrlToBytes,
+  encodeJsonBase64Url,
+  decodeJsonBase64Url,
+} from './url-codec.js';
 export { runTool, reloadOutputs, attachVerification } from './run-tool.js';
 export type {
   NeoFile,

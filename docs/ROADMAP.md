@@ -289,5 +289,49 @@ WP-19/20/25 + Rename erledigt
 - Git-Repo auf `main` initialisiert (erster Commit: wave 1+2). Kein Remote.
 - ESLint (flat) + Prettier root-weit; Root-Scripts `dev`/`build`/`test`/`typecheck`/`lint`/`e2e`/`cli`.
 - Playwright-Smokes in `apps/web/e2e/` gegen Static-Server mit Produktions-Headern; CI `.github/workflows/ci.yml` (build, test, typecheck, lint, chromium-smoke, Report-Artefakt bei Fehler). `desktop.yml` unverändert.
-- Offener Browser-Bug (nicht gefixt): `packages/tools-pdf/src/pdfjs.ts` setzt `GlobalWorkerOptions.workerSrc` nicht — Auto-Treffer/`run(pdf-redact)` im Tool-Worker scheitert; Smoke `d2` ist `test.fixme`.
+- `packages/tools-pdf/src/pdfjs.ts` setzt `GlobalWorkerOptions.workerSrc` (self-hosted Worker). Smoke `d2` (Redact Auto-Treffer + Verify) ist aktiv.
+
+## Status Pack `image` KI/CV (`@neotools/tools-image-ai`)
+
+- Paket `packages/tools-image-ai` mit Tools `image-remove-background`, `image-auto-blur`, `image-doc-repair`, `image-screenshot-workshop`, `image-upscale`, `image-denoise`, `image-alt-text` (pack `a11y`).
+- ONNX Runtime (WebGPU→WASM / Node), Modell-Registry `src/models/models.json`, `scripts/fetch-models.mjs`, Cache Storage / `~/.cache/neotools/models`.
+- Keine AGPL-Gewichte (kein Ultralytics-YOLOv8, kein RMBG-1.4). Raster-Codec PNG/JPEG lokal; Umstellung auf `@neotools/tools-image` geplant (gleiche Signatur).
+- CLI: `neotools models fetch <tool>|--all`. Kategorie „KI & Erkennung“ / „AI & Detection“.
+- Bericht: `docs/reports/tools-image-ai.md`.
+
+## Status Pack `image` Kern (Phase 2)
+
+- Paket `packages/tools-image` (`@neotools/tools-image`) mit Codec-Schicht (jSquash lazy/WASM, eigene BMP/TGA/PNM/ICO, UTIF, gifuct/gifenc, upng-js, HEIC dynamisch LGPL, SVG Browser/`@resvg` optional).
+- Parser JPEG/PNG/TIFF nach `packages/parsers` (`@neotools/parsers`) extrahiert; Forensik re-exportiert unverändert.
+- Tools: convert, compress, resize, crop (+Kreis), rotate-flip, adjust, watermark, metadata+verify, redact+verify, compare, creator-export-pack, image-to-animation (kein Video), palette, colorblind, exif-batch, duplicates, ascii.
+- Nicht gebaut (Agent AI): Hintergrund, Auto-Blur, Doc-Repair, Screenshot-Werkstatt. `images-to-pdf` bleibt im PDF-Pack.
+- Tests: Vitest Roundtrips, Resize/Crop, EXIF, Verify, Compress, Compare, Export-Pack, Palette, Duplikate. HEIC/SVG-Node als Skip/Fehlerhinweis.
+
+## Status Pack `pdf` Phase-1-Rest + Pack `dach` (WP-26–31)
+
+- **pdf-compare:** Text-Diff (pdfjs-Absätze, Wort-Diff `diff`, Seiten-Alignment über Absatz-Hashes), Pixel-Heatmap+SSIM (Canvas / sonst Hinweis), Diff-PDF + JSON + Markdown. Presets `text` / `pixel` / `vertrag`.
+- **pdf-a:** Eigene Regelmaschine PDF/A-2b/3b (Teilmenge, kein veraPDF). XMP/pdfaid, Info↔XMP, Encrypt, JS/Launch, Fonts inkl. Standard-14, LZW, OutputIntent+sRGB-ICC (Debian icc-profiles-free, zlib), Anhänge 2b/3b+AFRelationship, Header 1.4–1.7, %%EOF, qpdf `--check`. Convert best-effort + `verify`-Hook.
+- **pdf-aktenbundler:** Deckblatt, TOC mit Link-Annotationen, verschachtelte Outlines (`outlines.ts`), Bates über `page-stamps.ts` (pdf-page-numbers re-exportiert), Kopfzeile, optional Trennblätter/Anlagen-Stempel, JSON-Index.
+- **pdf-sign:** Prüfen (ByteRange/CMS via pkijs, PAdES B-B/B-T/B-LT grob, inkrementelle Änderung). Erstellen PKCS#12 (node-forge) + PAdES-B-B (`ESS signing-certificate-v2`), `verify`-Hook. TSA nur bei gesetzter URL.
+- **Pack `dach`:** `dach-bea-erv` (Regelwerk `rules/erv.json` v2026-01, ERVV §2/§5 + ERVB, Auto-Fix-Pipeline), `dach-hash-timestamp` (SHA-256/512, RFC-3161 optional, Nachweisblatt), `dach-girocode` (EPC069-12, qrcode, zxing-wasm).
+- Web: Markdown-Outputs (`marked` + DOMPurify). Kategorien Vergleichen / Archivierung / DACH-Business & Recht.
+
+## Status Integration Welle 3 (Owner)
+
+- Uncommitted Arbeit seit `f99d54f` integriert: Packs `image` (17) + `image-ai` (7), PDF-Rest (`pdf-compare`, `pdf-a`, `pdf-aktenbundler`, `pdf-sign`), Pack `dach` (3), Format-KB (≥45), SEO-Routen, Verlauf, Lizenzen.
+- `gifenc` CJS→ESM lazy (`createRequire`/Default-Export), damit `neotools list` nicht mehr bricht.
+- `tools-image-ai` `raster.ts` re-exportiert `@neotools/tools-image` (`decode`/`encode`/`resample`/`boxBlur`/`pixelate`/`stripJpegSegments`). `image-alt-text` schreibt EXIF/XMP über den Metadaten-Writer.
+- Convert-SEO-Seiten auf real abgedeckte Bildpaare begrenzt (kein tga/ppm-Kartesisches Produkt).
+- Playwright: 12 Chromium-Smokes inkl. `d2`, `/image-convert` (PNG→JPG/`FFD8`), `/formats/jpg`+JSON-LD, `/verlauf` nach Tool-Lauf. Hydration-Wait (`data-tool-ready` / `data-reader-ready`) vor Datei-Upload.
+- `verifyRedactedPdf` ignoriert technische Info-Felder (`D:YYYYMMDD…`, pdf-lib Producer), damit CreationDate nicht als Telefonnummer fehlschlägt.
+- Bericht: `docs/reports/tools-image-ai.md`.
+
+## Offen für Welle 4
+
+- Office-/Media-/Speech-Packs (FFmpeg LGPL, Whisper, E-Rechnung).
+- HEIC-Decode in Node ohne optionales libheif; SVG-Raster ohne `@resvg` bleibt Browser-only.
+- PDF/A ist eine ehrliche Teilmenge (kein veraPDF); PAdES-TSA nur bei gesetzter URL.
+- Desktop-Updater und White-Label-Lizenzschlüssel bleiben Stubs.
+- Super-Res/Denoise bleiben Showcases ohne Qualitätsversprechen.
+
 

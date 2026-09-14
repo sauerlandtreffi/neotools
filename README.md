@@ -1,6 +1,6 @@
 # NeoTools
 
-Lokale Werkzeuge für PDFs — im Browser, als CLI, per Docker oder (später) als Desktop-App.  
+Lokale Werkzeuge für PDFs, Bilder, Forensik und DACH-Recht — im Browser, als CLI, per Docker oder (später) als Desktop-App.  
 Kein Upload, kein Wasserzeichen, kein Tracking, keine CDN-Laufzeitabhängigkeit.
 
 Vorbild: ihatepdf.cv / ihatefiles.com. Differenzierung: **isomorphe Engine** (Browser + Node), White-Label-Self-Hosting, Datenschutz-Tools (Sanitize, Metadaten), vorbereitete Desktop-Dateizuordnung.
@@ -74,13 +74,20 @@ docker compose -f deploy/docker/docker-compose.yml up --build
 ## Architektur
 
 ```
-packages/engine      @neotools/engine     defineTool, Registry, Pipeline, Batch, Provenance
-packages/tools-pdf   @neotools/tools-pdf  PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, jSquash, Tesseract.js)
-apps/web             Astro 5 + Preact + Tailwind 4, Worker via Comlink
-apps/cli             dieselben Tool-Definitionen, Zod → Flags
-apps/desktop         Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Single-Instance)
-deploy/docker        nginx-static, branding.json zur Build-Zeit
+packages/engine         @neotools/engine          defineTool, Registry, Pipeline, Batch, Provenance
+packages/parsers        @neotools/parsers         JPEG/PNG/TIFF-Parser (geteilt)
+packages/tools-pdf      @neotools/tools-pdf       21 PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, PAdES, PDF/A)
+packages/tools-forensics @neotools/tools-forensics 10 Forensik-Tools
+packages/tools-image    @neotools/tools-image     17 Bild-Tools (jSquash, eigene Codecs)
+packages/tools-image-ai @neotools/tools-image-ai  7 KI/CV-Bild-Tools (ONNX, Transformers.js)
+packages/tools-dach     @neotools/tools-dach      3 DACH-Tools (beA/ERV, Hash+TSA, GiroCode)
+apps/web                Astro 5 + Preact + Tailwind 4, Worker via Comlink
+apps/cli                dieselben Tool-Definitionen, Zod → Flags
+apps/desktop            Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Single-Instance)
+deploy/docker           nginx-static, branding.json zur Build-Zeit
 ```
+
+**58 Tools** in fünf Packs (`pdf`, `forensics`, `image`, `image-ai`/`a11y`, `dach`). White-Label: `branding.json` (`hiddenTools`, Name, Farben).
 
 Die Engine kennt kein DOM. Platform-Adapter:
 
@@ -97,7 +104,9 @@ Eigener Code: **MIT** (`LICENSE`).
 Laufzeit: pdf-lib (MIT), PDF.js (Apache-2.0), qpdf-wasm (Apache-2.0), @cantoo/pdf-lib (MIT), jSquash/mozjpeg/oxipng (Apache-2.0/BSD/MIT), Tesseract.js (Apache-2.0), Zod, Comlink, fflate, Astro, Preact, Tailwind.  
 **Nicht verwendet:** Ghostscript, MuPDF, iText (AGPL).
 
-Die Seite `/lizenzen` sammelt `licenses` aller Tools plus Plattform-Libs.
+Die Seite `/lizenzen` sammelt `licenses` aller Tools plus Plattform-Libs. Zusätzlich `/licenses.json` und `/THIRD_PARTY_NOTICES.txt`.
+
+SEO: `/formats/[id]`, `/convert/[from]-to-[to]`, `/spec/[platform]`, `/guides/[slug]` (de + `/en/...`). Verlauf lokal unter `/verlauf`.
 
 ## Branding
 

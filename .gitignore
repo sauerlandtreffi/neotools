@@ -34,6 +34,18 @@ apps/web/public/assets/jsquash/*
 !apps/web/public/assets/jsquash/.gitkeep
 apps/web/public/assets/tesseract/*
 !apps/web/public/assets/tesseract/.gitkeep
+apps/web/public/assets/onnx/*
+!apps/web/public/assets/onnx/.gitkeep
+apps/web/public/assets/models/*
+!apps/web/public/assets/models/models.json
+!apps/web/public/assets/models/.gitkeep
+apps/web/public/assets/fonts/*
+!apps/web/public/assets/fonts/.gitkeep
+!apps/web/public/assets/fonts/SourceSans3-Regular.otf
+packages/tools-image-ai/.models/
+**/.models/*.onnx
+**/*.onnx
+!**/.gitkeep
 
 # Env / local secrets
 .env
