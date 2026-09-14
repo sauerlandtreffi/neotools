@@ -26,6 +26,18 @@ const SWITCH: Record<string, string> = {
   '/en/license': '/lizenz',
   '/watch': '/en/watch',
   '/en/watch': '/watch',
+  '/ueber': '/en/about',
+  '/en/about': '/ueber',
+  '/preise': '/en/pricing',
+  '/en/pricing': '/preise',
+  '/vergleich/ilovepdf': '/en/compare/ilovepdf',
+  '/en/compare/ilovepdf': '/vergleich/ilovepdf',
+  '/vergleich/smallpdf': '/en/compare/smallpdf',
+  '/en/compare/smallpdf': '/vergleich/smallpdf',
+  '/vergleich/adobe-acrobat': '/en/compare/adobe-acrobat',
+  '/en/compare/adobe-acrobat': '/vergleich/adobe-acrobat',
+  '/vergleich/ihatepdf': '/en/compare/ihatepdf',
+  '/en/compare/ihatepdf': '/vergleich/ihatepdf',
 };
 
 export function switchLocalePath(path: string, from: Locale): string {
@@ -151,6 +163,8 @@ const dict = {
     mobileMediaWarn: 'Datei über 500 MB — auf Mobilgeräten vor der Verarbeitung Speicher und Akku prüfen.',
     ffmpegSourceOffer:
       'FFmpeg: Offizieller @ffmpeg/core ist GPL-2.0-or-later (x264, Übergang). LGPL-Build: packages/tools-media/scripts/build-ffmpeg-lgpl.sh bzw. .github/workflows/ffmpeg-lgpl.yml + scripts/fetch-ffmpeg-lgpl.mjs. Quellcode des gebündelten Cores auf Anfrage an die Impressums-Adresse; H.264-Encode im Browser über WebCodecs.',
+    ffmpegSourceOfferLgpl:
+      'FFmpeg: Der gebündelte WASM-Core ist ein eigener Build ohne --enable-gpl (LGPL-2.1-or-later; libvpx, Opus, Vorbis, LAME, libass). Reproduzierbar über packages/tools-media/Dockerfile.ffmpeg-lgpl bzw. .github/workflows/ffmpeg-lgpl.yml; BUILD-INFO.json und LICENSE.txt liegen unter /assets/ffmpeg/lgpl/. Quellcode des Cores auf Anfrage an die Impressums-Adresse; H.264-Encode im Browser über WebCodecs.',
     license: 'Lizenz',
     licensePaste: 'Lizenz-Token einfügen',
     licenseVerify: 'Lokal prüfen',
@@ -287,6 +301,8 @@ const dict = {
     mobileMediaWarn: 'File over 500 MB — on mobile, check memory and battery before processing.',
     ffmpegSourceOffer:
       'FFmpeg: Official @ffmpeg/core is GPL-2.0-or-later (x264, temporary). LGPL build: packages/tools-media/scripts/build-ffmpeg-lgpl.sh or .github/workflows/ffmpeg-lgpl.yml + scripts/fetch-ffmpeg-lgpl.mjs. Corresponding core source is offered on request via the legal notice address; browser H.264 encode uses WebCodecs.',
+    ffmpegSourceOfferLgpl:
+      'FFmpeg: The bundled WASM core is our own build without --enable-gpl (LGPL-2.1-or-later; libvpx, Opus, Vorbis, LAME, libass). Reproducible via packages/tools-media/Dockerfile.ffmpeg-lgpl or .github/workflows/ffmpeg-lgpl.yml; BUILD-INFO.json and LICENSE.txt live under /assets/ffmpeg/lgpl/. Corresponding core source is offered on request via the legal notice address; browser H.264 encode uses WebCodecs.',
     license: 'License',
     licensePaste: 'Paste license token',
     licenseVerify: 'Verify locally',
@@ -342,7 +358,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
     compare: 'Vergleichen',
     organize: 'Ordnen',
     security: 'Sicherheit',
-    creator: 'Creator',
+    creator: 'Creator & Social',
     media: 'Medien',
     speech: 'Sprache & Untertitel',
     a11y: 'Barrierefreiheit',
@@ -368,7 +384,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
     compare: 'Compare',
     organize: 'Organize',
     security: 'Security',
-    creator: 'Creator',
+    creator: 'Creator & Social',
     media: 'Media',
     speech: 'Speech & Subtitles',
     a11y: 'Accessibility',

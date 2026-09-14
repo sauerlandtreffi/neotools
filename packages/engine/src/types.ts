@@ -70,11 +70,15 @@ export interface VerificationCheck {
   id: string;
   passed: boolean;
   detail?: string;
+  /** When true, a failed check is a documented limit (UI warning), not a silent pass. */
+  advisory?: boolean;
 }
 
 export interface VerificationReport {
   passed: boolean;
   checks: VerificationCheck[];
+  /** Non-empty ⇒ UI must not present a silent green “shared-safe”. */
+  warnings?: string[];
 }
 
 export interface ToolUi {

@@ -1,11 +1,28 @@
 # NeoTools
 
-Lokale Werkzeuge für PDFs, Bilder, Forensik und DACH-Recht — im Browser, als CLI, per Docker oder (später) als Desktop-App.  
+Lokale Werkzeuge für PDFs, Bilder, Video/Audio, Sprache, Office, Archive, Forensik, Creator-Formate und DACH-Recht — im Browser, als CLI, per Docker, REST-API oder Desktop-App.  
 Kein Upload, kein Wasserzeichen, kein Tracking, keine CDN-Laufzeitabhängigkeit.
 
-Vorbild: ihatepdf.cv / ihatefiles.com. Differenzierung: **isomorphe Engine** (Browser + Node), White-Label-Self-Hosting, Datenschutz-Tools (Sanitize, Metadaten), vorbereitete Desktop-Dateizuordnung.
+Vorbild: ihatepdf.cv / ihatefiles.com. Differenzierung: **isomorphe Engine** (Browser + Node), White-Label-Self-Hosting, Datenschutz-Tools (Sanitize, Metadaten, Verify), Desktop-Dateizuordnung.
 
 UI-Sprache: **Deutsch** (ohne Prefix), Englisch unter `/en/...`.
+
+**235 Tools in 10 Packs** — Stand Welle 5 (Launch-Vorbereitung):
+
+| Pack        | Tools | Paket                      | Schwerpunkt                                                        |
+| ----------- | ----: | -------------------------- | ------------------------------------------------------------------ |
+| `pdf`       |    24 | `packages/tools-pdf`       | Merge, Redact + Verify, Sanitize, OCR, PDF/A, UA, PAdES, Mailmerge |
+| `forensics` |    10 | `packages/tools-forensics` | Identify, Hidden-Data, Fake-Ext, Fingerprint, Share-Safe           |
+| `image`     |    40 | `packages/tools-image`     | jSquash-Codecs, Doc-Repair, LUT, Film-Scan, Passfoto, SVG-Tracer   |
+| `a11y`      |     4 | `packages/tools-image-ai`  | ONNX/Transformers: Alt-Text, Easy-Read, Sign-Friendly              |
+| `creator`   |    23 | `packages/tools-creator`   | Plattform-Packs, Spec-Check, Audiogram, Collage, Sticker, Mockups  |
+| `dach`      |    12 | `packages/tools-dach`      | beA/ERV, E-Rechnung, GoBD, GiroCode, RFC-3161                      |
+| `speech`    |    11 | `packages/tools-speech`    | Whisper lokal: Transkript, Untertitel, Kapitel, Übersetzung        |
+| `office`    |    32 | `packages/tools-office`    | DOCX/XLSX/CSV/E-Book/Fonts/SQL, SheetJS Community, OFL-Fonts       |
+| `media`     |    68 | `packages/tools-media`     | FFmpeg-WASM (LGPL-Build) + WebCodecs: Video/Audio-Convert, Edit    |
+| `archive`   |    11 | `packages/tools-archive`   | ZIP/TAR nativ, 7z dynamisch, Ordner-Konvertierung, Sidecars        |
+
+Zähler aus der Registry: `node apps/cli/dist/cli.js list --json`. `audio-stems` bleibt registriert, aber nicht im Web-Grid (kein lizenzsauberes kleines Modell). Weitere KI-Bild-Tools aus `tools-image-ai` (Hintergrund, Gesichter, Super-Res/Denoise-Showcases) laufen unter dem Pack `image`.
 
 ## Quickstart
 
@@ -18,7 +35,10 @@ pnpm --filter @neotools/web dev          # http://localhost:4321
 pnpm -r build
 pnpm -r test
 pnpm -r typecheck
+node scripts/check-i18n.mjs              # de/en-Dictionary + categoryLabels deckungsgleich
 ```
+
+Mitarbeit: [CONTRIBUTING.md](./CONTRIBUTING.md) · Änderungen: [CHANGELOG.md](./CHANGELOG.md) · Sicherheitsmeldungen: [SECURITY.md](./SECURITY.md) · Plugins: [docs/PLUGINS.md](./docs/PLUGINS.md) · White-Label: [docs/BRANDING.md](./docs/BRANDING.md) · Deployment: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) · Security-Review: [docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md)
 
 ## Entwicklung & Qualität
 
@@ -32,6 +52,8 @@ Root-Aliase (von `/` aus):
 | `pnpm format` / `pnpm format:check`           | Prettier                                                          |
 | `pnpm e2e`                                    | Playwright-Smokes gegen `apps/web/dist` (baut bei fehlendem Dist) |
 | `pnpm cli`                                    | Alias auf `apps/cli` (`neotools`)                                 |
+| `node scripts/check-i18n.mjs`                 | Fail, wenn de/en-UI-Dictionary oder `categoryLabels` divergieren  |
+| `node scripts/fetch-ffmpeg-lgpl.mjs`          | LGPL-FFmpeg-Core aus dem eigenen GitHub-Release (gitignored)      |
 
 Playwright braucht einmalig Chromium:
 
@@ -80,21 +102,23 @@ packages/parsers        @neotools/parsers         JPEG/PNG/TIFF-Parser (geteilt)
 packages/models         @neotools/models          ONNX/Whisper-Katalog (kein CDN)
 packages/tools-pdf      @neotools/tools-pdf       24 PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, PAdES, PDF/A, UA)
 packages/tools-forensics @neotools/tools-forensics 10 Forensik-Tools
-packages/tools-image    @neotools/tools-image     17 Bild-Tools (jSquash, eigene Codecs)
-packages/tools-image-ai @neotools/tools-image-ai  7 KI/CV-Bild-Tools (ONNX, Transformers.js)
+packages/tools-image    @neotools/tools-image     Bild-Tools (jSquash, eigene Codecs, LUT, Film-Scan, SVG-Tracer)
+packages/tools-image-ai @neotools/tools-image-ai  KI/CV-Bild- und A11y-Tools (ONNX, Transformers.js)
+packages/tools-creator  @neotools/tools-creator   23 Creator/Social-Tools (baut auf tools-image + tools-media)
 packages/tools-dach     @neotools/tools-dach      12 DACH-Tools (beA/ERV, E-Rechnung, GoBD, GiroCode)
 packages/tools-office   @neotools/tools-office    32 Office/E-Book/Daten-Tools
-packages/tools-media    @neotools/tools-media     62 Video/Audio-Tools (FFmpeg, WebCodecs)
-packages/tools-speech   @neotools/tools-speech    12 Sprache/Untertitel-Tools (Whisper)
+packages/tools-media    @neotools/tools-media     68 Video/Audio-Tools (FFmpeg LGPL-Build, WebCodecs)
+packages/tools-speech   @neotools/tools-speech    11 Sprache/Untertitel-Tools (Whisper)
 packages/tools-archive  @neotools/tools-archive   11 Archiv/Ordner-Tools
-apps/web                Astro 5 + Preact + Tailwind 4, Worker via Comlink
+packages/plugins/3d-lite @neotools-plugin/3d-lite Community-Plugin-Beispiel (Manifest, Caps-Sandbox; nicht registriert)
+apps/web                Astro 5 + Preact + Tailwind 4, Worker via Comlink (1202 statische Seiten)
 apps/cli                dieselben Tool-Definitionen, Zod → Flags, watch, license
 apps/api                Fastify REST-Sidecar (gleiche Engine)
 apps/desktop            Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Deep-Link)
 deploy/docker           nginx-static + optional API, branding.json zur Build-Zeit
 ```
 
-**187 Tools** in neun Packs (`pdf` 24, `forensics` 10, `image` 17, `image-ai`/`a11y` 7, `dach` 12, `office` 32, `media` 62, `speech` 12, `archive` 11). `audio-stems` bleibt registriert, aber nicht im Web-Grid (kein lizenzsauberes kleines Modell). White-Label: `branding.json` (`hiddenTools`, Name, Farben, Lizenz).
+Tool-Zahlen je logischem Pack: siehe Tabelle oben (235 / 10 Packs). White-Label: `branding.json` (`hiddenTools`, Name, Farben, `legal.*`, Lizenz) — Details in [docs/BRANDING.md](./docs/BRANDING.md). Community-Plugins: [docs/PLUGINS.md](./docs/PLUGINS.md) (Loader Phase 5 offen).
 
 Die Engine kennt kein DOM. Platform-Adapter:
 
@@ -108,17 +132,34 @@ Batch: eine kaputte Datei bricht den Rest nicht ab (`ok|error` + Grund).
 ## Lizenzen
 
 Eigener Code: **MIT** (`LICENSE`).  
-Laufzeit: pdf-lib (MIT), PDF.js (Apache-2.0), qpdf-wasm (Apache-2.0), @cantoo/pdf-lib (MIT), jSquash/mozjpeg/oxipng (Apache-2.0/BSD/MIT), Tesseract.js (Apache-2.0), Zod, Comlink, fflate, Astro, Preact, Tailwind, @noble/ed25519 (MIT), SheetJS Community (Apache-2.0), OFL-Fonts (Source Sans/Serif/Code). FFmpeg-WASM-Core derzeit **GPL-2.0-or-later (temporär, x264)** — LGPL-Skript und GH-Workflow im Repo. libheif/7z-wasm nur dynamisch (LGPL).  
+Laufzeit: pdf-lib (MIT), PDF.js (Apache-2.0), qpdf-wasm (Apache-2.0), @cantoo/pdf-lib (MIT), jSquash/mozjpeg/oxipng (Apache-2.0/BSD/MIT), Tesseract.js (Apache-2.0), ONNX Runtime (MIT), Transformers.js (Apache-2.0), Zod, Comlink, fflate, Astro, Preact, Tailwind, @noble/ed25519 (MIT), SheetJS Community (Apache-2.0), OFL-Fonts (Source Sans/Serif/Code), mp4-muxer (MIT), mp4box.js (BSD-3-Clause). libheif/7z-wasm nur dynamisch (LGPL).  
 **Nicht verwendet:** Ghostscript, MuPDF, iText (AGPL).
 
-Die Seite `/lizenzen` sammelt `licenses` aller Tools plus Plattform-Libs. Zusätzlich `/licenses.json` und `/THIRD_PARTY_NOTICES.txt`.
+**FFmpeg-WASM-Core:** eigener **LGPL-2.1-or-later-Build** ohne `--enable-gpl`/x264/x265 (`packages/tools-media/Dockerfile.ffmpeg-lgpl`, `packages/tools-media/scripts/build-ffmpeg-lgpl.sh`, Workflow `.github/workflows/ffmpeg-lgpl.yml` → Release `ffmpeg-lgpl`). `node scripts/fetch-ffmpeg-lgpl.mjs` legt das Artefakt gitignored unter `packages/tools-media/vendor/ffmpeg-lgpl/` ab; `scripts/copy-wasm-assets.mjs` kopiert es nach `apps/web/public/assets/ffmpeg/`. Der Loader bevorzugt den LGPL-Core. **Nur wenn das Artefakt fehlt**, fällt er auf den GPL-Core aus `@ffmpeg/core` zurück — `/lizenzen` kennzeichnet den tatsächlich geladenen Core dynamisch (`getFfmpegCoreFlavor()`). H.264-Encode läuft ausschließlich über WebCodecs + mp4-muxer.
 
-SEO: `/formats/[id]`, `/convert/[from]-to-[to]`, `/spec/[platform]`, `/guides/[slug]` (de + `/en/...`). Verlauf lokal unter `/verlauf`.
+Die Seite `/lizenzen` sammelt `licenses` aller Tools plus Plattform-Libs (`packages/engine/src/licenses.ts`). Zusätzlich `/licenses.json` und `/THIRD_PARTY_NOTICES.txt`. Regel: jede neue Laufzeit-Lib landet im selben PR in `src/licenses.ts` des Packs.
+
+SEO: `/formats/[id]`, `/convert/[from]-to-[to]`, `/spec/[platform]`, `/guides/[slug]` (24 Guides, de + `/en/...`). Verlauf lokal unter `/verlauf`.
+
+## Launch
+
+Seiten für den Launch (alle statisch, Inhalte aus `branding.json`):
+
+| Seite                                                                                           | Englisch        | Inhalt                                                                                                     |
+| ----------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/preise`                                                                                       | `/en/pricing`   | Community (alle Tools, kostenlos), Pro, Enterprise/Self-Host — Preise aus `pricing.*`, sonst „auf Anfrage“ |
+| `/vergleich/ilovepdf`, `/vergleich/smallpdf`, `/vergleich/adobe-acrobat`, `/vergleich/ihatepdf` | `/en/compare/*` | Funktions-/Datenschutzvergleich: lokal vs. Upload, Wasserzeichen, Limits, Lizenzen                         |
+| `/ueber`                                                                                        | `/en/about`     | Projekt, Engine, Betreiber (`legal.operator`, `contact.*`)                                                 |
+| `/impressum`                                                                                    | `/en/imprint`   | **Vorlage** aus `legal.*` — leere Felder bleiben Platzhalter                                               |
+| `/datenschutz`                                                                                  | `/en/privacy`   | **Vorlage** aus `legal.*`, `hosting.*`, `desktop.*` (lokale Verarbeitung, keine Uploads, Update-Check)     |
+| `/lizenzen`, `/licenses.json`, `/THIRD_PARTY_NOTICES.txt`                                       | `/en/licenses`  | generierte Lizenzlisten                                                                                    |
+
+Impressum und Datenschutzerklärung sind Textvorlagen, **keine Rechtsberatung** — vor dem Launch von einer fachkundigen Person prüfen lassen und `legal.updated` setzen. Release-Ablauf: Tag `v*` → `.github/workflows/release.yml` (Web-Dist, CLI-Tarball, optional LGPL-Core, GitHub-Release mit CHANGELOG-Auszug); Desktop-Bundles über `desktop.yml` (`desktop-v*`).
 
 ## Branding
 
-`branding.json` im Repo-Root (Name, Logo, Farben, Impressum/Datenschutz-Platzhalter).  
-Build liest `NEOTOOLS_BRANDING=/pfad/branding.json`.
+`branding.json` im Repo-Root (Name, Tagline, Logo, Farben, `hiddenTools`, `footerLinks`, `legal.*`, `pricing.*`, `contact.*`, `hosting.*`, `desktop.*`, Lizenz-Token, Presets).  
+Build liest `NEOTOOLS_BRANDING=/pfad/branding.json`. Logo-Pfad und Farben werden über `safeAssetUrl`/`safeCssColor` geprüft (kein `javascript:`, kein Remote-Logo, keine CSS-Injection). Alle Felder: [docs/BRANDING.md](./docs/BRANDING.md).
 
 ## Bekannte Entscheidungen
 
@@ -150,6 +191,8 @@ node scripts/copy-wasm-assets.mjs        # qpdf / jSquash / tesseract-core
 
 **Passwortfelder:** Zod `.describe('password')` (oder Feldname enthält `password`) → Web-Formular `type=password`.
 
-## Welle 2 (Stand)
+## Stand
 
-`pdf-lock`, `pdf-repair`, `pdf-compress` (WP-19), `pdf-ocr` (WP-25), `pdf-forms` (WP-21 Teil), Rename `pdf-organize` → `pdf-reorder`. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`. `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
+Wellen 1–5 sind in `main` (Details: [CHANGELOG.md](./CHANGELOG.md), [docs/ROADMAP.md](./docs/ROADMAP.md)). Welle 5 brachte den adversarial Security-Review mit Fix-Mandat ([docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md), F1–F24, keine offenen kritischen/hohen Findings), das Creator-Pack, 18 neue Bild- und 6 neue Media-Tools, den LGPL-FFmpeg-Build, die Launch-Seiten und 24 Guides. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`; `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
+
+Offen: Community-Plugin-Loader (Phase 5), `audio-stems`-Modell, WebLLM/Volltext als Showcases, Desktop-Updater-Signatur, veraPDF-äquivalente PDF/A-Validierung.

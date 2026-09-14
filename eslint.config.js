@@ -12,6 +12,8 @@ export default tseslint.config(
       '**/src-tauri/**',
       'docs/**',
       'apps/web/public/assets/**',
+      'packages/tools-media/vendor/**',
+      'packages/tools-media/scripts/ffmpeg-wasm/**',
       'apps/web/public/tessdata/**',
       'coverage/**',
       '**/test-results/**',

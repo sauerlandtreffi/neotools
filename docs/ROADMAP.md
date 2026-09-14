@@ -296,3 +296,37 @@ Pack-Commits: `bd5d049` office, `21d6a16` speech, `4d3b6b1` media, `53761f3` dac
 - WebLLM/`speech-chat-doc`, Volltext-OPFS, Super-Res/Denoise bleiben Showcases.
 - Desktop-Updater-Pubkey und signierte Bundles sind Platzhalter (`createUpdaterArtifacts` aus).
 
+## Stand nach Welle 5 (2026-09-14)
+
+Welle 5 = Security-Review mit Fixes, Creator-Pack, Bild-/Medien-Lücken, LGPL-FFmpeg-Build, Launch-Seiten. **235 Tools** in zehn logischen Packs (Registry `node apps/cli/dist/cli.js list --json`; Web-Grid ohne `audio-stems`).
+
+| Pack | Tools | Neu in Welle 5 |
+|---|---|---|
+| pdf | 24 | Redact/Verify-Härtung (Form-XObjects, TJ, AP-Streams, Outline/XMP/StructTree, Neu-Schreiben), Sanitize-Härtung |
+| forensics | 10 | — |
+| image | 40 | +23: burst-best, color-transfer, film-scan, geotag-export, hdr-tonemap, hidden-layer-check, icc, line-art, live-photo, lut, normal-map, passport, pixel-art, red-eye, scopes, seamless-texture, sort-by-date, to-svg … |
+| a11y | 4 | `a11y-easy-read`, `a11y-sign-friendly` |
+| creator | 23 | eigenes Paket `packages/tools-creator` (22) + `creator-export-pack` aus `tools-image`; Kategorie „Creator & Social“ |
+| dach | 12 | — |
+| office | 32 | — |
+| media | 68 | +6: audio-click-track, audio-spatial-flatten, video-360-reframe, video-chroma-key, video-highlight-reel, video-smart-reframe; **LGPL-Core** (eigener Build) |
+| speech | 11 | — |
+| archive | 11 | Zip-Slip/Bomb-Härtung |
+
+**LGPL-FFmpeg:** `packages/tools-media/Dockerfile.ffmpeg-lgpl` (abgeleitet von ffmpegwasm/ffmpeg.wasm v0.12.10, ohne `--enable-gpl`/x264/x265; libvpx, opus, vorbis, lame, libass+freetype+fribidi+harfbuzz, zlib, native AAC/FLAC/PCM, 436 LGPL-Filter; Patch `-sSTACK_SIZE=5MB` gegen VP9-Stack-Overflow). Artefakt `vendor/ffmpeg-lgpl/{ffmpeg-core.js,ffmpeg-core.wasm,BUILD-INFO.json,LICENSE.txt}` (gitignored, ~23,7 MB), Kopie nach `apps/web/public/assets/ffmpeg/lgpl/`. Loader bevorzugt LGPL-Core (Node: Vendor-Pfad, Browser: `/assets/ffmpeg/lgpl/`), Fallback `@ffmpeg/core` mit Kennzeichnung `GPL-2.0-or-later (temporär)`. CI: `.github/workflows/ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs`.
+
+**Security:** `docs/SECURITY-REVIEW.md` — Findings F1 ff. mit Fix/Grenze; adversariale Vitest-Suites für Redact, Sanitize, License, API, Archive, Web; Playwright-Netzwerk-Whitelist über alle statischen und Tool-Seiten; Redact-Angriffsfall (Form-XObject) im E2E.
+
+**Launch:** Startseite (Zähler aus Registry, Packs, Desktop, Self-Hosting), `/preise` · `/en/pricing`, `/vergleich/{ilovepdf,smallpdf,adobe-acrobat,ihatepdf}` · `/en/compare/*` (Stand-Datum in `LandingCompareData.ts`), `/ueber` · `/en/about`, `/impressum` · `/datenschutz` als Vorlagen aus `branding.json` `legal.*` (§ 5 DDG / § 18 MStV, „keine Rechtsberatung“), 24 Guides de+en, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/PLUGINS.md`, `docs/BRANDING.md`, `.github/workflows/release.yml`, `scripts/check-i18n.mjs`.
+
+**Community:** `packages/plugins/3d-lite` als Plugin-Beispiel (Manifest, Caps, Lizenzen) — ohne Laufzeit-Loader.
+
+### Offen nach Welle 5
+
+- Community-Plugin-Loader + Sandbox (DoD Phase 5), `community-exotic` hinter Feature-Flag.
+- `audio-stems` ausgeblendet (kein lizenzsauberes kompaktes Modell); WebLLM/`speech-chat-doc`, Super-Res/Denoise bleiben Showcases.
+- LGPL-Core: MT-Variante (`FFMPEG_MT`) nicht gebaut; GPL-Filter (`hqdn3d`, `cropdetect`, `eq`, `boxblur`, `delogo`, `mpdecimate`) und H.264-Encoder fehlen (H.264 im Browser über WebCodecs).
+- Redact-Grenzen: CID-Fonts ohne ToUnicode (Verify meldet rot), Type3/Clip-Text nur per Raster-Fallback, OCR nur über `ocrScanned`.
+- Lizenz: keine vertrauenswürdige Uhr (Grace 24 h), Desktop-Updater-Pubkey Platzhalter.
+- Vergleichsseiten: Fakten zum Stand-Datum, jährlich prüfen. Rechtstexte: Vorlagen, vor Launch juristisch prüfen.
+- `docs/BACKLOG.md` Spalte *Status*: 164 Zeilen `offen` (viele sind Presets/Zusammenlegungen unter anderer ID).
