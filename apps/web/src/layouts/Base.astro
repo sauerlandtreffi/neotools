@@ -1,18 +1,20 @@
 ---
+import { getCollection } from 'astro:content';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Seo from '../components/Seo.astro';
 import CommandPalette from '../components/CommandPalette.tsx';
 import ReaderBoot from '../components/ReaderBoot.tsx';
+import ShortcutHelp from '../components/ShortcutHelp.tsx';
+import UpdateBanner from '../components/UpdateBanner.tsx';
 import { branding } from '../lib/branding';
-import { tools } from '../lib/registry';
+import { listPublicTools } from '../lib/visible-tools';
+import { listFormats } from '../data/formats';
+import { buildPaletteItems } from '../lib/palette';
+import { guideSlugFromId } from '../lib/guides';
 import type { Locale } from '../lib/i18n';
 import type { ToolDefinition } from '@neotools/engine';
-
-const toolsJson = JSON.stringify(
-  tools.map((tool) => ({ id: tool.id, title: tool.title, description: tool.description })),
-);
 
 interface Props {
   locale: Locale;
@@ -22,21 +24,42 @@ interface Props {
   tool?: ToolDefinition;
   jsonLd?: unknown[];
   wide?: boolean;
+  noindex?: boolean;
 }
 
-const { locale, title, description, path, tool, jsonLd = [], wide = false } = Astro.props;
+const { locale, title, description, path, tool, jsonLd = [], wide = false, noindex = false } = Astro.props;
 const themeInit = `(function(){try{var t=localStorage.getItem('neotools-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();`;
+
+const publicTools = listPublicTools();
+let guides: Array<{ slug: string; title: string }> = [];
+try {
+  const entries = await getCollection('guides');
+  guides = entries
+    .filter((entry) => entry.data.locale === locale)
+    .map((entry) => ({ slug: guideSlugFromId(entry.id, locale), title: entry.data.title }));
+} catch {
+  guides = [];
+}
+
+const itemsJson = JSON.stringify(
+  buildPaletteItems(
+    locale,
+    publicTools.map((item) => ({ id: item.id, title: item.title, description: item.description })),
+    listFormats().map((format) => ({ id: format.id, names: format.names })),
+    guides,
+  ),
+);
 ---
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} style={`--brand-primary:${branding.colors.primary};--brand-accent:${branding.colors.accent};--brand-ink:${branding.colors.ink}`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content={branding.colors.primary} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={branding.logo} type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <Seo locale={locale} title={title} description={description} path={path} tool={tool} jsonLd={jsonLd} />
+    <Seo locale={locale} title={title} description={description} path={path} tool={tool} jsonLd={jsonLd} noindex={noindex} />
     <script is:inline set:html={themeInit} />
   </head>
   <body class="min-h-screen antialiased">
@@ -46,7 +69,9 @@ const themeInit = `(function(){try{var t=localStorage.getItem('neotools-theme');
     </main>
     <ReaderBoot client:load locale={locale} />
     <Footer locale={locale} />
-    <CommandPalette client:idle locale={locale} toolsJson={toolsJson} />
+    <CommandPalette client:idle locale={locale} itemsJson={itemsJson} />
+    <ShortcutHelp client:idle locale={locale} />
+    <UpdateBanner client:idle locale={locale} />
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {

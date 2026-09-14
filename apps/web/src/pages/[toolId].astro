@@ -1,8 +1,12 @@
 ---
+import { getCollection } from 'astro:content';
 import { zodObjectFields } from '@neotools/engine';
 import Base from '../layouts/Base.astro';
 import ToolApp from '../components/ToolApp.tsx';
 import { registry, toolPaths } from '../lib/registry';
+import { localePath, t } from '../lib/i18n';
+import { formatsForTool } from '../data/formats';
+import { guideSlugFromId } from '../lib/guides';
 
 export function getStaticPaths() {
   return toolPaths();
@@ -17,6 +21,15 @@ const meta = {
   presets: tool.presets,
   ui: tool.ui ?? null,
 };
+const related = formatsForTool(tool);
+let guides: Array<{ slug: string; title: string }> = [];
+try {
+  guides = (await getCollection('guides'))
+    .filter((entry) => entry.data.locale === locale && entry.data.tool === tool.id)
+    .map((entry) => ({ slug: guideSlugFromId(entry.id, locale), title: entry.data.title }));
+} catch {
+  guides = [];
+}
 ---
 <Base locale={locale} title={tool.title.de} description={tool.description.de} path={`/${tool.id}`} tool={tool}>
   <p class="stamp" style="color: var(--accent)">{tool.id}</p>
@@ -25,9 +38,32 @@ const meta = {
   <div class="mt-8">
     <ToolApp client:load locale={locale} toolId={tool.id} fieldsJson={JSON.stringify(fields)} metaJson={JSON.stringify(meta)} />
   </div>
+  {guides.length > 0 && (
+    <section class="mt-12">
+      <h2 class="text-2xl">{t(locale, 'relatedGuides')}</h2>
+      <ul class="mt-3 grid gap-2">
+        {guides.map((guide) => (
+          <li><a href={localePath(locale, `/guides/${guide.slug}`)}>{guide.title}</a></li>
+        ))}
+      </ul>
+    </section>
+  )}
+  {(related.inputs.length > 0 || related.outputs.length > 0) && (
+    <section class="mt-12">
+      <h2 class="text-2xl">{t(locale, 'formats')}</h2>
+      <p class="mt-2 text-sm">
+        {related.inputs.map((f) => (
+          <a class="mr-3" href={localePath(locale, `/formats/${f.id}`)}>{f.names.de}</a>
+        ))}
+        {related.outputs.map((f) => (
+          <a class="mr-3" href={localePath(locale, `/formats/${f.id}`)}>{f.names.de}</a>
+        ))}
+      </p>
+    </section>
+  )}
   {tool.seo?.faq && (
     <section class="mt-12">
-      <h2 class="text-2xl">FAQ</h2>
+      <h2 class="text-2xl">{t(locale, 'faq')}</h2>
       {tool.seo.faq.map((item) => (
         <details class="mt-3">
           <summary>{item.q.de}</summary>

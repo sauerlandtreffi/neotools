@@ -1,0 +1,73 @@
+---
+import { zodObjectFields } from '@neotools/engine';
+import ToolApp from '../ToolApp.tsx';
+import { localePath, t, type Locale } from '../../lib/i18n';
+import { registry } from '../../lib/registry';
+import { listPublicTools } from '../../lib/visible-tools';
+import type { ConversionEdge, FormatRecord } from '../../data/formats';
+import type { FaqItem } from '../../lib/format-faq';
+
+interface Props {
+  locale: Locale;
+  from: FormatRecord;
+  to: FormatRecord;
+  edge: ConversionEdge;
+  faq: FaqItem[];
+}
+const { locale, from, to, edge, faq } = Astro.props;
+const tool = edge.toolId && edge.status === 'available' ? registry.get(edge.toolId) : undefined;
+const visible = tool && listPublicTools().some((item) => item.id === tool.id);
+const fields = tool ? zodObjectFields(tool.options) : [];
+const meta = tool
+  ? {
+      id: tool.id,
+      inputs: tool.inputs,
+      presets: tool.presets,
+      ui: tool.ui ?? null,
+      initialOptions: edge.options ?? {},
+      initialPreset: edge.presetId,
+    }
+  : null;
+---
+<p class="stamp" style="color: var(--accent)">
+  {from.id} → {to.id}
+  {edge.status === 'planned' ? ` · ${t(locale, 'planned')}` : ''}
+</p>
+<h1 class="mt-2 text-4xl">
+  {locale === 'de' ? `${from.names.de} nach ${to.names.de}` : `${from.names.en} to ${to.names.en}`}
+</h1>
+<p class="mt-4 max-w-2xl">
+  {from.typicalUse[locale]} → {to.typicalUse[locale]}
+  {edge.toolId ? ` (${edge.toolId})` : ''}.
+</p>
+<p class="mt-2 text-sm">
+  <a href={localePath(locale, `/formats/${from.id}`)}>{from.names[locale]}</a>
+  ·
+  <a href={localePath(locale, `/formats/${to.id}`)}>{to.names[locale]}</a>
+</p>
+
+{visible && meta && tool ? (
+  <div class="mt-8">
+    <ToolApp
+      client:load
+      locale={locale}
+      toolId={tool.id}
+      fieldsJson={JSON.stringify(fields)}
+      metaJson={JSON.stringify(meta)}
+    />
+  </div>
+) : (
+  <p class="mt-8 rounded-lg border p-4" style="border-color: var(--line); color: var(--muted)">
+    {t(locale, 'toolSoon')}
+  </p>
+)}
+
+<section class="mt-12">
+  <h2 class="text-2xl">{t(locale, 'faq')}</h2>
+  {faq.map((item) => (
+    <details class="mt-3">
+      <summary>{item.q[locale]}</summary>
+      <p class="mt-2" style="color: var(--muted)">{item.a[locale]}</p>
+    </details>
+  ))}
+</section>

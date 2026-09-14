@@ -4,11 +4,11 @@ import ToolGrid from '../components/ToolGrid.astro';
 import HomeSearch from '../components/HomeSearch.tsx';
 import { branding } from '../lib/branding';
 import { localePath, t } from '../lib/i18n';
-import { tools } from '../lib/registry';
+import { listPublicTools } from '../lib/visible-tools';
 
 const locale = 'de' as const;
 const toolsJson = JSON.stringify(
-  tools.map((tool) => ({ id: tool.id, title: tool.title, description: tool.description })),
+  listPublicTools().map((tool) => ({ id: tool.id, title: tool.title, description: tool.description })),
 );
 ---
 <Base locale={locale} title={branding.name} description={branding.tagline.de} path="/">

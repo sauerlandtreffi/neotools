@@ -1,5 +1,6 @@
 import { wrap, proxy } from 'comlink';
 import type { WorkerApi, WorkerFile } from '../worker/tool-worker';
+import { bytesToBlob } from './bytes-blob';
 
 export type { WorkerFile };
 
@@ -16,7 +17,7 @@ export function createToolWorker() {
 }
 
 export function downloadBytes(name: string, data: Uint8Array, mime: string) {
-  const blob = new Blob([data.slice()], { type: mime });
+  const blob = bytesToBlob(data, mime);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

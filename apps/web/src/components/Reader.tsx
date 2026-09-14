@@ -165,6 +165,11 @@ export default function Reader({ locale, toolsJson }: Props) {
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ page: number; x: number; y: number; x2: number; y2: number } | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const pageCount = metrics.length;
 
@@ -489,6 +494,7 @@ export default function Reader({ locale, toolsJson }: Props) {
   return (
     <div
       class="reader-shell"
+      data-reader-ready={hydrated ? '1' : '0'}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();

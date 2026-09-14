@@ -11,5 +11,8 @@
     "ink": "#e8efe9"
   },
   "impressum": "TODO: Impressumsangaben ergänzen (Name, Anschrift, Kontakt).",
-  "privacy": "TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking."
+  "privacy": "TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking.",
+  "hiddenTools": [],
+  "defaultLocale": "de",
+  "footerLinks": []
 }

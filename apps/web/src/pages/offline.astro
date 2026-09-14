@@ -1,0 +1,11 @@
+---
+import Base from '../layouts/Base.astro';
+import { localePath } from '../lib/i18n';
+---
+<Base locale="de" title="Offline" description="Die App-Shell ist da, Packs kommen aus dem Cache" path="/offline">
+  <h1 class="text-4xl">Offline</h1>
+  <p class="mt-4 max-w-2xl">
+    Du siehst diese Seite, weil das Netz fehlt. Die App-Shell und bereits geladene Werkzeuge/WASM liegen im Cache (Stale-While-Revalidate).
+  </p>
+  <p class="mt-3"><a href={localePath('de', '/')}>Zur Startseite</a></p>
+</Base>

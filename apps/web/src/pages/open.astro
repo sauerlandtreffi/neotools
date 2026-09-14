@@ -2,8 +2,8 @@
 import Base from '../layouts/Base.astro';
 import OpenApp from '../components/OpenApp.tsx';
 import ReaderLaunch from '../components/ReaderLaunch.tsx';
-import { tools } from '../lib/registry';
-const payload = JSON.stringify(tools.map((t) => ({ id: t.id, title: t.title, accept: t.inputs.accept })));
+import { listPublicTools } from '../lib/visible-tools';
+const payload = JSON.stringify(listPublicTools().map((t) => ({ id: t.id, title: t.title, accept: t.inputs.accept })));
 ---
 <Base locale="de" title="Datei öffnen" description="Dateityp erkennen und Werkzeug vorschlagen" path="/open">
   <h1 class="text-4xl">Datei öffnen</h1>

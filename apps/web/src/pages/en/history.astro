@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import HistoryApp from '../../components/HistoryApp.tsx';
+---
+<Base locale="en" title="History" description="Local runs, undo, journal without file contents" path="/history">
+  <h1 class="text-4xl">History</h1>
+  <div class="mt-8">
+    <HistoryApp client:load locale="en" />
+  </div>
+</Base>

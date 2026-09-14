@@ -1,29 +1,50 @@
-const VERSION = 'neotools-v0.1.0';
+const VERSION = 'neotools-v0.2.0';
 const PRECACHE = [
   '/',
-  '/index.html',
+  '/offline',
+  '/en/offline',
   '/manifest.webmanifest',
   '/logo.svg',
   '/favicon.svg',
   '/pipeline',
   '/open',
+  '/verlauf',
+  '/formats',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(VERSION).then((cache) => cache.addAll(PRECACHE).catch(() => undefined)),
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))),
-    ),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
   );
-  self.clients.claim();
 });
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+function staleWhileRevalidate(request) {
+  return caches.open(VERSION).then(async (cache) => {
+    const cached = await cache.match(request);
+    const fetched = fetch(request)
+      .then((res) => {
+        if (res.ok) cache.put(request, res.clone());
+        return res;
+      })
+      .catch(() => cached);
+    return cached || fetched;
+  });
+}
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
@@ -33,17 +54,12 @@ self.addEventListener('fetch', (event) => {
   }
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const runtime = /\.(wasm|woff2|ttf|mjs)$/.test(url.pathname);
+  const runtime =
+    /\.(wasm|woff2|ttf)$/.test(url.pathname) ||
+    url.pathname.includes('/assets/') ||
+    url.pathname.includes('/_astro/');
   if (runtime) {
-    event.respondWith(
-      caches.open(VERSION).then(async (cache) => {
-        const cached = await cache.match(req);
-        if (cached) return cached;
-        const res = await fetch(req);
-        if (res.ok) cache.put(req, res.clone());
-        return res;
-      }),
-    );
+    event.respondWith(staleWhileRevalidate(req));
     return;
   }
   event.respondWith(
@@ -53,6 +69,8 @@ self.addEventListener('fetch', (event) => {
         caches.open(VERSION).then((c) => c.put(req, copy));
         return res;
       })
-      .catch(() => caches.match(req).then((c) => c || caches.match('/'))),
+      .catch(() =>
+        caches.match(req).then((c) => c || caches.match('/offline') || caches.match('/')),
+      ),
   );
 });

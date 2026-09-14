@@ -10,6 +10,8 @@ import {
   mergeFixturePdfs,
   pdfBytes,
   readerPdf,
+  tinyPng,
+  uploadFiles,
   uploadPdfs,
 } from './helpers';
 
@@ -38,8 +40,8 @@ test('b) /pdf-merge: zwei PDFs → Download mit 2+ Seiten', async ({ page }) => 
     { name: 'a.pdf', buffer: a },
     { name: 'b.pdf', buffer: b },
   ]);
-  await expect(page.getByText('a.pdf')).toBeVisible();
-  await expect(page.getByText('b.pdf')).toBeVisible();
+  await expect(page.getByText('a.pdf').first()).toBeVisible();
+  await expect(page.getByText('b.pdf').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Ausführen' }).click();
   const downloadBtn = page.getByRole('button', { name: 'Download' });
@@ -79,17 +81,7 @@ test('d) /pdf-redact: Editor lädt, Seite als Canvas gerendert', async ({ page }
   guards.assertClean();
 });
 
-/**
- * Bug (fremder Code, nicht gefixt):
- * `packages/tools-pdf/src/pdfjs.ts` `loadPdfjs`/`openPdfjsDocument` (ca. Z. 7–27)
- * setzt `GlobalWorkerOptions.workerSrc` nicht. Auto-Treffer und `run(pdf-redact)`
- * laufen im Tool-Worker (`apps/web/src/worker/tool-worker.ts` `previewRedact` /
- * `run` → `previewRedactHits`/`collectHits` → `extractPageMaps` → `openPdfjsDocument`)
- * und werfen: `No "GlobalWorkerOptions.workerSrc" specified.`
- * Repro: `/pdf-redact`, PDF mit Text `IBAN DE89370400440532013000`, „Auto-Treffer“.
- * UI zeigt den Fehler als roten Absatz; Markierungsliste bleibt leer.
- */
-test.fixme('d2) /pdf-redact: Auto-Treffer zeigt IBAN, Schwärzen & verifizieren ist grün', async ({
+test('d2) /pdf-redact: Auto-Treffer zeigt IBAN, Schwärzen & verifizieren ist grün', async ({
   page,
 }) => {
   const guards = attachGuards(page);
@@ -161,5 +153,51 @@ test('h) Service Worker + manifest file_handlers', async ({ page }) => {
   });
   const accepts = (manifest.file_handlers ?? []).flatMap((h) => Object.keys(h.accept ?? {}));
   expect(accepts).toContain('application/pdf');
+  guards.assertClean();
+});
+
+test('i) /image-convert: PNG → JPG beginnt mit FFD8', async ({ page }) => {
+  const guards = attachGuards(page);
+  await page.goto('/image-convert');
+  await uploadFiles(page, [{ name: 'in.png', mimeType: 'image/png', buffer: tinyPng() }]);
+  await expect(page.getByText('in.png')).toBeVisible();
+  await page.getByRole('button', { name: 'Ausführen' }).click();
+  const downloadBtn = page.getByRole('button', { name: 'Download' });
+  await expect(downloadBtn).toBeVisible({ timeout: 60_000 });
+  const [download] = await Promise.all([page.waitForEvent('download'), downloadBtn.click()]);
+  const path = await download.path();
+  expect(path, 'Playwright sollte die Datei speichern').toBeTruthy();
+  const bytes = await readFile(path!);
+  expect(bytes[0]).toBe(0xff);
+  expect(bytes[1]).toBe(0xd8);
+  guards.assertClean();
+});
+
+test('j) /formats/jpg rendert und enthält JSON-LD', async ({ page }) => {
+  const guards = attachGuards(page);
+  await page.goto('/formats/jpg');
+  await expect(page.locator('h1')).toBeVisible();
+  await expect(page.locator('h1')).toContainText(/JPEG/i);
+  const jsonLd = page.locator('script[type="application/ld+json"]');
+  expect(await jsonLd.count()).toBeGreaterThan(0);
+  const blobs = await jsonLd.allTextContents();
+  expect(blobs.join('\n')).toMatch(/TechArticle|FAQPage|BreadcrumbList/);
+  guards.assertClean();
+});
+
+test('k) /verlauf zeigt nach einem Tool-Lauf einen Eintrag', async ({ page }) => {
+  const guards = attachGuards(page);
+  const { a, b } = await mergeFixturePdfs();
+  await page.goto('/pdf-merge');
+  await uploadPdfs(page, [
+    { name: 'a.pdf', buffer: a },
+    { name: 'b.pdf', buffer: b },
+  ]);
+  await page.getByRole('button', { name: 'Ausführen' }).click();
+  await expect(page.getByRole('button', { name: 'Download' })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByText(/Im Verlauf gespeichert|Saved in history/)).toBeVisible();
+  await page.goto('/verlauf');
+  await expect(page.locator('h1')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'pdf-merge' })).toBeVisible();
   guards.assertClean();
 });

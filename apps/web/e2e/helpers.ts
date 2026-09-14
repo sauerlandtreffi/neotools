@@ -98,12 +98,37 @@ export async function readerPdf(): Promise<Buffer> {
 }
 
 export async function uploadPdfs(page: Page, files: Array<{ name: string; buffer: Buffer }>) {
-  await page.locator('input[type="file"]').setInputFiles(
-    files.map((file) => ({
-      name: file.name,
-      mimeType: 'application/pdf',
-      buffer: file.buffer,
-    })),
+  await uploadFiles(
+    page,
+    files.map((file) => ({ name: file.name, mimeType: 'application/pdf', buffer: file.buffer })),
+  );
+}
+
+export async function uploadFiles(
+  page: Page,
+  files: Array<{ name: string; mimeType: string; buffer: Buffer }>,
+) {
+  const island = page.locator('[data-tool-ready], [data-reader-ready]');
+  if ((await island.count()) > 0) {
+    await expect(page.locator('[data-tool-ready="1"], [data-reader-ready="1"]')).toBeVisible({
+      timeout: 20_000,
+    });
+  }
+  const dropInput = page.locator('section[role="group"] input[type="file"]');
+  const input = (await dropInput.count()) > 0 ? dropInput : page.locator('input[type="file"]').first();
+  await input.setInputFiles(files);
+  if ((await dropInput.count()) > 0 && files[0]) {
+    await expect(page.getByText(files[0].name, { exact: false }).first()).toBeVisible({
+      timeout: 15_000,
+    });
+  }
+}
+
+/** 2×2 opaque PNG (IHDR+IDAT+IEND), valid for image-convert. */
+export function tinyPng(): Buffer {
+  return Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
   );
 }
 

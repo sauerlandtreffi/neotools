@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { localePath } from '../../lib/i18n';
+import { guideSlugFromId } from '../../lib/guides';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('guides');
+  return entries
+    .filter((entry) => entry.data.locale === 'de')
+    .map((entry) => ({ params: { slug: guideSlugFromId(entry.id, 'de') }, props: { entry } }));
+}
+
+const locale = 'de' as const;
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+<Base locale={locale} title={entry.data.title} description={entry.data.description} path={`/guides/${guideSlugFromId(entry.id, locale)}`}>
+  <p class="stamp" style="color: var(--accent)">{entry.data.updated}</p>
+  <h1 class="mt-2 text-4xl">{entry.data.title}</h1>
+  {entry.data.tool && (
+    <p class="mt-3">
+      Tool: <a href={localePath(locale, `/${entry.data.tool}`)}>{entry.data.tool}</a>
+    </p>
+  )}
+  <article class="prose mt-8 max-w-2xl">
+    <Content />
+  </article>
+</Base>

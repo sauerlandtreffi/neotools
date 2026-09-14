@@ -1,0 +1,21 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { localePath } from '../../../lib/i18n';
+import { listFormats } from '../../../data/formats';
+const locale = 'en' as const;
+const formats = listFormats();
+---
+<Base locale={locale} title="Formats" description="Fact sheets for image, document, archive and media formats" path="/formats">
+  <h1 class="text-4xl">Formats</h1>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">Knowledge base for converters, spec checks and SEO. Tools attach automatically once a pack registers them.</p>
+  <ul class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {formats.map((format) => (
+      <li class="rounded-lg border p-3" style="border-color: var(--line)">
+        <a href={localePath(locale, `/formats/${format.id}`)}>
+          <span class="mono text-xs">{format.id}</span>
+          <div>{format.names.en}</div>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Base>

@@ -1,0 +1,113 @@
+---
+import { localePath, t, type Locale } from '../../lib/i18n';
+import { listPublicTools } from '../../lib/visible-tools';
+import {
+  conversionsFrom,
+  conversionPairId,
+  relatedToolIds,
+  type ConversionEdge,
+  type FormatRecord,
+} from '../../data/formats';
+import type { FaqItem } from '../../lib/format-faq';
+
+interface Props {
+  locale: Locale;
+  format: FormatRecord;
+  conversions: ConversionEdge[];
+  faq: FaqItem[];
+}
+const { locale, format, conversions, faq } = Astro.props;
+const publicIds = new Set(listPublicTools().map((tool) => tool.id));
+const tools = relatedToolIds(format, listPublicTools());
+const outgoing = conversionsFrom(format.id, conversions);
+const browsers = ['chrome', 'firefox', 'safari'] as const;
+---
+<p class="stamp" style="color: var(--accent)">{format.family}</p>
+<h1 class="mt-2 text-4xl">{format.names[locale]}</h1>
+<p class="mono mt-1 text-sm" style="color: var(--muted)">{format.id} · {format.mime.join(', ')}</p>
+<p class="mt-4 max-w-2xl">{format.typicalUse[locale]}</p>
+
+<dl class="mt-6 grid gap-3 sm:grid-cols-2">
+  <div><dt class="stamp">{t(locale, 'family')}</dt><dd>{format.family}</dd></div>
+  <div><dt class="stamp">{t(locale, 'openStandard')}</dt><dd>{format.openStandard ? 'yes' : 'no'}</dd></div>
+  <div><dt class="stamp">lossy / lossless</dt><dd>{String(format.lossy)} / {String(format.lossless)}</dd></div>
+  <div><dt class="stamp">alpha / animation</dt><dd>{String(format.alpha)} / {String(format.animation)}</dd></div>
+  {format.container && <div><dt class="stamp">container</dt><dd>{format.container}</dd></div>}
+  {format.codec && <div><dt class="stamp">codec</dt><dd>{format.codec}</dd></div>}
+  <div><dt class="stamp">year</dt><dd>{format.year}</dd></div>
+  <div><dt class="stamp">spec</dt><dd><a href={format.spec}>{format.spec}</a></dd></div>
+</dl>
+
+{format.patentNotes && (
+  <p class="mt-4 max-w-2xl text-sm" style="color: var(--muted)">
+    <strong>{t(locale, 'patents')}.</strong> {format.patentNotes[locale]}
+  </p>
+)}
+
+<section class="mt-10">
+  <h2 class="text-2xl">{t(locale, 'pros')}</h2>
+  <ul class="mt-2 list-disc pl-5">{format.pros[locale].map((item) => <li>{item}</li>)}</ul>
+  <h2 class="mt-6 text-2xl">{t(locale, 'cons')}</h2>
+  <ul class="mt-2 list-disc pl-5">{format.cons[locale].map((item) => <li>{item}</li>)}</ul>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-2xl">{t(locale, 'browserSupport')}</h2>
+  <table class="mt-3 w-full max-w-lg text-sm">
+    <thead>
+      <tr>
+        <th></th>
+        {browsers.map((b) => <th class="text-left">{b}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="stamp py-1">{t(locale, 'decode')}</td>
+        {browsers.map((b) => <td>{format.browserSupport.decode[b]}</td>)}
+      </tr>
+      <tr>
+        <td class="stamp py-1">{t(locale, 'encode')}</td>
+        {browsers.map((b) => <td>{format.browserSupport.encode[b]}</td>)}
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-2xl">{t(locale, 'convertTo')}</h2>
+  {outgoing.length === 0 && <p class="mt-2" style="color: var(--muted)">{t(locale, 'toolSoon')}</p>}
+  <ul class="mt-3 flex flex-wrap gap-2">
+    {outgoing.map((edge) => (
+      <li>
+        <a
+          class="rounded-full border px-3 py-1 text-sm no-underline"
+          style="border-color: var(--line)"
+          href={localePath(locale, `/convert/${conversionPairId(edge)}`)}
+        >
+          {edge.from} → {edge.to}
+          {edge.status === 'planned' ? ` · ${t(locale, 'planned')}` : ''}
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-2xl">{t(locale, 'relatedTools')}</h2>
+  {tools.length === 0 && <p class="mt-2" style="color: var(--muted)">{t(locale, 'toolSoon')}</p>}
+  <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+    {tools.filter((id) => publicIds.has(id)).map((id) => (
+      <li><a href={localePath(locale, `/${id}`)}>{id}</a></li>
+    ))}
+  </ul>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-2xl">{t(locale, 'faq')}</h2>
+  {faq.map((item) => (
+    <details class="mt-3">
+      <summary>{item.q[locale]}</summary>
+      <p class="mt-2" style="color: var(--muted)">{item.a[locale]}</p>
+    </details>
+  ))}
+</section>

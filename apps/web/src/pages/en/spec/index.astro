@@ -1,0 +1,17 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { localePath } from '../../../lib/i18n';
+import { listPlatformSpecs } from '../../../data/specs';
+const locale = 'en' as const;
+---
+<Base locale={locale} title="Platform limits" description="WhatsApp, Instagram, beA and other limits with source and date" path="/spec">
+  <h1 class="text-4xl">Platform limits</h1>
+  <ul class="mt-8 grid gap-3">
+    {listPlatformSpecs().map((spec) => (
+      <li class="rounded border p-3" style="border-color: var(--line)">
+        <a href={localePath(locale, `/spec/${spec.id}`)}>{spec.name.en}</a>
+        <p class="text-sm" style="color: var(--muted)">{spec.summary.en}</p>
+      </li>
+    ))}
+  </ul>
+</Base>

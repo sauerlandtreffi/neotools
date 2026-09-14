@@ -62,7 +62,34 @@ a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+[role='dialog']:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.prose :is(h2, h3) {
+  margin-top: 1.4em;
+  font-size: 1.25rem;
+}
+.prose p,
+.prose li {
+  margin-top: 0.6em;
+}
+.prose table {
+  width: 100%;
+  margin-top: 1em;
+  font-size: 0.95rem;
 }

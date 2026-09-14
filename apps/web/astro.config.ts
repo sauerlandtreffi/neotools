@@ -10,7 +10,13 @@ const engineBrowser = fileURLToPath(
 );
 const toolsPdf = fileURLToPath(new URL('../../packages/tools-pdf/src/index.ts', import.meta.url));
 const toolsForensics = fileURLToPath(new URL('../../packages/tools-forensics/src/index.ts', import.meta.url));
+const toolsImage = fileURLToPath(new URL('../../packages/tools-image/src/index.ts', import.meta.url));
+const toolsImageAi = fileURLToPath(new URL('../../packages/tools-image-ai/src/index.ts', import.meta.url));
+const toolsDach = fileURLToPath(new URL('../../packages/tools-dach/src/index.ts', import.meta.url));
+const parsers = fileURLToPath(new URL('../../packages/parsers/src/index.ts', import.meta.url));
 const napiStub = fileURLToPath(new URL('./src/stubs/napi-canvas.ts', import.meta.url));
+const resvgStub = fileURLToPath(new URL('./src/stubs/resvg.ts', import.meta.url));
+const onnxNodeStub = fileURLToPath(new URL('./src/stubs/onnxruntime-node.ts', import.meta.url));
 
 export default defineConfig({
   site: 'https://neotools.local',
@@ -21,6 +27,10 @@ export default defineConfig({
       i18n: {
         defaultLocale: 'de',
         locales: { de: 'de-DE', en: 'en' },
+      },
+      filter(page) {
+        // Hidden tools are not generated; planned convert pages stay in the sitemap but send noindex.
+        return !page.includes('/offline');
       },
     }),
   ],
@@ -37,19 +47,46 @@ export default defineConfig({
         '@neotools/engine': engine,
         '@neotools/tools-pdf': toolsPdf,
         '@neotools/tools-forensics': toolsForensics,
+        '@neotools/tools-image': toolsImage,
+        '@neotools/tools-image-ai': toolsImageAi,
+        '@neotools/tools-dach': toolsDach,
+        '@neotools/parsers': parsers,
         '@napi-rs/canvas': napiStub,
+        '@resvg/resvg-js': resvgStub,
+        'onnxruntime-node': onnxNodeStub,
       },
     },
     worker: { format: 'es' },
     assetsInclude: ['**/*.wasm'],
+    build: {
+      reportCompressedSize: false,
+      sourcemap: false,
+      rollupOptions: { maxParallelFileOps: 2 },
+    },
     optimizeDeps: {
-      exclude: ['@napi-rs/canvas', '@jspawn/qpdf-wasm', '@jsquash/jpeg', '@jsquash/png', 'tesseract.js'],
+      exclude: [
+        '@napi-rs/canvas',
+        '@resvg/resvg-js',
+        'onnxruntime-node',
+        '@jspawn/qpdf-wasm',
+        '@jsquash/jpeg',
+        '@jsquash/png',
+        '@jsquash/webp',
+        '@jsquash/avif',
+        '@jsquash/jxl',
+        '@jsquash/oxipng',
+        'tesseract.js',
+      ],
     },
     ssr: {
       noExternal: [
         '@neotools/engine',
         '@neotools/tools-pdf',
         '@neotools/tools-forensics',
+        '@neotools/tools-image',
+        '@neotools/tools-image-ai',
+        '@neotools/tools-dach',
+        '@neotools/parsers',
         'pdfjs-dist',
         'pdf-lib',
         '@cantoo/pdf-lib',

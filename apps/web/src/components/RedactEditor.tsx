@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { loadPdfjs } from '@neotools/tools-pdf';
 import { t, type Locale } from '../lib/i18n';
 import { createToolWorker, downloadBytes, type WorkerFile } from '../lib/worker-client';
 
@@ -72,11 +73,7 @@ export default function RedactEditor({
   useEffect(() => {
     let dead = false;
     (async () => {
-      const pdfjs = await import('pdfjs-dist');
-      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-        'pdfjs-dist/build/pdf.worker.min.mjs',
-        import.meta.url,
-      ).toString();
+      const pdfjs = await loadPdfjs();
       const doc = await pdfjs.getDocument({ data: file.data.slice(), isEvalSupported: false, verbosity: 0 }).promise;
       if (dead) {
         await doc.destroy();
@@ -271,7 +268,6 @@ export default function RedactEditor({
       byPage.set(it.page, list);
     }
     for (const [p, list] of byPage) {
-      let offset = 0;
       const text = list.map((i) => i.str).join('');
       for (const m of text.matchAll(re)) {
         if (m.index === undefined || !m[0]) continue;
@@ -296,7 +292,6 @@ export default function RedactEditor({
           selected: true,
         });
       }
-      void offset;
     }
     push([...marks, ...next]);
   };

@@ -16,6 +16,15 @@ export default defineConfig({
       '@neotools/tools-forensics': fileURLToPath(
         new URL('../../packages/tools-forensics/src/index.ts', import.meta.url),
       ),
+      '@neotools/tools-image': fileURLToPath(
+        new URL('../../packages/tools-image/src/index.ts', import.meta.url),
+      ),
+      '@neotools/tools-dach': fileURLToPath(
+        new URL('../../packages/tools-dach/src/index.ts', import.meta.url),
+      ),
+      '@neotools/parsers': fileURLToPath(
+        new URL('../../packages/parsers/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

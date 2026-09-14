@@ -18,12 +18,13 @@ export default function ZodForm({ fields, values, onChange }: Props) {
   return (
     <div class="grid gap-3 sm:grid-cols-2">
       {fields.map((field) => (
-        <label key={field.name} class="block text-sm">
+        <label key={field.name} class="block text-sm" htmlFor={`opt-${field.name}`}>
           <span class="mono text-xs" style={{ color: 'var(--muted)' }}>
             {field.name}
           </span>
           {field.kind === 'boolean' ? (
             <input
+              id={`opt-${field.name}`}
               class="ml-2 align-middle"
               type="checkbox"
               checked={Boolean(values[field.name] ?? field.defaultValue)}
@@ -31,6 +32,7 @@ export default function ZodForm({ fields, values, onChange }: Props) {
             />
           ) : field.kind === 'enum' ? (
             <select
+              id={`opt-${field.name}`}
               class="mt-1 w-full rounded border px-2 py-2"
               style={{ background: 'var(--card)', borderColor: 'var(--line)' }}
               value={String(values[field.name] ?? field.defaultValue ?? field.enumValues?.[0] ?? '')}
@@ -44,6 +46,7 @@ export default function ZodForm({ fields, values, onChange }: Props) {
             </select>
           ) : field.kind === 'number' ? (
             <input
+              id={`opt-${field.name}`}
               class="mt-1 w-full rounded border px-2 py-2"
               style={{ background: 'var(--card)', borderColor: 'var(--line)' }}
               type="number"
@@ -52,6 +55,7 @@ export default function ZodForm({ fields, values, onChange }: Props) {
             />
           ) : field.kind === 'array' ? (
             <input
+              id={`opt-${field.name}`}
               class="mt-1 w-full rounded border px-2 py-2"
               style={{ background: 'var(--card)', borderColor: 'var(--line)' }}
               value={
@@ -71,6 +75,7 @@ export default function ZodForm({ fields, values, onChange }: Props) {
             />
           ) : (
             <input
+              id={`opt-${field.name}`}
               class="mt-1 w-full rounded border px-2 py-2"
               style={{ background: 'var(--card)', borderColor: 'var(--line)' }}
               type={isPasswordField(field) ? 'password' : 'text'}

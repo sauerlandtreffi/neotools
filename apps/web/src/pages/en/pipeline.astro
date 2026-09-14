@@ -2,9 +2,9 @@
 import { zodObjectFields } from '@neotools/engine';
 import Base from '../../layouts/Base.astro';
 import PipelineBuilder from '../../components/PipelineBuilder.tsx';
-import { tools } from '../../lib/registry';
+import { listPublicTools } from '../../lib/visible-tools';
 
-const catalog = tools.map((tool) => ({
+const catalog = listPublicTools().map((tool) => ({
   id: tool.id,
   title: tool.title,
   fields: zodObjectFields(tool.options),

@@ -1,6 +1,6 @@
 ---
 import { branding } from '../lib/branding';
-import { localePath, type Locale } from '../lib/i18n';
+import { hreflangUrls, localePath, type Locale } from '../lib/i18n';
 import type { ToolDefinition } from '@neotools/engine';
 
 interface Props {
@@ -10,14 +10,17 @@ interface Props {
   path: string;
   tool?: ToolDefinition;
   jsonLd?: unknown[];
+  noindex?: boolean;
 }
 
-const { locale, title, description, path, tool, jsonLd = [] } = Astro.props;
+const { locale, title, description, path, tool, jsonLd = [], noindex = false } = Astro.props;
 const site = Astro.site ?? new URL('https://neotools.local');
 const canonical = new URL(localePath(locale, path), site).toString();
-const deUrl = new URL(localePath('de', path), site).toString();
-const enUrl = new URL(localePath('en', path), site).toString();
+const pair = hreflangUrls(locale, path);
+const deUrl = new URL(pair.de, site).toString();
+const enUrl = new URL(pair.en, site).toString();
 const fullTitle = `${title} · ${branding.name}`;
+const ogImage = new URL(`/og.svg?n=${encodeURIComponent(branding.name)}`, site).toString();
 
 const extra: unknown[] = [...jsonLd];
 if (tool) {
@@ -53,6 +56,7 @@ if (tool) {
 ---
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
+{noindex && <meta name="robots" content="noindex,follow" />}
 <link rel="canonical" href={canonical} />
 <link rel="alternate" hreflang="de" href={deUrl} />
 <link rel="alternate" hreflang="en" href={enUrl} />
@@ -60,6 +64,8 @@ if (tool) {
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:locale" content={locale === 'de' ? 'de_DE' : 'en'} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={branding.name} />
 {extra.map((block) => (
   <script is:inline type="application/ld+json" set:html={JSON.stringify(block)} />
 ))}

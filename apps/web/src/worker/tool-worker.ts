@@ -1,10 +1,14 @@
 import { expose } from 'comlink';
 import { createToolContext, neoFileFromBytes, runTool } from '@neotools/engine';
 import { browserPlatform } from '@neotools/engine/platform/browser';
-import { createPdfRegistry, previewRedactHits } from '@neotools/tools-pdf';
+import { createPdfRegistry, previewRedactHits, loadPdfjs } from '@neotools/tools-pdf';
 import { registerForensicsTools } from '@neotools/tools-forensics';
+import { modelStatus, registerImageAiTools } from '@neotools/tools-image-ai';
+import { registerImageTools } from '@neotools/tools-image';
+import { registerDachTools } from '@neotools/tools-dach';
 
-const registry = registerForensicsTools(createPdfRegistry());
+const registry = registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))));
+void loadPdfjs();
 
 export interface WorkerFile {
   name: string;
@@ -36,6 +40,16 @@ export interface WorkerApi {
     file: WorkerFile,
     options: unknown,
   ): Promise<{ hits: unknown[]; warnings: string[]; pages: number }>;
+  modelStatus(toolId: string): Promise<
+    Array<{
+      id: string;
+      ready: boolean;
+      sizeBytes: number;
+      license: string;
+      confirmMessageDe: string;
+      confirmMessageEn: string;
+    }>
+  >;
 }
 
 const api: WorkerApi = {
@@ -101,6 +115,9 @@ const api: WorkerApi = {
         : [],
       ocrScanned: Boolean(parsed.ocrScanned),
     });
+  },
+  async modelStatus(toolId) {
+    return modelStatus(toolId, browserPlatform());
   },
 };
 

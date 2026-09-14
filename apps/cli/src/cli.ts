@@ -18,8 +18,12 @@ import {
 import { nodePlatformReady } from '@neotools/engine/platform/node';
 import { createPdfRegistry } from '@neotools/tools-pdf';
 import { registerForensicsTools } from '@neotools/tools-forensics';
+import { registerImageAiTools } from '@neotools/tools-image-ai';
+import { registerImageTools } from '@neotools/tools-image';
+import { registerDachTools } from '@neotools/tools-dach';
 import { addZodOptions, optionsFromFlags } from './flags.js';
 import { batchOf, describeTool, hasBatchErrors, jsonResult, printTable } from './format.js';
+import { listModelCatalog, runModelsFetch } from './models-cmd.js';
 
 export const EXIT_OK = 0;
 export const EXIT_ERROR = 1;
@@ -44,7 +48,7 @@ export async function runCli(
   argv: string[],
   io = { stdout: console.log.bind(console), stderr: console.error.bind(console) },
 ): Promise<number> {
-  const registry = registerForensicsTools(createPdfRegistry());
+  const registry = registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))));
   let code = EXIT_OK;
   const program = new Command();
   program.exitOverride();
@@ -194,6 +198,25 @@ export async function runCli(
       else outputs.forEach((p) => io.stdout(p));
       if (hasBatchErrors(result)) code = EXIT_PARTIAL;
     });
+
+  const models = program.command('models').description('Lokale ONNX-/Transformers-Modelle (kein CDN)');
+  models
+    .command('fetch')
+    .argument('[tool]', 'Tool-ID')
+    .option('--all', 'Alle Modelle der Registry')
+    .action(async (tool: string | undefined, flags: { all?: boolean }) => {
+      if (!flags.all && !tool) {
+        io.stderr('neotools models fetch <tool>  oder  --all');
+        code = EXIT_USAGE;
+        return;
+      }
+      code = await runModelsFetch(tool, Boolean(flags.all));
+    });
+  models.command('list').argument('[tool]').action((tool?: string) => {
+    for (const m of listModelCatalog(tool)) {
+      io.stdout(`${m.id.padEnd(22)} ${(m.sizeBytes / 1e6).toFixed(1)} MB  ${m.license}  ${m.tools.join(',')}`);
+    }
+  });
 
   try {
     await program.parseAsync(argv, { from: 'user' });

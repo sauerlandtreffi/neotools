@@ -1,0 +1,21 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { localePath, t } from '../../../lib/i18n';
+import { buildConversionMatrix, conversionPairId, seoConversionEdges } from '../../../data/formats';
+import { registry } from '../../../lib/registry';
+const locale = 'en' as const;
+const edges = seoConversionEdges(buildConversionMatrix(registry));
+---
+<Base locale={locale} title="Convert" description="Local conversion pairs from the registry and the planned matrix" path="/convert">
+  <h1 class="text-4xl">Convert</h1>
+  <ul class="mt-8 grid gap-2 sm:grid-cols-2">
+    {edges.map((edge) => (
+      <li>
+        <a href={localePath(locale, `/convert/${conversionPairId(edge)}`)}>
+          {edge.from} → {edge.to}
+          {edge.status === 'planned' ? ` · ${t(locale, 'planned')}` : ''}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Base>

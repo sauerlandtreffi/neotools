@@ -1,0 +1,44 @@
+---
+import { localePath, t, type Locale } from '../../lib/i18n';
+import { listPublicTools } from '../../lib/visible-tools';
+import type { PlatformSpec } from '../../data/specs';
+
+interface Props {
+  locale: Locale;
+  spec: PlatformSpec;
+}
+const { locale, spec } = Astro.props;
+const publicIds = new Set(listPublicTools().map((tool) => tool.id));
+---
+<p class="stamp" style="color: var(--accent)">{spec.id}</p>
+<h1 class="mt-2 text-4xl">{spec.name[locale]}</h1>
+<p class="mt-4 max-w-2xl">{spec.summary[locale]}</p>
+<p class="mt-3 text-sm" style="color: var(--muted)">
+  Quelle: <a href={spec.source.url}>{spec.source.label}</a> · {spec.source.retrieved}
+</p>
+
+<table class="mt-8 w-full text-sm">
+  <tbody>
+    {spec.limits.map((limit) => (
+      <tr class="border-b" style="border-color: var(--line)">
+        <th class="py-2 text-left align-top">{limit.label[locale]}</th>
+        <td class="py-2">{limit.value[locale]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+{spec.notes && <p class="mt-4 max-w-2xl text-sm">{spec.notes[locale]}</p>}
+<p class="mt-4 text-sm" style="color: var(--muted)">{t(locale, 'makeFitLater')}</p>
+
+<section class="mt-8">
+  <h2 class="text-2xl">{t(locale, 'relatedTools')}</h2>
+  <ul class="mt-3 grid gap-2">
+    {spec.relatedTools.filter((id) => publicIds.has(id)).map((id) => (
+      <li><a href={localePath(locale, `/${id}`)}>{id}</a></li>
+    ))}
+    {spec.relatedFormats.map((id) => (
+      <li><a href={localePath(locale, `/formats/${id}`)}>{id}</a></li>
+    ))}
+  </ul>
+</section>

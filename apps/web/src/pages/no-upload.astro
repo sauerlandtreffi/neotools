@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base locale="de" title="Kein Upload" description="Wie du prüfst, dass Dateien das Gerät nicht verlassen" path="/no-upload">
+  <h1 class="text-4xl">Kein Upload</h1>
+  <p class="mt-4 max-w-2xl">
+    NeoTools ist eine statische Seite. Dateien laufen im Web Worker auf diesem Gerät. Es gibt keinen Server-Endpunkt, der Bytes entgegennimmt.
+  </p>
+  <ol class="mt-6 max-w-2xl list-decimal pl-6">
+    <li>DevTools öffnen (F12) → Tab <strong>Network</strong>.</li>
+    <li>Filter auf „Fetch/XHR“ und „Doc“ setzen, „Disable cache“ an.</li>
+    <li>Ein Werkzeug ausführen.</li>
+    <li>Es darf kein Request zu einem <em>fremden</em> Host mit der Datei als Body erscheinen.</li>
+    <li>Same-Origin-Ladevorgänge (`/_astro/`, `/assets/*.wasm`) sind keine Uploads — der Indikator zählt sie nicht.</li>
+  </ol>
+  <p class="mt-4 max-w-2xl text-sm" style="color: var(--muted)">
+    Der Status „0 Bytes gesendet“ im Tool-Header kommt aus <span class="mono">PerformanceObserver</span> (`resource`). Nur fremde Origins erhöhen den Zähler.
+  </p>
+</Base>

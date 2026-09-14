@@ -1,17 +1,29 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { FormField } from '@neotools/engine';
+import { encodePipelineHash } from '@neotools/engine';
+import { assessExtension, type ExtensionAssessment } from '../lib/assess-extension';
 import ZodForm from './ZodForm';
 import VerificationBlock from './VerificationBlock';
 import RedactEditor from './RedactEditor';
+import ImageBoxEditor from './ImageBoxEditor';
+import DropZone from './DropZone';
+import NetworkStatus from './NetworkStatus';
+import ModelConfirm from './ModelConfirm';
 import { localePath, t, type Locale } from '../lib/i18n';
 import { createToolWorker, downloadBytes, zipDownload, type WorkerFile } from '../lib/worker-client';
 import { putHandoffResult, takeHandoff } from '../lib/desktop-handoff';
+import { getBrowserHistoryStore } from '../lib/history';
+import { readToolQuery } from '../lib/options-url';
+import { bytesToBlob } from '../lib/bytes-blob';
+import MarkdownOutput from './MarkdownOutput';
 
 export interface ToolMeta {
   id: string;
   inputs: { accept: string[]; multiple: boolean };
   presets?: Array<{ id: string; title: Record<'de' | 'en', string>; options: Record<string, unknown> }>;
   ui?: { editor?: string };
+  initialOptions?: Record<string, unknown>;
+  initialPreset?: string;
 }
 
 interface Props {
@@ -31,15 +43,51 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
   const fields = JSON.parse(fieldsJson) as FormField[];
   const meta = JSON.parse(metaJson) as ToolMeta;
   const [files, setFiles] = useState<WorkerFile[]>([]);
-  const [values, setValues] = useState<Record<string, unknown>>(defaultsFrom(fields));
+  const [values, setValues] = useState<Record<string, unknown>>(() => ({
+    ...defaultsFrom(fields),
+    ...(meta.initialOptions ?? {}),
+    ...(meta.presets?.find((p) => p.id === meta.initialPreset)?.options ?? {}),
+  }));
   const [progress, setProgress] = useState<{ v: number; m?: string } | null>(null);
   const [outputs, setOutputs] = useState<WorkerFile[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [report, setReport] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<'input' | 'result'>('input');
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [assessments, setAssessments] = useState<ExtensionAssessment[]>([]);
+  const [riskOk, setRiskOk] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const session = useRef<ReturnType<typeof createToolWorker> | null>(null);
 
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   useEffect(() => () => session.current?.terminate(), []);
+
+  useEffect(() => {
+    const query = readToolQuery();
+    if (query.preset && meta.presets) {
+      const preset = meta.presets.find((p) => p.id === query.preset);
+      if (preset) setValues((v) => ({ ...v, ...preset.options }));
+    }
+    if (query.options) setValues((v) => ({ ...v, ...query.options }));
+    if (query.rerun) {
+      void getBrowserHistoryStore()
+        .get(query.rerun)
+        .then(async (record) => {
+          if (!record || record.toolId !== toolId) return;
+          setValues((v) => ({ ...v, ...(record.options as Record<string, unknown>) }));
+          const restored: WorkerFile[] = [];
+          for (const ref of record.inputs) {
+            const data = await getBrowserHistoryStore().readBlob(ref);
+            if (data) restored.push({ name: ref.name, mime: ref.mime, data });
+          }
+          if (restored.length) setFiles(restored);
+        });
+    }
+  }, [meta.presets, toolId]);
 
   useEffect(() => {
     void takeHandoff().then((incoming) => {
@@ -57,13 +105,38 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
   const addFiles = async (list: File[]) => {
     const next: WorkerFile[] = [];
     for (const file of list) {
-      next.push({
-        name: file.name,
-        mime: file.type || guessMime(file.name),
-        data: new Uint8Array(await file.arrayBuffer()),
-      });
+      const data = new Uint8Array(await file.arrayBuffer());
+      const mime = file.type || guessMime(file.name);
+      next.push({ name: file.name, mime, data });
     }
+    setRiskOk(false);
     setFiles((prev) => (meta.inputs.multiple ? [...prev, ...next] : next.slice(-1)));
+    const nextAssess: ExtensionAssessment[] = [];
+    for (const file of next) {
+      try {
+        nextAssess.push(await assessExtension({ name: file.name, mime: file.mime, bytes: file.data }));
+      } catch {
+        // forensics optional if pack API changes
+      }
+    }
+    setAssessments((prev) => (meta.inputs.multiple ? [...prev, ...nextAssess] : nextAssess.slice(-1)));
+  };
+
+  const risky = assessments.some((a) => a.mismatch || a.dangerous || a.severity === 'medium' || a.severity === 'high' || a.severity === 'critical');
+
+  const persistResult = async (nextOutputs: WorkerFile[], nextReport: Record<string, unknown> | null) => {
+    try {
+      const record = await getBrowserHistoryStore().save({
+        toolId,
+        options: values,
+        inputs: files,
+        outputs: nextOutputs,
+        report: nextReport ?? undefined,
+      });
+      setHistoryId(record.id);
+    } catch {
+      setHistoryId(null);
+    }
   };
 
   const run = async () => {
@@ -83,6 +156,8 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
       setWarnings(result.warnings);
       setReport(result.report ?? null);
       setProgress({ v: 1, m: 'OK' });
+      setPhase('result');
+      void persistResult(result.outputs, result.report ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -97,17 +172,50 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
   const batch = (report?.batch as BatchRow[] | undefined) ?? [];
 
   return (
-    <div class="grid gap-6">
-      <Drop
-        locale={locale}
-        accept={meta.inputs.accept.join(',')}
-        multiple={meta.inputs.multiple}
-        files={files}
-        onFiles={addFiles}
-        onClear={() => setFiles([])}
-      />
+    <div class="grid gap-6" data-tool-ready={hydrated ? '1' : '0'}>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <NetworkStatus locale={locale} />
+        {phase === 'result' && (
+          <button type="button" class="text-sm underline" onClick={() => setPhase('input')}>
+            {t(locale, 'undo')}
+          </button>
+        )}
+      </div>
 
-      {meta.presets && meta.presets.length > 0 && (
+      {phase === 'input' && (
+        <DropZone
+          locale={locale}
+          accept={meta.inputs.accept.join(',')}
+          multiple={meta.inputs.multiple}
+          files={files}
+          assessments={assessments}
+          onFiles={addFiles}
+          onClear={() => {
+            setFiles([]);
+            setAssessments([]);
+            setRiskOk(false);
+          }}
+        />
+      )}
+
+      {risky && phase === 'input' && (
+        <aside class="rounded-lg border p-4" style={{ borderColor: '#c45c26' }} role="alert">
+          <strong>{t(locale, 'riskBanner')}</strong>
+          <ul class="mt-2 list-disc pl-5 text-sm">
+            {assessments.flatMap((item) =>
+              item.reasons.map((reason) => (
+                <li key={`${item.file}-${reason[locale]}`}>{reason[locale]}</li>
+              )),
+            )}
+          </ul>
+          <label class="mt-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={riskOk} onChange={(e) => setRiskOk((e.target as HTMLInputElement).checked)} />
+            {t(locale, 'confirmProcess')}
+          </label>
+        </aside>
+      )}
+
+      {meta.presets && meta.presets.length > 0 && phase === 'input' && (
         <section>
           <h2 class="stamp mb-2">{t(locale, 'presets')}</h2>
           <div class="flex flex-wrap gap-2">
@@ -126,12 +234,27 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
         </section>
       )}
 
-      <section>
-        <h2 class="stamp mb-2">{t(locale, 'options')}</h2>
-        <ZodForm fields={fields} values={values} onChange={setValues} />
-      </section>
+      {phase === 'input' && (
+        <section>
+          <h2 class="stamp mb-2">{t(locale, 'options')}</h2>
+          <ZodForm fields={fields} values={values} onChange={setValues} />
+        </section>
+      )}
 
-      {(meta.ui?.editor === 'redact' || toolId === 'pdf-redact') && files[0] && (
+      {phase === 'input' && (
+        <ModelConfirm
+          locale={locale}
+          toolId={toolId}
+          confirmed={Boolean(values.confirmModelDownload)}
+          onConfirm={(next) => setValues((v) => ({ ...v, confirmModelDownload: next }))}
+        />
+      )}
+
+      {meta.ui?.editor === 'image-boxes' && files[0] && phase === 'input' && (
+        <ImageBoxEditor locale={locale} file={files[0]} values={values} onChangeValues={setValues} />
+      )}
+
+      {(meta.ui?.editor === 'redact' || toolId === 'pdf-redact') && files[0] && phase === 'input' && (
         <RedactEditor
           locale={locale}
           file={files[0]}
@@ -141,26 +264,30 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
             setOutputs(result.outputs);
             setWarnings(result.warnings);
             setReport(result.report ?? null);
+            setPhase('result');
+            void persistResult(result.outputs, result.report ?? null);
           }}
           onProgress={setProgress}
           onError={setError}
         />
       )}
 
-      <div class="flex gap-3">
-        <button
-          type="button"
-          class="rounded-md px-4 py-2 font-medium"
-          style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
-          disabled={!files.length}
-          onClick={run}
-        >
-          {t(locale, 'run')}
-        </button>
-        <button type="button" class="rounded-md border px-4 py-2" style={{ borderColor: 'var(--line)' }} onClick={cancel}>
-          {t(locale, 'cancel')}
-        </button>
-      </div>
+      {phase === 'input' && (
+        <div class="flex gap-3">
+          <button
+            type="button"
+            class="rounded-md px-4 py-2 font-medium"
+            style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
+            disabled={!files.length || (risky && !riskOk)}
+            onClick={run}
+          >
+            {t(locale, 'run')}
+          </button>
+          <button type="button" class="rounded-md border px-4 py-2" style={{ borderColor: 'var(--line)' }} onClick={cancel}>
+            {t(locale, 'cancel')}
+          </button>
+        </div>
+      )}
 
       {progress && (
         <div>
@@ -177,6 +304,13 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
           {w}
         </p>
       ))}
+
+      {historyId && (
+        <p class="text-sm" role="status">
+          {t(locale, 'historySaved')} ·{' '}
+          <a href={localePath(locale, locale === 'de' ? '/verlauf' : '/history')}>{t(locale, 'history')}</a>
+        </p>
+      )}
 
       {batch.length > 0 && (
         <section>
@@ -220,10 +354,27 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
             {outputs.map((file) => (
               <li
                 key={file.name}
-                class="flex items-center justify-between rounded border px-3 py-2"
+                class="flex items-center justify-between gap-3 rounded border px-3 py-2"
                 style={{ borderColor: 'var(--line)' }}
               >
-                <span>{file.name}</span>
+                <span class="flex min-w-0 items-center gap-3">
+                  {isImageOutput(file.mime, file.name) && (
+                    <span class="flex items-center gap-2">
+                      {files[0] && isImageOutput(files[0].mime, files[0].name) && (
+                        <Thumb bytes={files[0].data} mime={files[0].mime} label={t(locale, 'before')} />
+                      )}
+                      <Thumb bytes={file.data} mime={file.mime} label={t(locale, 'after')} />
+                    </span>
+                  )}
+                  <span class="min-w-0">
+                    <span class="truncate">{file.name}</span>
+                    {(file.mime === 'text/markdown' || file.name.toLowerCase().endsWith('.md')) && (
+                      <div class="mt-2 max-h-80 overflow-auto text-left">
+                        <MarkdownOutput markdown={new TextDecoder().decode(file.data)} />
+                      </div>
+                    )}
+                  </span>
+                </span>
                 <span class="flex gap-3">
                   {(file.mime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && (
                     <button
@@ -244,6 +395,16 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
               </li>
             ))}
           </ul>
+          <button
+            type="button"
+            class="stamp mt-3"
+            onClick={() => {
+              const hash = encodePipelineHash({ steps: [{ toolId, options: values }] });
+              location.assign(`${localePath(locale, '/pipeline')}${hash}`);
+            }}
+          >
+            {t(locale, 'savePipeline')}
+          </button>
         </section>
       )}
     </div>
@@ -261,83 +422,28 @@ function guessMime(name: string): string {
   if (lower.endsWith('.pdf')) return 'application/pdf';
   if (lower.endsWith('.png')) return 'image/png';
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.avif')) return 'image/avif';
+  if (lower.endsWith('.bmp')) return 'image/bmp';
+  if (lower.endsWith('.tif') || lower.endsWith('.tiff')) return 'image/tiff';
+  if (lower.endsWith('.svg')) return 'image/svg+xml';
+  if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic';
+  if (lower.endsWith('.ico')) return 'image/x-icon';
+  if (lower.endsWith('.jxl')) return 'image/jxl';
   return 'application/octet-stream';
 }
 
-function Drop({
-  locale,
-  accept,
-  multiple,
-  files,
-  onFiles,
-  onClear,
-}: {
-  locale: Locale;
-  accept: string;
-  multiple: boolean;
-  files: WorkerFile[];
-  onFiles: (files: File[]) => Promise<void>;
-  onClear: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const onPaste = (e: ClipboardEvent) => {
-      const list = [...(e.clipboardData?.files ?? [])];
-      if (list.length) void onFiles(list);
-    };
-    window.addEventListener('paste', onPaste);
-    return () => window.removeEventListener('paste', onPaste);
-  }, [onFiles]);
+function isImageOutput(mime: string, name: string): boolean {
+  return mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|avif|bmp|tiff?|ico)$/i.test(name);
+}
 
+function Thumb({ bytes, mime, label }: { bytes: Uint8Array; mime: string; label: string }) {
+  const url = URL.createObjectURL(bytesToBlob(bytes, mime || 'image/png'));
   return (
-    <section
-      class="rounded-xl border-2 border-dashed p-8 text-center"
-      style={{
-        borderColor: 'var(--accent)',
-        background: 'color-mix(in oklab, var(--card) 80%, transparent)',
-      }}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        void onFiles([...(e.dataTransfer?.files ?? [])]);
-      }}
-    >
-      <p class="text-xl">{t(locale, 'drop')}</p>
-      <p class="stamp mt-1" style={{ color: 'var(--muted)' }}>
-        {t(locale, 'dropHint')}
-      </p>
-      <button
-        type="button"
-        class="mt-4 rounded-md border px-4 py-2"
-        style={{ borderColor: 'var(--line)' }}
-        onClick={() => inputRef.current?.click()}
-      >
-        {t(locale, 'choose')}
-      </button>
-      <input
-        ref={inputRef}
-        class="hidden"
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        onChange={(e) => {
-          const list = [...((e.target as HTMLInputElement).files ?? [])];
-          if (list.length) void onFiles(list);
-        }}
-      />
-      <ul class="mx-auto mt-4 max-w-md text-left text-sm">
-        {files.length === 0 && <li style={{ color: 'var(--muted)' }}>{t(locale, 'empty')}</li>}
-        {files.map((f) => (
-          <li key={f.name}>
-            {f.name} · {(f.data.byteLength / 1024).toFixed(1)} KB
-          </li>
-        ))}
-      </ul>
-      {files.length > 0 && (
-        <button type="button" class="stamp mt-2" onClick={onClear}>
-          reset
-        </button>
-      )}
-    </section>
+    <span class="grid justify-items-center text-[10px]" style={{ color: 'var(--muted)' }}>
+      <img src={url} alt={label} class="h-12 w-12 rounded object-cover" onLoad={() => URL.revokeObjectURL(url)} />
+      {label}
+    </span>
   );
 }

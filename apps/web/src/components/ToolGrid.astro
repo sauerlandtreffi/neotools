@@ -1,9 +1,10 @@
 ---
-import { tools } from '../lib/registry';
+import { listPublicTools } from '../lib/visible-tools';
 import { categoryLabels, localePath, type Locale } from '../lib/i18n';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
+const tools = listPublicTools();
 const categories = [...new Set(tools.map((t) => t.category))];
 ---
 <section id="tools">
