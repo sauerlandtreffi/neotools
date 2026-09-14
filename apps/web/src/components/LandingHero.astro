@@ -1,0 +1,39 @@
+---
+import HomeSearch from './HomeSearch.tsx';
+import { branding } from '../lib/branding';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  toolsJson: string;
+}
+const { locale, toolsJson } = Astro.props;
+const de = locale === 'de';
+---
+<section class="mb-12 grid gap-8 md:grid-cols-[1.25fr_0.75fr] md:items-end">
+  <div>
+    <p class="stamp" style="color: var(--accent)">
+      {de ? 'Lokal · kein Upload · kein Tracking' : 'Local · no upload · no tracking'}
+    </p>
+    <h1 class="mt-3 text-4xl leading-tight tracking-tight md:text-5xl">
+      {de
+        ? 'Alle Tools laufen auf deinem Gerät. Kein Upload. Kein Wasserzeichen. Kostenlos.'
+        : 'Every tool runs on your device. No upload. No watermark. Free.'}
+    </h1>
+    <p class="mt-4 max-w-xl text-lg" style="color: var(--muted)">
+      {branding.tagline[locale]}
+      {' '}
+      {de
+        ? 'Web, CLI und Desktop nutzen dieselbe Engine.'
+        : 'Web, CLI and desktop share the same engine.'}
+    </p>
+    <p class="mt-3 max-w-xl text-sm" style="color: var(--muted)">
+      <a href={localePath(locale, '/reader')}>{de ? 'PDF-Reader' : 'PDF reader'}</a>
+      {' · '}
+      <a href={localePath(locale, '/pipeline')}>Pipeline</a>
+      {' · '}
+      <a href={localePath(locale, '/guides')}>{de ? 'Anleitungen' : 'Guides'}</a>
+    </p>
+  </div>
+  <HomeSearch client:load locale={locale} toolsJson={toolsJson} />
+</section>

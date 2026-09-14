@@ -1,0 +1,72 @@
+---
+import { COMPARE_AS_OF, COMPARE_PAGES, comparePath, type CompareId } from './LandingCompareData';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  id: CompareId;
+}
+const { locale, id } = Astro.props;
+const de = locale === 'de';
+const page = COMPARE_PAGES[id];
+const others = (Object.keys(COMPARE_PAGES) as CompareId[]).filter((item) => item !== id);
+---
+<p class="stamp" style="color: var(--accent)">
+  {de ? `Stand ${COMPARE_AS_OF}` : `As of ${COMPARE_AS_OF}`}
+</p>
+<h1 class="mt-2 text-4xl">{de ? `NeoTools und ${page.name}` : `NeoTools and ${page.name}`}</h1>
+<p class="mt-4 max-w-2xl" style="color: var(--muted)">{page.summary[locale]}</p>
+<p class="mt-2 text-sm">
+  {de ? 'Anbieterseite:' : 'Vendor site:'}
+  <a href={page.site} rel="nofollow noopener">{page.site}</a>
+</p>
+
+<div class="mt-8 overflow-x-auto">
+  <table class="w-full min-w-[40rem] text-left text-sm">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--line)">
+        <th class="py-2 pr-4">{de ? 'Kriterium' : 'Criterion'}</th>
+        <th class="py-2 pr-4">NeoTools</th>
+        <th class="py-2">{page.name}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {page.rows.map((row) => (
+        <tr style="border-bottom: 1px solid var(--line)">
+          <th class="py-3 pr-4 align-top font-normal">{row.criterion[locale]}</th>
+          <td class="py-3 pr-4 align-top">{row.neo[locale]}</td>
+          <td class="py-3 align-top">{row.other[locale]}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<p class="mt-4 max-w-2xl text-sm" style="color: var(--muted)">{page.notes[locale]}</p>
+
+<section class="mt-10 max-w-2xl">
+  <h2 class="text-2xl">{de ? 'Fragen' : 'Questions'}</h2>
+  {page.faq.map((item) => (
+    <div class="mt-6">
+      <h3 class="text-lg">{item.q[locale]}</h3>
+      <p class="mt-2" style="color: var(--muted)">{item.a[locale]}</p>
+    </div>
+  ))}
+</section>
+
+<nav class="mt-10 text-sm" aria-label={de ? 'Weitere Vergleiche' : 'Other comparisons'}>
+  <p class="stamp mb-3" style="color: var(--muted)">{de ? 'Weitere Tabellen' : 'Other tables'}</p>
+  <ul class="flex flex-wrap gap-4">
+    {others.map((item) => {
+      const p = comparePath(locale, item);
+      return (
+        <li>
+          <a href={p.current}>{COMPARE_PAGES[item].name}</a>
+        </li>
+      );
+    })}
+    <li>
+      <a href={localePath(locale, '/')}>{de ? 'Start' : 'Home'}</a>
+    </li>
+  </ul>
+</nav>

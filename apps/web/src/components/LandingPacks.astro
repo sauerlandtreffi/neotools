@@ -1,0 +1,42 @@
+---
+import LandingPackIcon from './LandingPackIcon.astro';
+import { PACK_META, PACK_ORDER, type PackId } from './LandingCopy';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  counts: Record<string, number>;
+}
+const { locale, counts } = Astro.props;
+const de = locale === 'de';
+const packs = PACK_ORDER.filter((id) => (counts[id] ?? 0) > 0);
+---
+<section id="packs" class="mb-14">
+  <h2 class="text-2xl">{de ? 'Packs' : 'Packs'}</h2>
+  <p class="mt-2 max-w-2xl text-sm" style="color: var(--muted)">
+    {de
+      ? 'Jede Karte zählt registrierte Tools des Packs. Das Raster darunter listet alle öffentlichen Werkzeuge.'
+      : 'Each card counts registered tools in that pack. The grid below lists every public tool.'}
+  </p>
+  <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {packs.map((id: PackId) => {
+      const meta = PACK_META[id];
+      return (
+        <a
+          href={localePath(locale, meta.href)}
+          class="flex gap-3 rounded-lg border p-4 no-underline transition hover:-translate-y-0.5"
+          style="border-color: var(--line); background: var(--card)"
+        >
+          <span class="mt-0.5" style="color: var(--accent)">
+            <LandingPackIcon pack={id} />
+          </span>
+          <span>
+            <span class="mono text-xs" style="color: var(--accent)">{counts[id] ?? 0}</span>
+            <h3 class="text-lg">{meta[locale]}</h3>
+            <p class="mt-1 text-sm" style="color: var(--muted)">{meta.hint[locale]}</p>
+          </span>
+        </a>
+      );
+    })}
+  </div>
+</section>

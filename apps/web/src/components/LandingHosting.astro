@@ -1,0 +1,33 @@
+---
+import { branding, brandingContactEmail } from '../lib/branding';
+import { landingHref } from './LandingCopy';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+const email = brandingContactEmail(branding);
+---
+<section class="mb-14 rounded-lg border p-6" style="border-color: var(--line); background: var(--card)">
+  <h2 class="text-2xl">{de ? 'Self-Hosting für Kanzlei und Behörde' : 'Self-hosting for firms and public bodies'}</h2>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">
+    {de
+      ? 'Community bleibt vollständig: alle Tools in Web, Desktop und CLI. Pro schaltet API, Watch, Team-Presets, White-Label und ein signiertes Audit-Log frei. Dateien liegen bei euch, nicht bei uns.'
+      : 'Community stays complete: every tool in web, desktop and CLI. Pro unlocks API, watch, team presets, white-label and a signed audit log. Files stay with you, not with us.'}
+  </p>
+  <p class="mt-4 flex flex-wrap gap-4 text-sm">
+    <a href={landingHref(locale, '/preise', '/en/pricing')}>{de ? 'Pläne' : 'Plans'}</a>
+    <a href={localePath(locale, '/guides/self-hosting-docker')}>
+      {de ? 'Docker-Anleitung' : 'Docker guide'}
+    </a>
+    {email ? (
+      <a href={`mailto:${email}`}>{email}</a>
+    ) : (
+      <span style="color: var(--muted)">
+        {de ? 'Kontakt: contact.email in branding.json' : 'Contact: contact.email in branding.json'}
+      </span>
+    )}
+  </p>
+</section>

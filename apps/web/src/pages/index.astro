@@ -1,28 +1,52 @@
 ---
 import Base from '../layouts/Base.astro';
 import ToolGrid from '../components/ToolGrid.astro';
-import HomeSearch from '../components/HomeSearch.tsx';
+import LandingHero from '../components/LandingHero.astro';
+import LandingStats from '../components/LandingStats.astro';
+import LandingPacks from '../components/LandingPacks.astro';
+import LandingDifferentiators from '../components/LandingDifferentiators.astro';
+import LandingNoUpload from '../components/LandingNoUpload.astro';
+import LandingDesktop from '../components/LandingDesktop.astro';
+import LandingHosting from '../components/LandingHosting.astro';
+import LandingCompareTeaser from '../components/LandingCompareTeaser.astro';
+import { PACK_ORDER } from '../components/LandingCopy';
 import { branding } from '../lib/branding';
-import { localePath, t } from '../lib/i18n';
+import { listFormats } from '../data/formats';
+import { registry } from '../lib/registry';
 import { listPublicTools } from '../lib/visible-tools';
 
 const locale = 'de' as const;
+const registered = registry.list();
 const toolsJson = JSON.stringify(
   listPublicTools().map((tool) => ({ id: tool.id, title: tool.title, description: tool.description })),
 );
+const counts: Record<string, number> = {};
+for (const id of PACK_ORDER) {
+  if (id === 'a11y') {
+    counts[id] = registered.filter((tool) => tool.pack === 'a11y' || tool.category === 'ai').length;
+  } else {
+    counts[id] = registered.filter((tool) => tool.pack === id).length;
+  }
+}
 ---
-<Base locale={locale} title={branding.name} description={branding.tagline.de} path="/">
-  <section class="mb-12 grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-end">
-    <div>
-      <p class="stamp" style="color: var(--accent)">{t(locale, 'localBadge')}</p>
-      <h1 class="mt-2 text-5xl leading-tight tracking-tight">{branding.tagline.de}</h1>
-      <p class="mt-4 max-w-xl text-lg" style="color: var(--muted)">
-        Zusammenführen, teilen, drehen, Metadaten, Sanitize — alles im Browser, per CLI oder Self-Hosting.
-        Kein Wasserzeichen, kein CDN zur Laufzeit.
-        <a class="ml-1" href={localePath(locale, '/reader')}>{t(locale, 'reader')}</a>
-      </p>
-    </div>
-    <HomeSearch client:load locale={locale} toolsJson={toolsJson} />
-  </section>
+<Base
+  locale={locale}
+  title={branding.name}
+  description="Alle Tools laufen auf deinem Gerät. Kein Upload. Kein Wasserzeichen. Kostenlos."
+  path="/"
+>
+  <LandingHero locale={locale} toolsJson={toolsJson} />
+  <LandingStats
+    locale={locale}
+    tools={registered.length}
+    packs={new Set(registered.map((tool) => tool.pack)).size}
+    formats={listFormats().length}
+  />
+  <LandingPacks locale={locale} counts={counts} />
+  <LandingDifferentiators locale={locale} />
+  <LandingNoUpload locale={locale} />
+  <LandingDesktop locale={locale} />
+  <LandingHosting locale={locale} />
+  <LandingCompareTeaser locale={locale} />
   <ToolGrid locale={locale} />
 </Base>

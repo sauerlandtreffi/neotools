@@ -1,0 +1,31 @@
+---
+import { landingHref } from './LandingCopy';
+import { type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+const rows = [
+  { id: 'ilovepdf', label: 'iLovePDF', de: '/vergleich/ilovepdf', en: '/en/compare/ilovepdf' },
+  { id: 'smallpdf', label: 'Smallpdf', de: '/vergleich/smallpdf', en: '/en/compare/smallpdf' },
+  { id: 'adobe-acrobat', label: 'Adobe Acrobat', de: '/vergleich/adobe-acrobat', en: '/en/compare/adobe-acrobat' },
+  { id: 'ihatepdf', label: 'iHatePDF', de: '/vergleich/ihatepdf', en: '/en/compare/ihatepdf' },
+] as const;
+---
+<section class="mb-14">
+  <h2 class="text-2xl">{de ? 'Sachlicher Vergleich' : 'Factual comparison'}</h2>
+  <p class="mt-2 max-w-2xl text-sm" style="color: var(--muted)">
+    {de
+      ? 'Nur öffentlich bekannte Produktdaten, mit Stand-Datum. Keine Wertung.'
+      : 'Publicly known product facts only, with a retrieval date. No ranking.'}
+  </p>
+  <ul class="mt-4 flex flex-wrap gap-4 text-sm">
+    {rows.map((row) => (
+      <li>
+        <a href={landingHref(locale, row.de, row.en)}>{row.label}</a>
+      </li>
+    ))}
+  </ul>
+</section>

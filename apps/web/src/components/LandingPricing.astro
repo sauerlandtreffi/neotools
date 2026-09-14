@@ -1,0 +1,93 @@
+---
+import {
+  branding,
+  brandingContactEmail,
+  brandingPrice,
+} from '../lib/branding';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+const email = brandingContactEmail(branding);
+const proY = brandingPrice(branding.pricing.pro.yearly, locale);
+const proM = brandingPrice(branding.pricing.pro.monthly, locale);
+const entY = brandingPrice(branding.pricing.enterprise.yearly, locale);
+const entM = brandingPrice(branding.pricing.enterprise.monthly, locale);
+---
+<h1 class="text-4xl">{de ? 'Preise und Pläne' : 'Pricing and plans'}</h1>
+<p class="mt-4 max-w-2xl text-lg" style="color: var(--muted)">
+  {de
+    ? 'Alle Werkzeuge bleiben frei. Bezahlte Pläne gelten nur für Self-Hosting-Extras: API, Watch, Team-Presets, White-Label, signiertes Audit-Log, Support.'
+    : 'Every tool stays free. Paid plans cover self-hosting extras only: API, watch, team presets, white-label, signed audit log, support.'}
+</p>
+
+<div class="mt-10 grid gap-4 lg:grid-cols-3">
+  <article class="rounded-lg border p-5" style="border-color: var(--line); background: var(--card)">
+    <p class="stamp" style="color: var(--accent)">Community</p>
+    <h2 class="mt-2 text-2xl">{de ? 'Frei' : 'Free'}</h2>
+    <ul class="mt-4 list-disc pl-5 text-sm">
+      <li>{de ? 'Alle registrierten Tools' : 'Every registered tool'}</li>
+      <li>{de ? 'Web, Desktop, CLI (run, pipeline, list)' : 'Web, desktop, CLI (run, pipeline, list)'}</li>
+      <li>{de ? 'Kein Wasserzeichen, kein Upload' : 'No watermark, no upload'}</li>
+      <li>{de ? 'Kein Konto' : 'No account'}</li>
+    </ul>
+  </article>
+
+  <article class="rounded-lg border p-5" style="border-color: var(--accent); background: var(--card)">
+    <p class="stamp" style="color: var(--accent)">Pro Self-Hosting</p>
+    <h2 class="mt-2 text-2xl">{proY}</h2>
+    <p class="text-sm" style="color: var(--muted)">
+      {de ? `Jahr · Monat ${proM}` : `per year · month ${proM}`}
+    </p>
+    <ul class="mt-4 list-disc pl-5 text-sm">
+      <li>{de ? 'Alles aus Community' : 'Everything in Community'}</li>
+      <li>{de ? 'REST-API (Sidecar)' : 'REST API (sidecar)'}</li>
+      <li>{de ? 'Watch-Ordner (CLI und Chromium)' : 'Watch folders (CLI and Chromium)'}</li>
+      <li>{de ? 'Team-Presets erzwingen' : 'Enforce team presets'}</li>
+      <li>{de ? 'White-Label ohne Pflicht-Footer' : 'White-label without the required footer'}</li>
+      <li>{de ? 'Signiertes Audit-Log (Hashes, keine Inhalte)' : 'Signed audit log (hashes, no contents)'}</li>
+    </ul>
+  </article>
+
+  <article class="rounded-lg border p-5" style="border-color: var(--line); background: var(--card)">
+    <p class="stamp" style="color: var(--accent)">Enterprise</p>
+    <h2 class="mt-2 text-2xl">{entY}</h2>
+    <p class="text-sm" style="color: var(--muted)">
+      {de ? `Jahr · Monat ${entM}` : `per year · month ${entM}`}
+    </p>
+    <ul class="mt-4 list-disc pl-5 text-sm">
+      <li>{de ? 'Alles aus Pro' : 'Everything in Pro'}</li>
+      <li>{de ? 'Support und SLA nach Vertrag' : 'Support and SLA by contract'}</li>
+      <li>{de ? 'Anpassungen (Packs, Branding, Regeln)' : 'Custom work (packs, branding, rules)'}</li>
+    </ul>
+  </article>
+</div>
+
+<p class="mt-8 max-w-2xl text-sm" style="color: var(--muted)">
+  {de
+    ? 'Beträge kommen aus branding.json (pricing.pro.yearly, pricing.pro.monthly, pricing.enterprise.*). Leer oder „auf Anfrage“ heißt: kein öffentlicher Listenpreis.'
+    : 'Amounts come from branding.json (pricing.pro.yearly, pricing.pro.monthly, pricing.enterprise.*). Empty or “on request” means there is no public list price.'}
+</p>
+
+<p class="mt-4 text-sm">
+  {email ? (
+    <a href={`mailto:${email}`}>{de ? `Kontakt: ${email}` : `Contact: ${email}`}</a>
+  ) : (
+    <span style="color: var(--muted)">
+      {de
+        ? 'Kontaktadresse: contact.email oder legal.email in branding.json.'
+        : 'Contact address: contact.email or legal.email in branding.json.'}
+    </span>
+  )}
+  {' · '}
+  <a href={localePath(locale, '/guides/self-hosting-docker')}>
+    {de ? 'Self-Hosting mit Docker' : 'Self-hosting with Docker'}
+  </a>
+  {' · '}
+  <a href={localePath(locale, locale === 'de' ? '/lizenz' : '/license')}>
+    {de ? 'Lizenz lokal prüfen' : 'Verify a license locally'}
+  </a>
+</p>

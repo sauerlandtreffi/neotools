@@ -1,0 +1,75 @@
+---
+import { landingHref, toolHref } from './LandingCopy';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+const items = [
+  {
+    title: { de: 'Schwärzung mit Verifikation', en: 'Redaction with verification' },
+    text: {
+      de: 'pdf-redact entfernt Textoperatoren und rastert Bildbereiche. Danach Extract, Muster und Pixelstichprobe. Overlay reicht nicht.',
+      en: 'pdf-redact drops text operators and rasters image areas. Then extract, patterns and pixel samples. Overlay is not enough.',
+    },
+    href: toolHref(locale, 'pdf-redact'),
+  },
+  {
+    title: { de: 'E-Rechnung', en: 'E-invoices' },
+    text: {
+      de: 'Prüfen (XRechnung, ZUGFeRD, Factur-X) und erzeugen (CII/UBL, optional Factur-X). Regeln lokal, ohne Portal-Upload.',
+      en: 'Validate (XRechnung, ZUGFeRD, Factur-X) and generate (CII/UBL, optional Factur-X). Rules stay local, no portal upload.',
+    },
+    href: toolHref(locale, 'dach-erechnung-validate'),
+  },
+  {
+    title: { de: 'PDF/A', en: 'PDF/A' },
+    text: {
+      de: 'Prüfen und best-effort wandeln (Profil 2b/3b) ohne Ghostscript. Lücken stehen im Report, kein falsch-grün.',
+      en: 'Validate and convert best-effort (profiles 2b/3b) without Ghostscript. Gaps stay in the report — no false green.',
+    },
+    href: toolHref(locale, 'pdf-a'),
+  },
+  {
+    title: { de: 'Forensik', en: 'Forensics' },
+    text: {
+      de: 'Dateityp, Hidden Data, Hash, Share-Safe. Reports ohne Dateiinhalte.',
+      en: 'File type, hidden data, hashes, share-safe. Reports without file contents.',
+    },
+    href: toolHref(locale, 'forensics-identify'),
+  },
+  {
+    title: { de: 'Desktop-App', en: 'Desktop app' },
+    text: {
+      de: 'Tauri 2, gleiche Engine. PDF-Dateizuordnung und Deep-Link neotools://. Builds unter Tag desktop-v*.',
+      en: 'Tauri 2, same engine. PDF file association and neotools:// deep links. Builds under tag desktop-v*.',
+    },
+    href: localePath(locale, '/reader'),
+  },
+  {
+    title: { de: 'Self-Hosting', en: 'Self-hosting' },
+    text: {
+      de: 'Statisches nginx-Image, optionale API im eigenen Netz. White-Label über branding.json.',
+      en: 'Static nginx image, optional API on your network. White-label via branding.json.',
+    },
+    href: landingHref(locale, '/preise', '/en/pricing'),
+  },
+];
+---
+<section class="mb-14">
+  <h2 class="text-2xl">{de ? 'Was sich unterscheidet' : 'What is different'}</h2>
+  <div class="mt-6 grid gap-3 md:grid-cols-2">
+    {items.map((item) => (
+      <a
+        href={item.href}
+        class="block rounded-lg border p-4 no-underline"
+        style="border-color: var(--line); background: var(--card)"
+      >
+        <h3 class="text-lg">{item.title[locale]}</h3>
+        <p class="mt-2 text-sm" style="color: var(--muted)">{item.text[locale]}</p>
+      </a>
+    ))}
+  </div>
+</section>

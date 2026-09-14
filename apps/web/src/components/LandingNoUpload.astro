@@ -1,0 +1,27 @@
+---
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+---
+<section class="mb-14 rounded-lg border p-6" style="border-color: var(--line); background: var(--card)">
+  <h2 class="text-2xl">{de ? 'So prüfst du, dass nichts hochgeladen wird' : 'How to check that nothing is uploaded'}</h2>
+  <ol class="mt-4 max-w-2xl list-decimal pl-6 text-sm">
+    <li>{de ? 'DevTools (F12) → Network.' : 'DevTools (F12) → Network.'}</li>
+    <li>{de ? 'Filter Fetch/XHR und Doc, Cache aus.' : 'Filter Fetch/XHR and Doc, disable cache.'}</li>
+    <li>{de ? 'Ein Werkzeug ausführen.' : 'Run a tool.'}</li>
+    <li>
+      {de
+        ? 'Kein Request zu einem fremden Host mit der Datei als Body.'
+        : 'No request to a foreign host with the file as the body.'}
+    </li>
+  </ol>
+  <p class="mt-4 text-sm">
+    <a href={localePath(locale, '/no-upload')}>
+      {de ? 'Anleitung mit Statusanzeige „0 Bytes gesendet“' : 'Guide including the “0 bytes sent” status'}
+    </a>
+  </p>
+</section>

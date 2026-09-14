@@ -1,0 +1,18 @@
+---
+import Base from '../../../layouts/Base.astro';
+import LandingCompare from '../../../components/LandingCompare.astro';
+import { COMPARE_PAGES, compareJsonLd } from '../../../components/LandingCompareData';
+
+const locale = 'en' as const;
+const id = 'ihatepdf' as const;
+const page = COMPARE_PAGES[id];
+---
+<Base
+  locale={locale}
+  title={`NeoTools and ${page.name}`}
+  description={page.summary.en}
+  path={`/compare/${id}`}
+  jsonLd={[compareJsonLd(locale, page)]}
+>
+  <LandingCompare locale={locale} id={id} />
+</Base>

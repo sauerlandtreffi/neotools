@@ -1,0 +1,81 @@
+---
+import { branding } from '../lib/branding';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+---
+<h1 class="text-4xl">{de ? `Über ${branding.name}` : `About ${branding.name}`}</h1>
+<p class="mt-4 max-w-2xl text-lg" style="color: var(--muted)">
+  {de
+    ? 'Lokale Werkzeuge für PDF, Bild, Medien, Office, Forensik und DACH-Recht. Dieselbe Engine im Browser, in der CLI, per Docker und als Desktop-App.'
+    : 'Local tools for PDF, images, media, office, forensics and DACH law. The same engine in the browser, CLI, Docker and the desktop app.'}
+</p>
+
+<section class="mt-10 max-w-2xl">
+  <h2 class="text-2xl">{de ? 'Architektur in kurz' : 'Architecture in brief'}</h2>
+  <ul class="mt-4 list-disc pl-6">
+    <li>
+      {de
+        ? 'Jedes Werkzeug ist eine defineTool-Definition: Zod-Optionen, i18n, Lizenzen, run().'
+        : 'Each tool is a defineTool definition: Zod options, i18n, licenses, run().'}
+    </li>
+    <li>
+      {de
+        ? 'Die Engine kennt kein DOM. Browser und Node sprechen über einen Platform-Adapter (OPFS bzw. fs).'
+        : 'The engine has no DOM. Browser and Node talk through a platform adapter (OPFS or fs).'}
+    </li>
+    <li>
+      {de
+        ? 'Web: statisches Astro, Worker per Comlink. Kein Server nimmt Dateibytes entgegen.'
+        : 'Web: static Astro, workers via Comlink. No server accepts file bytes.'}
+    </li>
+    <li>
+      {de
+        ? 'Self-Hosting: nginx für die statische Seite, optionale REST-API im eigenen Netz.'
+        : 'Self-hosting: nginx for the static site, optional REST API on your network.'}
+    </li>
+    <li>
+      {de
+        ? 'WASM und Modelle kommen von derselben Origin (/assets), nicht von einem CDN.'
+        : 'WASM and models come from the same origin (/assets), not from a CDN.'}
+    </li>
+  </ul>
+</section>
+
+<section class="mt-10 max-w-2xl">
+  <h2 class="text-2xl">{de ? 'Open Source' : 'Open source'}</h2>
+  <p class="mt-3">
+    {de
+      ? 'Eigener Code (Engine, Packs, Apps) steht unter MIT. Laufzeitbibliotheken haben eigene SPDX-Einträge.'
+      : 'Our code (engine, packs, apps) is MIT. Runtime libraries keep their own SPDX entries.'}
+  </p>
+  <p class="mt-3">
+    {de ? 'Liste der gebündelten Komponenten:' : 'Bundled components:'}
+    <a class="ml-1" href={localePath(locale, locale === 'de' ? '/lizenzen' : '/licenses')}>
+      {de ? 'Lizenzen' : 'Licenses'}
+    </a>
+  </p>
+  <p class="mt-3 text-sm" style="color: var(--muted)">
+    {de
+      ? 'FFmpeg-WASM: siehe Hinweis auf der Lizenzseite (LGPL-Build geplant, aktueller Core kann temporär GPL sein).'
+      : 'FFmpeg-WASM: see the license page (LGPL build planned; the current core may be temporarily GPL).'}
+  </p>
+</section>
+
+<section class="mt-10 max-w-2xl">
+  <h2 class="text-2xl">{de ? 'Was nicht angeboten wird' : 'What is not offered'}</h2>
+  <ul class="mt-4 list-disc pl-6">
+    <li>{de ? 'Kein Tracking, kein Analyse-Pixel.' : 'No tracking, no analytics pixel.'}</li>
+    <li>{de ? 'Kein Chat und keine Dritt-KI-API.' : 'No chat and no third-party AI API.'}</li>
+    <li>{de ? 'Kein Ghostscript, MuPDF oder iText (AGPL).' : 'No Ghostscript, MuPDF or iText (AGPL).'}</li>
+    <li>
+      {de
+        ? 'Community bleibt für alle Werkzeuge frei. Bezahlte Pläne betreffen nur Plattform-Extras.'
+        : 'Community stays free for every tool. Paid plans cover platform extras only.'}
+    </li>
+  </ul>
+</section>

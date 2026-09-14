@@ -1,0 +1,186 @@
+# NeoTools release: tag `v*` → build, test, typecheck, lint, Web-Dist + CLI-Tarball, GitHub-Release.
+#
+# Desktop-Bundles (deb/AppImage/NSIS/MSI/DMG) baut `.github/workflows/desktop.yml` auf Tags `desktop-v*`.
+# Der LGPL-FFmpeg-Core kommt aus dem Release `ffmpeg-lgpl` (`.github/workflows/ffmpeg-lgpl.yml`); fehlt er,
+# fällt der Web-Build auf den GPL-Core aus `@ffmpeg/core` zurück und `/lizenzen` kennzeichnet das dynamisch.
+# Es werden keine Secrets außer dem automatischen GITHUB_TOKEN benötigt.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Bestehender Tag (z. B. v1.0.0), für den ein Release gebaut wird'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  check:
+    name: build · test · typecheck · lint
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm 10 via corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10 --activate
+          pnpm --version
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch LGPL ffmpeg-core (optional, from release `ffmpeg-lgpl`)
+        # Kein CDN: lädt ausschließlich aus GitHub-Releases dieses Repos. Bei 404 läuft der Build mit GPL-Fallback.
+        continue-on-error: true
+        env:
+          NEOTOOLS_FFMPEG_LGPL_REPO: ${{ github.repository }}
+          NEOTOOLS_FFMPEG_LGPL_TAG: ffmpeg-lgpl
+        run: |
+          node scripts/fetch-ffmpeg-lgpl.mjs
+          node scripts/copy-wasm-assets.mjs
+          if [ -f packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm ]; then
+            echo "FFMPEG_CORE=lgpl" >> "$GITHUB_ENV"
+          else
+            echo "FFMPEG_CORE=gpl-fallback" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        run: pnpm -r build
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: i18n check
+        run: node scripts/check-i18n.mjs
+
+      - name: Package web dist
+        run: |
+          mkdir -p out
+          tar -C apps/web/dist -czf "out/neotools-web-${RELEASE_TAG}.tar.gz" .
+
+      - name: Package CLI
+        # Enthält apps/cli/dist + package.json. Die workspace:*-Abhängigkeiten setzen ein installiertes
+        # Monorepo voraus (pnpm install && pnpm -r build); das Tarball ist kein eigenständiges npm-Paket.
+        run: |
+          mkdir -p out/neotools-cli
+          cp -r apps/cli/dist out/neotools-cli/dist
+          cp apps/cli/package.json out/neotools-cli/package.json
+          cp LICENSE out/neotools-cli/LICENSE
+          tar -C out -czf "out/neotools-cli-${RELEASE_TAG}.tar.gz" neotools-cli
+          rm -rf out/neotools-cli
+
+      - name: Package LGPL ffmpeg-core (if fetched)
+        if: env.FFMPEG_CORE == 'lgpl'
+        run: |
+          tar -C packages/tools-media/vendor -czf "out/neotools-ffmpeg-lgpl-core-${RELEASE_TAG}.tar.gz" ffmpeg-lgpl
+
+      - name: Third-party notices
+        run: |
+          cp apps/web/dist/THIRD_PARTY_NOTICES.txt "out/THIRD_PARTY_NOTICES-${RELEASE_TAG}.txt" 2>/dev/null || true
+          cp apps/web/dist/licenses.json "out/licenses-${RELEASE_TAG}.json" 2>/dev/null || true
+
+      - name: Checksums
+        run: |
+          cd out
+          sha256sum * > "SHA256SUMS-${RELEASE_TAG}.txt"
+          cat "SHA256SUMS-${RELEASE_TAG}.txt"
+
+      - name: Upload release assets (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: out/
+          if-no-files-found: error
+
+  release:
+    name: GitHub release
+    needs: check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: out
+
+      - name: CHANGELOG excerpt
+        # Nimmt den Abschnitt `## [<version>]` (Tag ohne führendes v) aus CHANGELOG.md; sonst `## [Unreleased]`.
+        run: |
+          node - "$RELEASE_TAG" > out/RELEASE_NOTES.md <<'EOF'
+          const fs = require('node:fs');
+          const tag = process.argv[2] || '';
+          const version = tag.replace(/^v/, '');
+          const md = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const sections = md.split(/^## /m).slice(1);
+          const pick = (needle) => sections.find((s) => s.startsWith(`[${needle}]`) || s.startsWith(needle));
+          const found = pick(version) || pick(tag) || pick('Unreleased');
+          let body = found ? found.replace(/^[^\n]*\n/, '').trim() : '';
+          body = body.replace(/^\[[^\]]+\]:.*$/gm, '').trim();
+          if (!body) body = '_Kein CHANGELOG-Abschnitt gefunden — siehe CHANGELOG.md._';
+          const ffmpegNote =
+            '\n\n---\n\n' +
+            '**Artefakte**\n\n' +
+            `- \`neotools-web-${tag}.tar.gz\` — statische Web-App (\`apps/web/dist\`), COOP/COEP-Header siehe \`deploy/docker/nginx.conf\` bzw. \`apps/web/public/_headers\`.\n` +
+            `- \`neotools-cli-${tag}.tar.gz\` — \`apps/cli/dist\` + \`package.json\` (benötigt installiertes Monorepo).\n` +
+            `- \`neotools-ffmpeg-lgpl-core-${tag}.tar.gz\` — nur vorhanden, wenn der LGPL-Core aus dem Release \`ffmpeg-lgpl\` verfügbar war; sonst nutzt der Build den GPL-Core aus \`@ffmpeg/core\` (auf \`/lizenzen\` gekennzeichnet).\n` +
+            '- `THIRD_PARTY_NOTICES-*.txt`, `licenses-*.json`, `SHA256SUMS-*.txt`.\n\n' +
+            'Desktop-Bundles: Workflow `desktop` (Tags `desktop-v*`).';
+          process.stdout.write(`## NeoTools ${tag}\n\n${body}${ffmpegNote}\n`);
+          EOF
+          cat out/RELEASE_NOTES.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: NeoTools ${{ env.RELEASE_TAG }}
+          body_path: out/RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          make_latest: true
+          # false: das LGPL-Core-Tarball ist optional
+          fail_on_unmatched_files: false
+          files: |
+            out/neotools-web-*.tar.gz
+            out/neotools-cli-*.tar.gz
+            out/neotools-ffmpeg-lgpl-core-*.tar.gz
+            out/THIRD_PARTY_NOTICES-*.txt
+            out/licenses-*.json
+            out/SHA256SUMS-*.txt

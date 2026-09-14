@@ -1,0 +1,26 @@
+---
+import { branding } from '../lib/branding';
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const de = locale === 'de';
+const url = branding.desktop.releasesUrl;
+---
+<section class="mb-14">
+  <h2 class="text-2xl">{de ? 'Desktop' : 'Desktop'}</h2>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">
+    {de
+      ? 'Dieselbe Web-Oberfläche in einer Tauri-2-Hülle. PDF als Standardprogramm, Deep-Link, lokale Dateien. Keine Telemetrie.'
+      : 'The same UI in a Tauri 2 shell. PDF as the default app, deep links, local files. No telemetry.'}
+  </p>
+  <p class="mt-4 flex flex-wrap gap-4 text-sm">
+    <a href={url}>{de ? 'Downloads (GitHub, Tag desktop-v*)' : 'Downloads (GitHub, tag desktop-v*)'}</a>
+    <a href={localePath(locale, '/reader')}>{de ? 'Reader im Browser' : 'Reader in the browser'}</a>
+    <a href={localePath(locale, '/guides/desktop-pdf')}>
+      {de ? 'Als PDF-Standardprogramm' : 'As the default PDF app'}
+    </a>
+  </p>
+</section>

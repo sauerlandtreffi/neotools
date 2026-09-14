@@ -1,0 +1,13 @@
+---
+import { type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+<p class="mt-12 max-w-2xl text-xs" style="color: var(--muted)">
+  {locale === 'de'
+    ? 'Vorlage ohne Rechtsberatung. Texte und Platzhalter müssen vom Betreiber geprüft und vervollständigt werden.'
+    : 'Template, not legal advice. The operator must review and complete the text and placeholders.'}
+</p>

@@ -1,0 +1,29 @@
+---
+import { localePath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  tools: number;
+  packs: number;
+  formats: number;
+}
+const { locale, tools, packs, formats } = Astro.props;
+const de = locale === 'de';
+const items = [
+  { n: tools, de: 'Tools in der Registry', en: 'tools in the registry', href: '#tools' },
+  { n: packs, de: 'Packs', en: 'packs', href: '#packs' },
+  { n: formats, de: 'Formate in der Wissensbasis', en: 'formats in the knowledge base', href: localePath(locale, '/formats') },
+] as const;
+---
+<section class="mb-12 grid gap-3 sm:grid-cols-3" aria-label={de ? 'Bestand' : 'Inventory'}>
+  {items.map((item) => (
+    <a
+      href={item.href}
+      class="rounded-lg border px-4 py-4 no-underline"
+      style="border-color: var(--line); background: var(--card)"
+    >
+      <div class="mono text-3xl" style="color: var(--accent)">{item.n}</div>
+      <p class="mt-1 text-sm" style="color: var(--muted)">{de ? item.de : item.en}</p>
+    </a>
+  ))}
+</section>

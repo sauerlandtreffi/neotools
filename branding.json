@@ -10,13 +10,58 @@
     "accent": "#3ee0b4",
     "ink": "#e8efe9"
   },
-  "impressum": "TODO: Impressumsangaben ergänzen (Name, Anschrift, Kontakt).",
-  "privacy": "TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking.",
+  "impressum": "TODO: Impressumsangaben über legal.* in branding.json setzen.",
+  "privacy": "TODO: Datenschutz über legal.*, hosting.* und desktop.* in branding.json setzen.",
   "hiddenTools": [],
   "defaultLocale": "de",
-  "footerLinks": [],
+  "footerLinks": [
+    {
+      "href": "/ueber",
+      "label": { "de": "Über", "en": "About" }
+    },
+    {
+      "href": "/preise",
+      "label": { "de": "Preise", "en": "Pricing" }
+    },
+    {
+      "href": "/guides",
+      "label": { "de": "Anleitungen", "en": "Guides" }
+    }
+  ],
   "license": "",
   "licensePubkey": "",
   "presetsPath": "",
-  "showPoweredBy": true
+  "showPoweredBy": true,
+  "legal": {
+    "operator": "",
+    "address": "",
+    "email": "",
+    "phone": "",
+    "vatId": "",
+    "register": "",
+    "responsible": "",
+    "updated": "2026-09-14"
+  },
+  "pricing": {
+    "pro": {
+      "yearly": "auf Anfrage",
+      "monthly": "auf Anfrage"
+    },
+    "enterprise": {
+      "yearly": "auf Anfrage",
+      "monthly": "auf Anfrage"
+    }
+  },
+  "contact": {
+    "email": "",
+    "github": "https://github.com/neotools/neotools"
+  },
+  "hosting": {
+    "provider": "",
+    "region": ""
+  },
+  "desktop": {
+    "updateCheck": true,
+    "releasesUrl": "https://github.com/neotools/neotools/releases?q=desktop-v"
+  }
 }

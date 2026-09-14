@@ -1,12 +1,63 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { branding } from '../../lib/branding';
+import LandingLegalNote from '../../components/LandingLegalNote.astro';
+import { branding, brandingContactEmail, brandingSlot } from '../../lib/branding';
+import { localePath } from '../../lib/i18n';
+
+const legal = branding.legal;
+const email = brandingContactEmail(branding);
+const operator = brandingSlot(legal.operator, '[legal.operator]');
+const address = brandingSlot(legal.address, '[legal.address]');
+const mail = brandingSlot(email, '[legal.email / contact.email]');
+const hoster = brandingSlot(branding.hosting.provider, '[hosting.provider]');
+const region = brandingSlot(branding.hosting.region, '[hosting.region]');
+const updateCheck = branding.desktop.updateCheck;
 ---
-<Base locale="en" title="Privacy" description="Privacy policy" path="/privacy">
+<Base locale="en" title="Privacy" description="Privacy template: local processing, hosting logs, no trackers" path="/privacy">
   <h1 class="text-4xl">Privacy</h1>
-  <p class="stamp mt-4" style="color: var(--accent)">TODO</p>
-  <p class="mt-4 max-w-xl whitespace-pre-wrap">{branding.privacy}</p>
-  <p class="mt-6 max-w-xl">
-    Files are processed in the browser (web worker). There is no analytics, no tracking, and no upload to a server.
+  <p class="stamp mt-4" style="color: var(--accent)">Template · as of {legal.updated}</p>
+  <p class="mt-4 max-w-2xl text-sm" style="color: var(--muted)">
+    Binding text for a German establishment: <a href="/datenschutz">Datenschutz</a>.
   </p>
+  <article class="prose mt-8 max-w-2xl">
+    <h2>1. Controller</h2>
+    <p class="whitespace-pre-wrap">{operator}<br />{address}</p>
+    <p>Email: {mail.includes('[') ? mail : <a href={'mailto:' + mail}>{mail}</a>}</p>
+    <h2>2. No file contents on servers</h2>
+    <p>
+      The public web app is static. Tools run in a browser worker on the user’s device. There is no
+      endpoint that accepts file bytes. See <a href={localePath('en', '/no-upload')}>/no-upload</a>.
+      A self-hosted API processes files on that operator’s machines, not on this Community site.
+    </p>
+    <h2>3. Hosting logs</h2>
+    <p>
+      Fetching HTML, scripts, WASM and models creates ordinary connection data: IP, time, path,
+      user agent, status. Host: {hoster}. Region: {region}.
+    </p>
+    <h2>4. Cookies and local storage</h2>
+    <p>
+      No tracking cookies. localStorage (theme, optional license token), IndexedDB (job metadata,
+      hashes, history heads, presets) and OPFS (large files, undo) stay on the device.
+    </p>
+    <h2>5. No tracking</h2>
+    <p>No analytics pixel and no third-party tracker in the default build.</p>
+    <h2>6. Optional user-started connections</h2>
+    <ul>
+      <li>Models load from the same origin only, after confirm where the tool requires it.</li>
+      <li>RFC 3161 TSA runs only if the user sets a URL.</li>
+      <li>There is no chat feature and no third-party AI API.</li>
+    </ul>
+    <h2>7. Desktop</h2>
+    <p>
+      No telemetry. Update check is currently {updateCheck ? 'on' : 'off'}
+      (<span class="mono">desktop.updateCheck</span>).
+    </p>
+    <h2>8. Rights</h2>
+    <p>
+      Where GDPR applies (mainly hosting logs): access, rectification, erasure, restriction,
+      portability, objection, complaint to a supervisory authority. This Community site does not
+      hold file contents.
+    </p>
+  </article>
+  <LandingLegalNote locale="en" />
 </Base>
