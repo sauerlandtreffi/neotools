@@ -25,6 +25,12 @@ export default defineConfig({
       '@neotools/parsers': fileURLToPath(
         new URL('../../packages/parsers/src/index.ts', import.meta.url),
       ),
+      '@neotools/tools-speech': fileURLToPath(
+        new URL('../../packages/tools-speech/src/index.ts', import.meta.url),
+      ),
+      '@neotools/models': fileURLToPath(
+        new URL('../../packages/models/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

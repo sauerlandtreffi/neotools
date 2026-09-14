@@ -19,6 +19,9 @@ const EXT_MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.heic': 'image/heic',
   '.jxl': 'image/jxl',
+  '.srt': 'application/x-subrip',
+  '.vtt': 'text/vtt',
+  '.ass': 'text/x-ssa',
 };
 
 export function mimeFromName(name: string): string {

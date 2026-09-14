@@ -93,6 +93,39 @@ try {
   console.warn(`skip onnx assets: ${err instanceof Error ? err.message : err}`);
 }
 
+
+try {
+  const { readFile, writeFile, mkdir } = await import('node:fs/promises');
+  const dest = join(root, 'apps/web/public/assets/models');
+  await mkdir(dest, { recursive: true });
+  const catalogs = [];
+  for (const rel of [
+    'packages/tools-image-ai/src/models/models.json',
+    'packages/tools-speech/src/models/models.json',
+  ]) {
+    try {
+      catalogs.push(JSON.parse(await readFile(join(root, rel), 'utf8')));
+    } catch {
+      // pack not present
+    }
+  }
+  const merged = { version: 1, models: [] };
+  const seen = new Set();
+  for (const cat of catalogs) {
+    for (const m of cat.models ?? []) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      merged.models.push(m);
+    }
+  }
+  if (merged.models.length) {
+    await writeFile(join(dest, 'models.json'), JSON.stringify(merged, null, 2));
+    console.log('merged models.json catalogs');
+  }
+} catch (err) {
+  console.warn(`skip speech model catalog merge: ${err instanceof Error ? err.message : err}`);
+}
+
 const fontSrc = join(root, 'packages/tools-image/assets/fonts/SourceSans3-Regular.otf');
 try {
   await copy(fontSrc, join(root, 'apps/web/public/assets/fonts/SourceSans3-Regular.otf'));

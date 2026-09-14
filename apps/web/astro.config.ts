@@ -13,6 +13,8 @@ const toolsForensics = fileURLToPath(new URL('../../packages/tools-forensics/src
 const toolsImage = fileURLToPath(new URL('../../packages/tools-image/src/index.ts', import.meta.url));
 const toolsImageAi = fileURLToPath(new URL('../../packages/tools-image-ai/src/index.ts', import.meta.url));
 const toolsDach = fileURLToPath(new URL('../../packages/tools-dach/src/index.ts', import.meta.url));
+const toolsSpeech = fileURLToPath(new URL('../../packages/tools-speech/src/index.ts', import.meta.url));
+const modelsPkg = fileURLToPath(new URL('../../packages/models/src/index.ts', import.meta.url));
 const parsers = fileURLToPath(new URL('../../packages/parsers/src/index.ts', import.meta.url));
 const napiStub = fileURLToPath(new URL('./src/stubs/napi-canvas.ts', import.meta.url));
 const resvgStub = fileURLToPath(new URL('./src/stubs/resvg.ts', import.meta.url));
@@ -50,6 +52,8 @@ export default defineConfig({
         '@neotools/tools-image': toolsImage,
         '@neotools/tools-image-ai': toolsImageAi,
         '@neotools/tools-dach': toolsDach,
+        '@neotools/tools-speech': toolsSpeech,
+        '@neotools/models': modelsPkg,
         '@neotools/parsers': parsers,
         '@napi-rs/canvas': napiStub,
         '@resvg/resvg-js': resvgStub,
@@ -86,6 +90,8 @@ export default defineConfig({
         '@neotools/tools-image',
         '@neotools/tools-image-ai',
         '@neotools/tools-dach',
+        '@neotools/tools-speech',
+        '@neotools/models',
         '@neotools/parsers',
         'pdfjs-dist',
         'pdf-lib',

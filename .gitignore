@@ -43,6 +43,8 @@ apps/web/public/assets/fonts/*
 !apps/web/public/assets/fonts/.gitkeep
 !apps/web/public/assets/fonts/SourceSans3-Regular.otf
 packages/tools-image-ai/.models/
+packages/tools-speech/.models/
+packages/models/.models/
 **/.models/*.onnx
 **/*.onnx
 !**/.gitkeep

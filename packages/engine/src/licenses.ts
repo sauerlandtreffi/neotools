@@ -39,6 +39,15 @@ export const PLATFORM_LICENSES: ToolLicense[] = [
   { name: 'opentype.js', license: 'MIT', url: 'https://github.com/opentypejs/opentype.js' },
   { name: 'Source Sans 3', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-sans' },
   { name: '@pdf-lib/fontkit', license: 'MIT', url: 'https://github.com/Hopding/fontkit' },
+  { name: 'OpenAI Whisper weights', license: 'MIT', url: 'https://github.com/openai/whisper' },
+  { name: 'Distil-Whisper', license: 'MIT', url: 'https://github.com/huggingface/distil-whisper' },
+  { name: 'OPUS-MT (Helsinki-NLP)', license: 'Apache-2.0', url: 'https://github.com/Helsinki-NLP/Opus-MT' },
+  { name: 'mpg123-decoder', license: 'MIT', url: 'https://github.com/eshaz/mpg123-decoder' },
+  { name: 'ogg-opus-decoder', license: 'MIT', url: 'https://github.com/eshaz/ogg-opus-decoder' },
+  { name: '@wasm-audio-decoders/flac', license: 'MIT', url: 'https://github.com/eshaz/wasm-audio-decoders' },
+  { name: 'all-MiniLM-L6-v2', license: 'Apache-2.0', url: 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2' },
+  { name: 'DistilBART-CNN', license: 'Apache-2.0', url: 'https://huggingface.co/sshleifer/distilbart-cnn-6-6' },
+  { name: 'pyannote.audio segmentation-3.0', license: 'MIT', url: 'https://github.com/pyannote/pyannote-audio' },
 ];
 
 export function collectLicenses(registry: Registry, extra: ToolLicense[] = PLATFORM_LICENSES): ToolLicense[] {

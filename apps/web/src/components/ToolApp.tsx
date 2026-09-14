@@ -9,6 +9,7 @@ import ImageBoxEditor from './ImageBoxEditor';
 import DropZone from './DropZone';
 import NetworkStatus from './NetworkStatus';
 import ModelConfirm from './ModelConfirm';
+import TranscriptEditor from './TranscriptEditor';
 import { localePath, t, type Locale } from '../lib/i18n';
 import { createToolWorker, downloadBytes, zipDownload, type WorkerFile } from '../lib/worker-client';
 import { putHandoffResult, takeHandoff } from '../lib/desktop-handoff';
@@ -248,6 +249,10 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
           confirmed={Boolean(values.confirmModelDownload)}
           onConfirm={(next) => setValues((v) => ({ ...v, confirmModelDownload: next }))}
         />
+      )}
+
+      {meta.ui?.editor === 'transcript' && outputs.length > 0 && (
+        <TranscriptEditor locale={locale} outputs={outputs} />
       )}
 
       {meta.ui?.editor === 'image-boxes' && files[0] && phase === 'input' && (

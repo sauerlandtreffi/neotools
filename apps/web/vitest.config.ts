@@ -17,6 +17,8 @@ export default defineConfig({
       '@neotools/tools-image': root('../../packages/tools-image/src/index.ts'),
       '@neotools/tools-image-ai': root('../../packages/tools-image-ai/src/index.ts'),
       '@neotools/tools-dach': root('../../packages/tools-dach/src/index.ts'),
+      '@neotools/tools-speech': root('../../packages/tools-speech/src/index.ts'),
+      '@neotools/models': root('../../packages/models/src/index.ts'),
       '@neotools/parsers': root('../../packages/parsers/src/index.ts'),
     },
   },

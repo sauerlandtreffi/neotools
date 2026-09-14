@@ -334,4 +334,10 @@ WP-19/20/25 + Rename erledigt
 - Desktop-Updater und White-Label-Lizenzschlüssel bleiben Stubs.
 - Super-Res/Denoise bleiben Showcases ohne Qualitätsversprechen.
 
+## Status Pack `speech` (Welle 4)
+
+- Paket `@neotools/tools-speech` (`packages/tools-speech`): 12 Tools, Kategorie „Sprache & Untertitel“ / „Speech & Subtitles“.
+- Gemeinsame Modell-Registry nach `@neotools/models` extrahiert; `tools-image-ai` re-exportiert (Shim). CLI: `neotools models fetch speech-transcribe`.
+- Whisper (Transformers.js v3, WebGPU→WASM, Node ORT), Untertitel-Parser/Writer, Cutlist/Kapitel/Notes, OCR-Frames, Bleep-Liste, a11y-AD-Entwurf.
+- Decoder ohne FFmpeg: WAV/PCM, MP3, OGG/Opus, FLAC; Browser `decodeAudioData`; Node-Video → Hinweis + optional `@neotools/tools-media`.
 

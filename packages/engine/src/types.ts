@@ -182,4 +182,6 @@ export const MIME = {
   tiff: 'image/tiff',
   svg: 'image/svg+xml',
   ico: 'image/x-icon',
+  srt: 'application/x-subrip',
+  vtt: 'text/vtt',
 } as const;
