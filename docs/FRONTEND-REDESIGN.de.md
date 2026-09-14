@@ -7,7 +7,7 @@
 **Geltungsbereich:** `apps/web` (Astro + Preact), Anbindung an `packages/engine`, Tauri-Desktop, PWA  
 **Nicht-Ziele dieser Datei:** Code-Änderungen, Bundle-Builds, Pack-Implementierung. Parallel laufende Integrationsarbeit bleibt unberührt.
 
-Verwandt: [ARCHITECTURE.md](./ARCHITECTURE.md) · [ROADMAP.md](./ROADMAP.md) · [BACKLOG.md](./BACKLOG.md)
+Verwandt: [ARCHITECTURE.de.md](./ARCHITECTURE.de.md) · [ROADMAP.de.md](./ROADMAP.de.md) · [BACKLOG.de.md](./BACKLOG.de.md)
 
 ---
 
