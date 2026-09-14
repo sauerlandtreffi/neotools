@@ -1,50 +1,51 @@
-# Sicherheitshinweise
+🇬🇧 English · [🇩🇪 Deutsch](./SECURITY.de.md)
 
-## Unterstützte Versionen
+# Security Policy
 
-| Version                     | Unterstützt                                   |
-| --------------------------- | --------------------------------------------- |
-| `main` / letztes `v*`-Tag   | ja — Sicherheitsfixes landen hier             |
-| ältere Tags, Desktop-Builds | nein — bitte auf das aktuelle Release wechseln |
+## Supported versions
 
-## Schwachstelle melden
+| Version                        | Supported                                       |
+| ------------------------------ | ----------------------------------------------- |
+| `main` / latest `v*` tag       | yes — security fixes land here                  |
+| older tags, desktop builds     | no — please switch to the current release       |
 
-Bitte **kein öffentliches Issue** für Sicherheitslücken.
+## Reporting a vulnerability
 
-- E-Mail an die in `branding.json` unter `contact.email` (bzw. `legal.email`) hinterlegte Adresse des
-  Betreibers. Betreiber eines Self-Hosts sollten dort zusätzlich ein `security@<ihre-domain>`-Postfach
-  angeben; im Community-Build ist das Feld ein Platzhalter und muss vor dem Launch gesetzt werden.
-- Alternativ: private Meldung über den in `contact.github` genannten Repository-Host (Security Advisory).
-- Bitte beilegen: betroffene Komponente (Web/CLI/API/Desktop), Version bzw. Commit, Reproduktion,
-  Auswirkung. Keine echten personenbezogenen Dateien als Beispiel schicken.
+Please **do not open a public issue** for security vulnerabilities.
 
-**Reaktionszeit:** Eingangsbestätigung innerhalb von 3 Werktagen, erste Einschätzung innerhalb von
-7 Tagen, Fix oder Workaround für kritische/hohe Findings innerhalb von 30 Tagen. Wir nennen Melder auf
-Wunsch im Changelog (Coordinated Disclosure nach Fix).
+- E-mail the operator address configured in `branding.json` under `contact.email` (or `legal.email`).
+  Operators of a self-hosted instance should additionally provide a `security@<your-domain>` mailbox
+  there; in the Community build this field is a placeholder and must be set before launch.
+- Alternatively: private report via the repository host named in `contact.github` (Security Advisory).
+- Please include: affected component (Web/CLI/API/Desktop), version or commit, reproduction steps,
+  impact. Do not send real personal files as examples.
+
+**Response times:** acknowledgement within 3 working days, initial assessment within 7 days, fix or
+workaround for critical/high findings within 30 days. On request we credit reporters in the changelog
+(coordinated disclosure after the fix).
 
 ## Scope
 
-- **Web** (`apps/web`): Tool-Worker, Pipeline-Import, Service Worker, CSP/COOP/COEP, Branding-Rendering.
-- **CLI** (`apps/cli`): Dateizugriff, Watch, Pipelines, Lizenzprüfung.
-- **API** (`apps/api`): Authentifizierung, Job-Isolation, Upload-Limits, Header, CORS.
-- **Desktop** (`apps/desktop`): Tauri-Capabilities, Deep-Link, Dateizuordnung, Updater.
-- **Packs** (`packages/tools-*`): insbesondere `pdf-redact`, `pdf-sanitize`, `forensics-verify`, Archive
-  (Zip-Bomb, Pfad-Traversal), Lizenz (`packages/license`).
+- **Web** (`apps/web`): tool workers, pipeline import, service worker, CSP/COOP/COEP, branding rendering.
+- **CLI** (`apps/cli`): file access, watch, pipelines, license check.
+- **API** (`apps/api`): authentication, job isolation, upload limits, headers, CORS.
+- **Desktop** (`apps/desktop`): Tauri capabilities, deep link, file associations, updater.
+- **Packs** (`packages/tools-*`): in particular `pdf-redact`, `pdf-sanitize`, `forensics-verify`, archives
+  (zip bombs, path traversal), license (`packages/license`).
 
-Außerhalb des Scopes: Schwachstellen in Drittbibliotheken ohne NeoTools-spezifischen Vektor (bitte
-upstream melden; wir ziehen Updates nach), Self-Hosts mit veränderter Konfiguration, Social Engineering.
+Out of scope: vulnerabilities in third-party libraries without a NeoTools-specific vector (please report
+upstream; we pull in updates), self-hosted instances with modified configuration, social engineering.
 
-## Grundsatz: lokale Verarbeitung
+## Principle: local processing
 
-Alle Werkzeuge verarbeiten Dateien **lokal** — im Browser (WASM/Worker), in Node oder im Desktop. Es gibt
-keine Uploads, kein Tracking und keine CDN-Laufzeitabhängigkeit; sämtliche WASM-Cores und Modelle werden
-same-origin unter `/assets/…` ausgeliefert. Die einzigen ausgehenden Verbindungen sind ausdrücklich vom
-Nutzer eingetragene Zeitstempel-Dienste (PAdES/RFC 3161). Der Netzwerk-Sweep in
-`docs/SECURITY-REVIEW.md` listet alle Laufzeitquellen; `apps/web/e2e/network-whitelist.spec.ts` prüft das
-in der CI.
+All tools process files **locally** — in the browser (WASM/workers), in Node or in the desktop app. There are
+no uploads, no tracking and no CDN runtime dependency; all WASM cores and models are served same-origin
+under `/assets/…`. The only outbound connections are timestamp services explicitly entered by the user
+(PAdES/RFC 3161). The network sweep in `docs/SECURITY-REVIEW.md` lists all runtime sources;
+`apps/web/e2e/network-whitelist.spec.ts` verifies this in CI.
 
-## Bisherige Reviews
+## Previous reviews
 
-Der adversarial Security-Review zu Welle 5 (F1–F24, PDF-Redact/Sanitize, Lizenz, API, Archive, Web,
-Desktop) ist in [`docs/SECURITY-REVIEW.md`](./docs/SECURITY-REVIEW.md) dokumentiert — inklusive der
-bewusst dokumentierten Grenzen (z. B. Glyphen ohne ToUnicode, Uhr-Rückstellung < 24 h bei Lizenzen).
+The adversarial security review for wave 5 (F1–F41, PDF redact/sanitize, license, API, archives, web,
+desktop) is documented in [`docs/SECURITY-REVIEW.md`](./docs/SECURITY-REVIEW.md) — including the
+deliberately documented limits (e.g. glyphs without ToUnicode, clock rollback < 24 h for licenses).
