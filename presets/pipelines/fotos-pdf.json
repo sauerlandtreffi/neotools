@@ -1,0 +1,13 @@
+{
+  "id": "fotos-pdf",
+  "title": {
+    "de": "Fotos → EXIF weg → PDF → komprimieren → verschlüsseln",
+    "en": "Photos → strip EXIF → PDF → compress → lock"
+  },
+  "steps": [
+    { "toolId": "image-metadata", "options": {}, "whenMime": ["image/*"] },
+    { "toolId": "images-to-pdf", "options": {} },
+    { "toolId": "pdf-compress", "options": { "preset": "medium" } },
+    { "toolId": "pdf-lock", "options": {} }
+  ]
+}

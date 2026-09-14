@@ -22,10 +22,16 @@ import { registerImageAiTools } from '@neotools/tools-image-ai';
 import { registerImageTools } from '@neotools/tools-image';
 import { registerDachTools } from '@neotools/tools-dach';
 import { registerSpeechTools } from '@neotools/tools-speech';
+import { registerOfficeTools } from '@neotools/tools-office';
+import { registerMediaTools } from '@neotools/tools-media';
 import { registerArchiveTools } from '@neotools/tools-archive';
+import { applyTeamPresets } from '@neotools/engine';
 import { addZodOptions, optionsFromFlags } from './flags.js';
 import { batchOf, describeTool, hasBatchErrors, jsonResult, printTable } from './format.js';
+import { runLicenseIssue, runLicenseKeygen, runLicenseVerify } from './license-cmd.js';
 import { listModelCatalog, runModelsFetch } from './models-cmd.js';
+import { extractPresetsSignature, loadPresetsFile, verifyPresetsSignature } from './presets-load.js';
+import { runWatch } from './watch-cmd.js';
 
 export const EXIT_OK = 0;
 export const EXIT_ERROR = 1;
@@ -50,11 +56,32 @@ export async function runCli(
   argv: string[],
   io = { stdout: console.log.bind(console), stderr: console.error.bind(console) },
 ): Promise<number> {
-  const registry = registerArchiveTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))));
+  const baseRegistry = registerArchiveTools(registerMediaTools(registerOfficeTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))))));
+  const presetsFlag = argv.includes('--presets') ? argv[argv.indexOf('--presets') + 1] : undefined;
+  const presetsPath = presetsFlag ?? process.env.NEOTOOLS_PRESETS;
+  let registry = baseRegistry;
+  if (presetsPath) {
+    try {
+      const doc = await loadPresetsFile(presetsPath);
+      const signed = extractPresetsSignature(doc);
+      if (signed) {
+        const pub = process.env.NEOTOOLS_LICENSE_PUBKEY || signed.publicKey || '';
+        if (pub && !(await verifyPresetsSignature(doc, pub))) {
+          io.stderr('Presets-Signatur ungültig.');
+          return EXIT_USAGE;
+        }
+      }
+      registry = applyTeamPresets(baseRegistry, signed?.body ?? doc);
+    } catch (err) {
+      io.stderr(err instanceof Error ? err.message : String(err));
+      return EXIT_USAGE;
+    }
+  }
   let code = EXIT_OK;
   const program = new Command();
   program.exitOverride();
   program.name('neotools').description('Lokale PDF-Werkzeuge ohne Upload.').version('0.1.0');
+  program.option('--presets <file>', 'Team-Presets JSON (Env NEOTOOLS_PRESETS)');
 
   program
     .command('list')
@@ -219,6 +246,61 @@ export async function runCli(
       io.stdout(`${m.id.padEnd(22)} ${(m.sizeBytes / 1e6).toFixed(1)} MB  ${m.license}  ${m.tools.join(',')}`);
     }
   });
+
+  const license = program.command('license').description('Offline-Lizenzschlüssel (Ed25519). Community-Tools bleiben frei.');
+  license
+    .command('keygen')
+    .description('Schlüsselpaar nach /tmp oder --out (Private Key nie committen)')
+    .option('--out <path>', 'Zieldatei', '/tmp/neotools-ed25519.json')
+    .action(async (flags: { out: string }) => {
+      code = await runLicenseKeygen(flags.out, io);
+    });
+  license
+    .command('issue')
+    .requiredOption('--org <name>')
+    .requiredOption('--plan <plan>', 'community|pro|enterprise')
+    .option('--days <n>', 'Gültigkeit', '365')
+    .option('--features <list>', 'z. B. api,watch,presets,whitelabel')
+    .option('--seats <n>')
+    .option('--domain <host>')
+    .requiredOption('--key <path>', 'Private-Key-Datei aus keygen')
+    .action(async (flags) => {
+      code = await runLicenseIssue(flags, io);
+    });
+  license
+    .command('verify')
+    .argument('<token>')
+    .option('--pubkey <hex>')
+    .action(async (token: string, flags: { pubkey?: string }) => {
+      code = await runLicenseVerify(token, flags.pubkey, io);
+    });
+
+  program
+    .command('watch')
+    .description('Ordner überwachen (Pro: Feature watch)')
+    .argument('<dir>')
+    .requiredOption('--pipeline <file.json>')
+    .requiredOption('--out <dir>')
+    .option('--pattern <glob>', '*.pdf')
+    .option('--move-processed <dir>')
+    .option('--poll <interval>', 'z. B. 2s')
+    .option('--fs-events', 'chokidar ohne Polling')
+    .action(async (dir: string, flags) => {
+      code = await runWatch(
+        registry,
+        {
+          dir,
+          pipeline: String(flags.pipeline),
+          out: String(flags.out),
+          pattern: flags.pattern as string | undefined,
+          moveProcessed: flags.moveProcessed as string | undefined,
+          poll: flags.poll as string | undefined,
+          fsEvents: Boolean(flags.fsEvents),
+          presets: presetsPath ? await loadPresetsFile(presetsPath) : undefined,
+        },
+        io,
+      );
+    });
 
   try {
     await program.parseAsync(argv, { from: 'user' });

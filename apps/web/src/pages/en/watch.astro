@@ -1,0 +1,14 @@
+---
+import Base from '../../layouts/Base.astro';
+import WatchApp from '../../components/WatchApp.tsx';
+import { branding } from '../../lib/branding';
+---
+<Base locale="en" title="Watch folder" description="Local folder rules in a Chromium tab" path="/watch">
+  <h1 class="text-4xl">Watch folder</h1>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">
+    Files stay on the device. Results go to <span class="mono">neotools-out/</span>, journal in history.
+  </p>
+  <div class="mt-8">
+    <WatchApp client:load locale="en" pubkey={branding.licensePubkey ?? ''} embedded={branding.license ?? ''} />
+  </div>
+</Base>

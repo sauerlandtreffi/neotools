@@ -1,0 +1,8 @@
+{
+  "id": "vor-versand",
+  "title": { "de": "Vor Versand sicher machen", "en": "Safe before sending" },
+  "steps": [
+    { "toolId": "pdf-sanitize", "options": {} },
+    { "toolId": "pdf-compress", "options": { "preset": "medium" } }
+  ]
+}

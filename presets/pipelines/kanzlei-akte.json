@@ -1,0 +1,11 @@
+{
+  "id": "kanzlei-akte",
+  "title": {
+    "de": "Kanzlei: Akte bundeln + Bates + schwärzen",
+    "en": "Firm: bundle file + Bates + redact"
+  },
+  "steps": [
+    { "toolId": "pdf-aktenbundler", "options": {} },
+    { "toolId": "pdf-redact", "options": {} }
+  ]
+}

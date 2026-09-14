@@ -11,7 +11,10 @@ if (!conf.bundle?.fileAssociations?.some((a) => a.ext?.includes('pdf'))) {
 }
 if (!conf.build?.frontendDist) throw new Error('frontendDist missing');
 if (!conf.plugins?.updater?.pubkey) throw new Error('updater pubkey placeholder missing');
-if (conf.bundle?.createUpdaterArtifacts) throw new Error('updater artifacts must stay disabled');
+if (!Array.isArray(conf.plugins?.updater?.endpoints) || !conf.plugins.updater.endpoints.length) {
+  throw new Error('updater endpoints missing');
+}
+if (conf.bundle?.createUpdaterArtifacts) throw new Error('updater artifacts must stay disabled until a real signing key exists');
 if (!conf.plugins?.deepLink?.desktop?.schemes?.includes('neotools') && !conf.plugins?.['deep-link']?.desktop?.schemes?.includes('neotools')) {
   throw new Error('deep-link scheme neotools missing');
 }

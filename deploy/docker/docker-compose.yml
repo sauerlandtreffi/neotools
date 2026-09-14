@@ -5,6 +5,76 @@ services:
       dockerfile: deploy/docker/Dockerfile
       args:
         NEOTOOLS_BRANDING: /src/branding.json
+        NEOTOOLS_LICENSE: ${NEOTOOLS_LICENSE:-}
     ports:
       - "8080:80"
     restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - edge
+      - intern
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+      args:
+        NEOTOOLS_BRANDING: /src/branding.json
+        NEOTOOLS_LICENSE: ${NEOTOOLS_LICENSE:-}
+    environment:
+      NEOTOOLS_API_HOST: 0.0.0.0
+      NEOTOOLS_API_PORT: "3000"
+      NEOTOOLS_API_KEYS: ${NEOTOOLS_API_KEYS:-dev-key-change-me}
+      NEOTOOLS_LICENSE: ${NEOTOOLS_LICENSE:-}
+      NEOTOOLS_LICENSE_PUBKEY: ${NEOTOOLS_LICENSE_PUBKEY:-}
+      NEOTOOLS_PRESETS: ${NEOTOOLS_PRESETS:-}
+      NEOTOOLS_MAX_UPLOAD_BYTES: ${NEOTOOLS_MAX_UPLOAD_BYTES:-52428800}
+      NEOTOOLS_MAX_PARALLEL: ${NEOTOOLS_MAX_PARALLEL:-2}
+      NEOTOOLS_JOB_TIMEOUT_MS: ${NEOTOOLS_JOB_TIMEOUT_MS:-120000}
+      NEOTOOLS_AUDIT_LOG: /tmp/neotools-audit.jsonl
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - intern
+    tmpfs:
+      - /tmp:size=256m
+
+  watch:
+    profiles: ["watch"]
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+    environment:
+      NEOTOOLS_LICENSE: ${NEOTOOLS_LICENSE:-}
+      NEOTOOLS_LICENSE_PUBKEY: ${NEOTOOLS_LICENSE_PUBKEY:-}
+      NEOTOOLS_PRESETS: ${NEOTOOLS_PRESETS:-}
+    volumes:
+      - ${NEOTOOLS_WATCH_IN:-./watch-in}:/in
+      - ${NEOTOOLS_WATCH_OUT:-./watch-out}:/out
+      - ${NEOTOOLS_WATCH_PIPELINE:-./pipeline.json}:/pipeline.json:ro
+    command:
+      [
+        "node",
+        "apps/cli/dist/cli.js",
+        "watch",
+        "/in",
+        "--pipeline",
+        "/pipeline.json",
+        "--out",
+        "/out",
+        "--pattern",
+        "*.pdf",
+        "--poll",
+        "2s",
+      ]
+    networks:
+      - intern
+    tmpfs:
+      - /tmp:size=256m
+
+networks:
+  edge: {}
+  intern:
+    internal: true

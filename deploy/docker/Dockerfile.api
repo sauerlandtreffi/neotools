@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+FROM node:22-bookworm-slim AS build
+WORKDIR /src
+RUN corepack enable
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc tsconfig.base.json branding.json license-pubkey.json ./
+COPY packages ./packages
+COPY apps/api ./apps/api
+COPY apps/cli ./apps/cli
+COPY apps/web ./apps/web
+COPY apps/desktop ./apps/desktop
+ARG NEOTOOLS_BRANDING=/src/branding.json
+ARG NEOTOOLS_LICENSE=
+ENV NEOTOOLS_BRANDING=${NEOTOOLS_BRANDING}
+ENV NEOTOOLS_LICENSE=${NEOTOOLS_LICENSE}
+RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm --filter @neotools/engine --filter @neotools/license --filter @neotools/tools-pdf --filter @neotools/cli --filter @neotools/api build
+
+FROM node:22-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /src /app
+EXPOSE 3000
+HEALTHCHECK CMD node -e "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "apps/api/dist/server.js"]

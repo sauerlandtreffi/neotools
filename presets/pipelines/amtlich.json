@@ -1,0 +1,11 @@
+{
+  "id": "amtlich",
+  "title": { "de": "Amtliche Veröffentlichung", "en": "Official publication" },
+  "pendingIfMissing": ["pdf-ua"],
+  "steps": [
+    { "toolId": "pdf-a", "options": {} },
+    { "toolId": "pdf-ua", "options": {} },
+    { "toolId": "pdf-sanitize", "options": {} },
+    { "toolId": "dach-hash-timestamp", "options": {} }
+  ]
+}

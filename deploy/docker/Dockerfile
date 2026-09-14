@@ -2,13 +2,15 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /src
 RUN corepack enable
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc tsconfig.base.json branding.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc tsconfig.base.json branding.json license-pubkey.json ./
 COPY packages ./packages
 COPY apps/web ./apps/web
 COPY apps/cli ./apps/cli
 COPY apps/desktop ./apps/desktop
 ARG NEOTOOLS_BRANDING=/src/branding.json
+ARG NEOTOOLS_LICENSE=
 ENV NEOTOOLS_BRANDING=${NEOTOOLS_BRANDING}
+ENV NEOTOOLS_LICENSE=${NEOTOOLS_LICENSE}
 RUN pnpm install --frozen-lockfile || pnpm install
 RUN pnpm --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/web build
 

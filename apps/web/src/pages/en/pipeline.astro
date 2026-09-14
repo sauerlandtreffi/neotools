@@ -1,21 +1,36 @@
 ---
-import { zodObjectFields } from '@neotools/engine';
+import { getAppliedPresets, zodObjectFields } from '@neotools/engine';
 import Base from '../../layouts/Base.astro';
 import PipelineBuilder from '../../components/PipelineBuilder.tsx';
 import { listPublicTools } from '../../lib/visible-tools';
+import { resolvePipelineLibrary } from '../../lib/pipeline-library';
+import { registry } from '../../lib/registry';
 
+const applied = getAppliedPresets(registry);
 const catalog = listPublicTools().map((tool) => ({
   id: tool.id,
   title: tool.title,
   fields: zodObjectFields(tool.options),
+  accept: tool.inputs.accept,
+  outputs: tool.outputs?.mime ?? [],
+  pack: tool.pack,
+  lockedKeys: applied?.locked?.[tool.id] ?? [],
 }));
+const library = resolvePipelineLibrary(registry);
+const required = Object.entries(applied?.requiredPipelines ?? {}).map(([name, tools]) => ({ name, tools }));
 ---
 <Base locale="en" title="Pipeline" description="Chain tools and share the URL hash" path="/pipeline">
   <h1 class="text-4xl">Pipeline</h1>
   <p class="mt-3 max-w-2xl" style="color: var(--muted)">
-    Add steps, set options, run. The shareable link stores the pipeline in <span class="mono">#p=</span>.
+    Steps from every pack, MIME checks, light branching, presets. The shareable link stores the pipeline in <span class="mono">#p=</span>.
   </p>
   <div class="mt-8">
-    <PipelineBuilder client:load locale="en" catalogJson={JSON.stringify(catalog)} />
+    <PipelineBuilder
+      client:load
+      locale="en"
+      catalogJson={JSON.stringify(catalog)}
+      libraryJson={JSON.stringify(library)}
+      requiredJson={JSON.stringify(required)}
+    />
   </div>
 </Base>

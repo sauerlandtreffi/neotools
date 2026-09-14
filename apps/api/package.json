@@ -1,0 +1,46 @@
+{
+  "name": "@neotools/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-Hosting REST-API (gleiche Engine wie CLI). Kein Persistieren von Dateien.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/server.js",
+  "bin": {
+    "neotools-api": "./dist/server.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "start": "node dist/server.js",
+    "dev": "node --import tsx src/server.ts"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/rate-limit": "^10.2.2",
+    "@neotools/engine": "workspace:*",
+    "@neotools/license": "workspace:*",
+    "@neotools/tools-archive": "workspace:*",
+    "@neotools/tools-dach": "workspace:*",
+    "@neotools/tools-forensics": "workspace:*",
+    "@neotools/tools-image": "workspace:*",
+    "@neotools/tools-image-ai": "workspace:*",
+    "@neotools/tools-media": "workspace:*",
+    "@neotools/tools-office": "workspace:*",
+    "@neotools/tools-pdf": "workspace:*",
+    "@neotools/tools-speech": "workspace:*",
+    "fastify": "^5.5.0",
+    "fflate": "^0.8.2",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "pdf-lib": "^1.17.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "undici": "^7.15.0",
+    "vitest": "^3.2.4"
+  }
+}

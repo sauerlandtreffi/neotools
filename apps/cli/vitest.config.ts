@@ -10,6 +10,9 @@ export default defineConfig({
       '@neotools/engine': fileURLToPath(
         new URL('../../packages/engine/src/index.ts', import.meta.url),
       ),
+      '@neotools/license': fileURLToPath(
+        new URL('../../packages/license/src/index.ts', import.meta.url),
+      ),
       '@neotools/tools-pdf': fileURLToPath(
         new URL('../../packages/tools-pdf/src/index.ts', import.meta.url),
       ),
@@ -24,6 +27,9 @@ export default defineConfig({
       ),
       '@neotools/parsers': fileURLToPath(
         new URL('../../packages/parsers/src/index.ts', import.meta.url),
+      ),
+      '@neotools/tools-image-ai': fileURLToPath(
+        new URL('../../packages/tools-image-ai/src/index.ts', import.meta.url),
       ),
       '@neotools/tools-speech': fileURLToPath(
         new URL('../../packages/tools-speech/src/index.ts', import.meta.url),

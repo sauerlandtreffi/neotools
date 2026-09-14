@@ -1,0 +1,8 @@
+{
+  "id": "bewerbung",
+  "title": { "de": "Bewerbungs-Bundle", "en": "Application bundle" },
+  "steps": [
+    { "toolId": "pdf-sanitize", "options": {} },
+    { "toolId": "pdf-merge", "options": {} }
+  ]
+}

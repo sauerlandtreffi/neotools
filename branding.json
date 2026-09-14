@@ -14,5 +14,9 @@
   "privacy": "TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking.",
   "hiddenTools": [],
   "defaultLocale": "de",
-  "footerLinks": []
+  "footerLinks": [],
+  "license": "",
+  "licensePubkey": "",
+  "presetsPath": "",
+  "showPoweredBy": true
 }

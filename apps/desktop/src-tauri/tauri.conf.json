@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'"
     }
   },
   "bundle": {
@@ -64,7 +64,10 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IE5FT1RPT0xTIFVQREFURVIgUExBQ0VIT0xERVIK",
-      "endpoints": ["https://example.invalid/neotools/desktop/{{target}}/{{arch}}/{{current_version}}"],
+      "endpoints": [
+        "https://example.invalid/neotools/desktop/{{target}}/{{arch}}/{{current_version}}",
+        "https://releases.neotools.example/desktop/{{target}}/{{arch}}/{{current_version}}"
+      ],
       "windows": {
         "installMode": "passive"
       }

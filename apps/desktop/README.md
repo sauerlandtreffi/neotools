@@ -2,7 +2,7 @@
 
 Native shell around the static `apps/web` build. Double-click a `.pdf` (or pass `--open <path>`) and the Reader route loads the file locally. A second instance forwards the path into the running window (single-instance plugin).
 
-Window title: **NeoTools**. Deep-link scheme `neotools://` is registered; the updater block is a **placeholder only** (`createUpdaterArtifacts: false`, plugin not loaded).
+Window title: **NeoTools**. Deep-link scheme `neotools://` is registered via `tauri-plugin-deep-link`. The updater plugin is loaded; `pubkey` and `endpoints` are placeholders (`createUpdaterArtifacts: false` until a real minisign key exists). Menu: Datei öffnen, Lizenz/Presets laden, Werkzeuge, Über. Optional tray icon.
 
 ## Prerequisites
 

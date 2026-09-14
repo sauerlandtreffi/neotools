@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import LicenseApp from '../components/LicenseApp.tsx';
+import { branding } from '../lib/branding';
+---
+<Base locale="de" title="Lizenz" description="Offline-Lizenzschlüssel, Community bleibt frei" path="/lizenz">
+  <h1 class="text-4xl">Lizenz</h1>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">
+    Token wird nur lokal (IndexedDB) geprüft — kein Phone-Home. Ohne Token gilt Community: alle Werkzeuge frei.
+  </p>
+  <div class="mt-8">
+    <LicenseApp client:load locale="de" pubkey={branding.licensePubkey ?? ''} embedded={branding.license ?? ''} />
+  </div>
+</Base>

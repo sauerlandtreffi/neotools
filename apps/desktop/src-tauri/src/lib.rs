@@ -4,7 +4,10 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use serde::Serialize;
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, State};
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::DialogExt;
 
 pub use args::parse_open_path;
@@ -12,6 +15,7 @@ pub use args::parse_open_path;
 #[derive(Default)]
 pub struct OpenedState {
     path: Mutex<Option<String>>,
+    recent: Mutex<Vec<String>>,
 }
 
 #[derive(Serialize, Clone)]
@@ -37,7 +41,12 @@ fn file_name(path: &str) -> String {
 
 fn set_pending(state: &OpenedState, path: String) {
     if let Ok(mut guard) = state.path.lock() {
-        *guard = Some(path);
+        *guard = Some(path.clone());
+    }
+    if let Ok(mut recent) = state.recent.lock() {
+        recent.retain(|p| p != &path);
+        recent.insert(0, path);
+        recent.truncate(8);
     }
 }
 
@@ -115,11 +124,33 @@ fn pick_save_path(app: tauri::AppHandle, default_name: Option<String>) -> Result
     Ok(picked.map(|p| p.to_string()))
 }
 
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn pick_open_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let picked = app.dialog().file().add_filter("All", &["*"]).blocking_pick_file();
+    Ok(picked.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+fn recent_files(state: State<'_, OpenedState>) -> Result<Vec<String>, String> {
+    state
+        .recent
+        .lock()
+        .map(|g| g.clone())
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             handle_startup_args(app, &argv);
             if let Some(window) = app.get_webview_window("main") {
@@ -132,10 +163,97 @@ pub fn run() {
             read_file,
             read_opened_file,
             save_file,
-            pick_save_path
+            pick_save_path,
+            read_text_file,
+            pick_open_path,
+            recent_files
         ])
         .setup(|app| {
+            let file_open = MenuItemBuilder::with_id("file_open", "Öffnen…")
+                .accelerator("CmdOrCtrl+O")
+                .build(app)?;
+            let load_license = MenuItemBuilder::with_id("load_license", "Lizenz-Token laden…").build(app)?;
+            let load_presets = MenuItemBuilder::with_id("load_presets", "Team-Presets laden…").build(app)?;
+            let tools_home = MenuItemBuilder::with_id("tools_home", "Werkzeuge").build(app)?;
+            let about = MenuItemBuilder::with_id("about", "Über NeoTools").build(app)?;
+            let file_menu = SubmenuBuilder::new(app, "Datei")
+                .item(&file_open)
+                .item(&PredefinedMenuItem::separator(app)?)
+                .item(&load_license)
+                .item(&load_presets)
+                .build()?;
+            let tools_menu = SubmenuBuilder::new(app, "Werkzeuge").item(&tools_home).build()?;
+            let help_menu = SubmenuBuilder::new(app, "Hilfe").item(&about).build()?;
+            let menu = MenuBuilder::new(app)
+                .item(&file_menu)
+                .item(&tools_menu)
+                .item(&help_menu)
+                .build()?;
+            app.set_menu(menu)?;
+            let _tray = TrayIconBuilder::new()
+                .tooltip("NeoTools")
+                .on_tray_icon_event(|tray, _event| {
+                    if let Some(window) = tray.app_handle().get_webview_window("main") {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                })
+                .build(app)?;
+            app.on_menu_event(|app, event| {
+                match event.id().as_ref() {
+                    "file_open" => {
+                        if let Some(path) = app
+                            .dialog()
+                            .file()
+                            .add_filter("PDF", &["pdf"])
+                            .blocking_pick_file()
+                        {
+                            apply_open_path(app, path.to_string());
+                        }
+                    }
+                    "load_license" => {
+                        if let Some(path) = app
+                            .dialog()
+                            .file()
+                            .add_filter("License", &["txt", "json", "lic"])
+                            .blocking_pick_file()
+                        {
+                            if let Ok(text) = std::fs::read_to_string(path.to_string()) {
+                                let _ = app.emit("load-license-token", text);
+                            }
+                        }
+                    }
+                    "load_presets" => {
+                        if let Some(path) = app
+                            .dialog()
+                            .file()
+                            .add_filter("Presets", &["json"])
+                            .blocking_pick_file()
+                        {
+                            if let Ok(text) = std::fs::read_to_string(path.to_string()) {
+                                let _ = app.emit("load-team-presets", text);
+                            }
+                        }
+                    }
+                    "tools_home" => {
+                        let _ = app.emit("navigate", "/");
+                    }
+                    "about" => {
+                        let _ = app.emit("about", "NeoTools Desktop 0.1.0");
+                    }
+                    _ => {}
+                }
+            });
             let handle = app.handle().clone();
+            handle.deep_link().on_open_url({
+                let handle = handle.clone();
+                move |event| {
+                    for url in event.urls() {
+                        let _ = handle.emit("open-deep-link", url.to_string());
+                    }
+                }
+            });
             let args: Vec<String> = std::env::args().collect();
             if parse_open_path(&args).is_some() || args.iter().any(|a| a.starts_with("neotools:")) {
                 std::thread::spawn(move || {

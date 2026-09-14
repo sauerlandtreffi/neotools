@@ -1,16 +1,14 @@
 {
   "name": "@neotools/cli",
   "version": "0.1.0",
-  "description": "NeoTools CLI \u2014 dieselben Tool-Definitionen wie im Browser.",
+  "description": "NeoTools CLI — dieselben Tool-Definitionen wie im Browser.",
   "license": "MIT",
   "type": "module",
   "bin": {
     "neotools": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"import('node:fs').then(fs=>fs.chmodSync('dist/cli.js',0o755))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -24,12 +22,16 @@
     "@neotools/tools-image-ai": "workspace:*",
     "@neotools/tools-image": "workspace:*",
     "@neotools/tools-dach": "workspace:*",
-    "@neotools/parsers": "workspace:*",
-    "commander": "^13.1.0",
-    "zod": "^3.24.2",
-    "@neotools/tools-speech": "workspace:*",
     "@neotools/tools-archive": "workspace:*",
-    "@neotools/models": "workspace:*"
+    "@neotools/tools-speech": "workspace:*",
+    "@neotools/tools-office": "workspace:*",
+    "@neotools/tools-media": "workspace:*",
+    "@neotools/models": "workspace:*",
+    "@neotools/parsers": "workspace:*",
+    "@neotools/license": "workspace:*",
+    "chokidar": "^4.0.3",
+    "commander": "^13.1.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.18.1",
