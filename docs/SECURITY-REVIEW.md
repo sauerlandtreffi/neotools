@@ -1,158 +1,160 @@
-# Security Review — Welle 5 (adversarial, mit Fix-Mandat)
+🇬🇧 English · [🇩🇪 Deutsch](./SECURITY-REVIEW.de.md)
 
-Datum: 2026-09-14. Scope: pdf-redact/verify, pdf-sanitize, Lizenz, API, Archive, Web-Header/SW/Pipeline, Netzwerk, Desktop.
+# Security Review — Wave 5 (adversarial, with fix mandate)
 
-Zweiter Durchgang (gleicher Tag): jede Behauptung des ersten Durchgangs wurde gegen Code **und** Tests
-geprüft. Wo ein Test grün war, ohne den Angriff wirklich abzubilden (F26), wurde der Test in einen echten
-Angriff umgebaut und die Implementierung repariert. Neue Findings ab F25.
+Date: 2026-09-14. Scope: pdf-redact/verify, pdf-sanitize, license, API, archives, web headers/SW/pipeline, network, desktop.
 
-## Findings nach Schweregrad
+Second pass (same day): every claim of the first pass was checked against code **and** tests.
+Where a test was green without actually modelling the attack (F26), the test was rebuilt into a real
+attack and the implementation repaired. New findings from F25 onwards.
 
-| Schwere | Anzahl (gesamt) | gefixt | dokumentierte Grenze |
+## Findings by severity
+
+| Severity | Count (total) | fixed | documented limit |
 |---|---|---|---|
-| kritisch | 3 (F1–F3) | 3 | 0 |
-| hoch | 9 (F4–F9, F25, F29, F35) | 9 | Restrisiken → Grenzen 1, 6, 7 |
-| mittel | 18 (F10–F18, F26–F28, F31–F33, F36, F37, F41) | 18 | Grenzen 8, 9, 10 |
-| niedrig | 11 (F19–F24, F30, F34, F38–F40) | 11 | Grenze 11 |
+| critical | 3 (F1–F3) | 3 | 0 |
+| high | 9 (F4–F9, F25, F29, F35) | 9 | residual risks → limits 1, 6, 7 |
+| medium | 18 (F10–F18, F26–F28, F31–F33, F36, F37, F41) | 18 | limits 8, 9, 10 |
+| low | 11 (F19–F24, F30, F34, F38–F40) | 11 | limit 11 |
 
 ## Findings
 
-| ID | Schwere | Bereich | Repro | Fix | Rest |
+| ID | Severity | Area | Repro | Fix | Residual |
 |---|---|---|---|---|---|
-| F1 | kritisch | API Jobs | `GET /jobs/:id` mit anderem Key | Job an `sha256(apiKey)` binden; 404 sonst | — |
-| F2 | kritisch | Desktop | `read_file`/`save_file` beliebiger Pfad | Allowlist: Dialog, argv, Association | — |
-| F3 | kritisch | PDF redact | Ungenutzte Streams / inkrementelles Update halten Klartext | `savePdfRewritten` (neues Doc, `useObjectStreams: false`) | — |
-| F4 | hoch | PDF redact | TJ-Kerning, Form-XObject, AP-Streams, Outline, XMP, StructTree `ActualText` | Stream-Rewrite inkl. TJ-Join, AP, Meta-Walk, Struct/XMP-Scrub | Glyphs ohne ToUnicode: Verify **fail** + Warnung |
-| F5 | hoch | PDF sanitize | `/AA`, XFA, URI/Launch/SubmitForm, RichMedia, Rohbytes | Strip + Byte-Scan außerhalb Streams | Keyword in komprimiertem Stream-Body nur nach inflate |
-| F6 | hoch | License | Token ohne Pubkey / `payloadFromResult` bei Fail | Community, niemals Pro; `hasFeature` fail-closed | Keine vertrauenswürdige Uhr |
-| F7 | hoch | API Auth | `Set.has` nicht zeitkonstant; Dateinamen `../` in ZIP | `timingSafeEqual`; `safeDownloadName` | — |
-| F8 | hoch | Archive | Zip-Bomb nur Warning; TAR-Symlink | Ratio+Größe → Abbruch; Typ 1/2 übersprungen | 7z über optionales WASM |
-| F9 | hoch | Web Pipeline | Hash-Import ohne Tool-Whitelist / `__proto__` | `sanitizePipelineSteps` | — |
-| F10 | mittel | API Upload | `toBuffer()` vor Limit | Stream + `Content-Length` + multipart `fileSize` | — |
-| F11 | mittel | API | vorhersagbare Job-IDs | 16 Byte CSPRNG | — |
-| F12 | mittel | API | keine Security-Header / CORS | Header + `NEOTOOLS_CORS_ORIGINS` | — |
-| F13 | mittel | License | `alg=none` JWT; nicht-kanonisches JSON | Reject | — |
-| F14 | mittel | Web SW | Cache-all GET | nur Precache + `/_astro` + `/assets` | — |
-| F15 | mittel | Web | `assessExtension` per Umbenennung | Magic + Markup unabhängig von Endung | — |
-| F16 | mittel | Web | Download-Dateiname / Markdown | Escape + DOMPurify FORBID | — |
-| F17 | mittel | PDF verify | Pixel-Skip `passed: true` | advisory + `warnings[]`, UI nicht still-grün | Node ohne Canvas: Warnung |
-| F18 | mittel | Archive | Case/Unicode-Kollision, Glob-ReDoS | NFC+case key; Glob-Länge | — |
-| F19 | niedrig | Branding | `javascript:` Logo, CSS-Injection | `safeAssetUrl` / `safeCssColor` | — |
-| F20 | niedrig | Desktop | Deep-Link unvalidiert | nur `neotools://tool/<kebab>` | — |
-| F21 | niedrig | History | IDB-Settings nach `clear` | Settings-Store + `deleteDatabase` | — |
-| F22 | niedrig | License | `issuedAt` in der Zukunft | fail-closed (>24h) | — |
-| F23 | niedrig | API Audit | Dateinamen | nur Hashes (unverändert) | — |
-| F24 | niedrig | CSP | `vercel.json` ohne Permissions-Policy | ergänzt; nginx/`_headers`/Astro-Middleware gleich | `unsafe-inline` für Astro-Hydration |
-| **F25** | **hoch** | PDF redact | IBAN **nur** in Annotation (`/Contents`, `/RC`, `/Subj`, `/T`, Popup) oder AP-Stream: pdf.js-Textextraktion sieht sie nicht → kein Hit → kein Scrub, Rohbytes/AP behalten IBAN. Verify ebenfalls blind für AP-Text (falsch-grün). | `collectMetaHits()` scannt Info/Outline/StructTree/XMP/Annotationen/AP-Streams mit den Patterns und erzeugt Hits (Seite 0 bzw. Annot-Seite); `collectAppearanceText()` fließt in `verify :meta` ein | AP-Hex-Strings ohne Font-Mapping werden als Latin-1 gelesen |
-| **F26** | **mittel** | PDF redact (Test) | Test „inkrementelles Update“ erzeugte einen **unregistrierten** flate-Stream → landete nie in der Datei, Precondition falsch, Test hätte nie einen Angriff geprüft | Test baut jetzt eine echte `/Prev`-Update-Sektion mit verwaistem, unkomprimiertem Stream; zusätzlicher Verify-Fail-Test (`:incremental`, `:bytes`) | — |
-| **F27** | **mittel** | PDF redact | Rewrite von Form-XObjects/AP-Streams verwarf Dict-Keys (`Subtype`, `Matrix`, `Group`, `FormType`) → Renderer kann Form ignorieren; AP-Stream-Resources (verschachtelte XObjects) wurden nicht rewritten | `copyStreamDict()` behält alle Keys außer Kodierung; AP → `rewriteXObjectForms` rekursiv; Test „zwei Ebenen tief“ | — |
-| **F28** | **mittel** | PDF verify | `pagesMissingToUnicode` ignorierte Type3 und Fonts in AP-Streams | Type3 immer gemeldet; AP-Resources gewalkt; Test | Type3-Seite ohne Canvas bleibt **fail** (ehrlich rot) |
-| **F29** | **hoch** | PDF sanitize | Preset „Kommentare behalten“: Seiten-`/AA`, Feld-`/AA` (JS/SubmitForm), Outline-`/A` (Launch) blieben; `inspectPdf` sah Outline/AcroForm-Aktionen nicht → Verify grün trotz Launch | `stripActionsDeep()` (AA überall, `/A` außer GoTo/Named), `/CO` weg, Seiten-AA immer; inspect walkt Outlines + AcroForm; Test | — |
-| **F30** | **niedrig** | PDF sanitize | Byte-Scan matchte Substrings (`/AA` in `/AAPL`, `/JS` in `/JSON`); Liste ohne `/SubmitForm`, `/URI`, `/GoToR`, `/Screen`, `/FileAttachment`; Trailer-`/ID` unverifiziert | Token-Grenzen-Match, Liste erweitert, `trailerId`-Check | Keyword in Stream-Body nur nach inflate (siehe Grenze 6) |
-| **F31** | **mittel** | License | `payloadFromResult`/`hasFeature` akzeptierten `ok:false && grace:true` (konstruierbares Objekt) | nur `ok === true`; Typ-Guards; Tests: Feature-/Plan-Eskalation, fremder Pubkey, Grace-Grenze 14d ± 1s, forged grace | kein `domain`-Binding-Check (Grenze 9) |
-| **F32** | **mittel** | API Rate-Limit | Bucket-Key = präsentierter Key → jeder Rate-Versuch mit neuem (ungültigen) Key bekam frischen Bucket; Brute-Force ungebremst | nur **gültiger** Key erhält eigenen Bucket (`key:sha256`), sonst `ip:`; `/docs` nicht mehr allowlisted; Test 3×401 → 429 | hinter Proxy `trustProxy:false` → eine IP (Grenze 10) |
-| **F33** | **mittel** | API Jobs | Job-Records inkl. Output-Bytes nie evicted (Memory-DoS); `get()` gab Jobs ohne Owner / ohne Key frei | Retention 10 min + Cap 1000 (`evict()`), Owner-Check strikt; Test | Inline-Worker nicht abbrechbar (Grenze 8) |
-| **F34** | **niedrig** | API | CORS-Preflight erlaubter Origins → 404; Fehlertexte konnten Pfade tragen (`ENOENT … /root/…`); Job-Timeout als 500; kein `requestTimeout` | Preflight 204 + Expose-Headers; `publicErrorMessage()` für 4xx/Job-Fehler, 5xx generisch, 504 bei Timeout; `requestTimeout`/`connectionTimeout`; `whenMime`/Schrittzahl validiert | — |
-| **F35** | **hoch** | Archive | Bomb-Prüfung erst **nach** `unzipSync` (alles bereits im RAM); `.tgz` via `gunzipSync` ohne Limit; Passwort-ZIP ohne Limit | `unzipSync(..., { filter })` prüft Central-Directory-Größen vor Inflate; `gunzipLimited()` streamt mit Cap; zip.js-Pfad prüft `uncompressedSize`/Ratio; Tests 2 MiB-Bombe, 80 MiB-Summe, gzip-Bombe | 7z/rar nicht gebündelt |
-| **F36** | **mittel** | Archive TAR | ustar-`prefix` ignoriert (Pfad-Fehlzuordnung, `..` im Prefix); Device/FIFO-Einträge als Dateien; kein Gesamt-Cap; keine Kollisionsprüfung | Prefix gejoint → `safeRelPath`; nur Typ 0/NUL/7; `maxTotal`; NFC/Case-Kollision; Tests | — |
-| **F37** | **mittel** | Web Pipeline | `sanitizePipelineOptions` ließ Arrays roh durch (Objekte mit `__proto__` in Arrays), keine Tiefen-/Key-/String-Limits, Hash-Länge unbegrenzt, `whenMime` unvalidiert, Objekte mit fremdem Prototyp | Rekursive Plain-JSON-Sanitisierung (Tiefe 6, 256 Keys, 4 KiB Strings, 32 Schritte), `decodePipelineHash()` 64 KiB + base64url-Regex, MIME-Regex; Tests | — |
-| **F38** | **niedrig** | Web SW | Kein Origin-/Protokoll-Guard (nur GET-Check); `/api/`-Antworten und Requests mit `Authorization`/`Range` konnten in die Cache-Logik laufen | Same-origin + http(s) + `/api/`-Passthrough + Header-Guard; statischer Test zählt `cache.put`-Stellen (2) | — |
-| **F39** | **niedrig** | Desktop | Tauri-CSP ohne `frame-ancestors`; Validator prüfte nur `fs:allow-all`/`fs:default` | CSP-Parität (Vitest vergleicht Direktiven), Validator: alle `fs/shell/http/process/os/…`-Permissions, `allow-all`, `remote`, Fenster-Scope, `path_allowed()` in `read_file`/`save_file`, `'unsafe-eval'`-Verbot | — |
-| **F40** | **niedrig** | E2E | network-whitelist nahm Seitenliste von Home-Karten (nicht dist), kein `/en`-Spiegel, Fremdrequests wurden nur protokolliert | Seitenliste aus `apps/web/dist` (alle `index.html`, 10 % `formats`/`convert`), `context.route` **abortet** Fremd-Origins, Phone-home-Probe (fetch + `sendBeacon` müssen scheitern) | — |
-| **F41** | **mittel** | PDF verify (Browser) | Nach F25 trugen Metadaten-Treffer `page: 0`; die Pixel-Stichprobe rief `pdf.getPage(0)` → `Invalid page request`, der Verify-Block erschien im Browser nie (E2E d2 + Form-XObject rot). Außerdem wurden `CreationDate`/`Producer` als `telefon`/`datum`-Treffer gemeldet | `pixelSample` nur für Seiten ≥ 1 mit sichtbarer Box, `sampleBoxMeans` clampt auf `numPages`; `collectMetaHits` filtert `isTechnicalPdfMeta`; Regressionstest mit `capabilities.canvas=true` in Node (fällt ohne Fix mit `Invalid page request` durch) | — |
+| F1 | critical | API jobs | `GET /jobs/:id` with another key | bind job to `sha256(apiKey)`; 404 otherwise | — |
+| F2 | critical | Desktop | `read_file`/`save_file` with arbitrary path | allowlist: dialog, argv, association | — |
+| F3 | critical | PDF redact | unused streams / incremental update keep plaintext | `savePdfRewritten` (new doc, `useObjectStreams: false`) | — |
+| F4 | high | PDF redact | TJ kerning, form XObject, AP streams, outline, XMP, StructTree `ActualText` | stream rewrite incl. TJ join, AP, meta walk, struct/XMP scrub | glyphs without ToUnicode: verify **fail** + warning |
+| F5 | high | PDF sanitize | `/AA`, XFA, URI/Launch/SubmitForm, RichMedia, raw bytes | strip + byte scan outside streams | keyword in compressed stream body only after inflate |
+| F6 | high | License | token without pubkey / `payloadFromResult` on fail | Community, never Pro; `hasFeature` fail-closed | no trusted clock |
+| F7 | high | API auth | `Set.has` not constant-time; file names `../` in ZIP | `timingSafeEqual`; `safeDownloadName` | — |
+| F8 | high | Archive | zip bomb only a warning; TAR symlink | ratio+size → abort; type 1/2 skipped | 7z via optional WASM |
+| F9 | high | Web pipeline | hash import without tool whitelist / `__proto__` | `sanitizePipelineSteps` | — |
+| F10 | medium | API upload | `toBuffer()` before limit | stream + `Content-Length` + multipart `fileSize` | — |
+| F11 | medium | API | predictable job IDs | 16-byte CSPRNG | — |
+| F12 | medium | API | no security headers / CORS | headers + `NEOTOOLS_CORS_ORIGINS` | — |
+| F13 | medium | License | `alg=none` JWT; non-canonical JSON | reject | — |
+| F14 | medium | Web SW | cache-all GET | precache + `/_astro` + `/assets` only | — |
+| F15 | medium | Web | `assessExtension` bypass by renaming | magic + markup independent of extension | — |
+| F16 | medium | Web | download file name / Markdown | escape + DOMPurify FORBID | — |
+| F17 | medium | PDF verify | pixel skip `passed: true` | advisory + `warnings[]`, UI not silently green | Node without canvas: warning |
+| F18 | medium | Archive | case/Unicode collision, glob ReDoS | NFC+case key; glob length | — |
+| F19 | low | Branding | `javascript:` logo, CSS injection | `safeAssetUrl` / `safeCssColor` | — |
+| F20 | low | Desktop | deep link unvalidated | only `neotools://tool/<kebab>` | — |
+| F21 | low | History | IDB settings after `clear` | settings store + `deleteDatabase` | — |
+| F22 | low | License | `issuedAt` in the future | fail-closed (>24h) | — |
+| F23 | low | API audit | file names | hashes only (unchanged) | — |
+| F24 | low | CSP | `vercel.json` without Permissions-Policy | added; nginx/`_headers`/Astro middleware identical | `unsafe-inline` for Astro hydration |
+| **F25** | **high** | PDF redact | IBAN **only** in an annotation (`/Contents`, `/RC`, `/Subj`, `/T`, popup) or AP stream: pdf.js text extraction does not see it → no hit → no scrub, raw bytes/AP keep the IBAN. Verify equally blind to AP text (false green). | `collectMetaHits()` scans Info/Outline/StructTree/XMP/annotations/AP streams with the patterns and produces hits (page 0 or annotation page); `collectAppearanceText()` feeds into `verify :meta` | AP hex strings without font mapping are read as Latin-1 |
+| **F26** | **medium** | PDF redact (test) | the "incremental update" test created an **unregistered** flate stream → never landed in the file, precondition wrong, the test would never have checked an attack | test now builds a real `/Prev` update section with an orphaned, uncompressed stream; additional verify-fail test (`:incremental`, `:bytes`) | — |
+| **F27** | **medium** | PDF redact | rewrite of form XObjects/AP streams discarded dict keys (`Subtype`, `Matrix`, `Group`, `FormType`) → renderer may ignore the form; AP stream resources (nested XObjects) were not rewritten | `copyStreamDict()` keeps all keys except encoding; AP → `rewriteXObjectForms` recursively; test "two levels deep" | — |
+| **F28** | **medium** | PDF verify | `pagesMissingToUnicode` ignored Type3 and fonts in AP streams | Type3 always reported; AP resources walked; test | Type3 page without canvas stays **fail** (honestly red) |
+| **F29** | **high** | PDF sanitize | preset "keep comments": page `/AA`, field `/AA` (JS/SubmitForm), outline `/A` (Launch) remained; `inspectPdf` did not see outline/AcroForm actions → verify green despite Launch | `stripActionsDeep()` (AA everywhere, `/A` except GoTo/Named), `/CO` removed, page AA always; inspect walks outlines + AcroForm; test | — |
+| **F30** | **low** | PDF sanitize | byte scan matched substrings (`/AA` in `/AAPL`, `/JS` in `/JSON`); list without `/SubmitForm`, `/URI`, `/GoToR`, `/Screen`, `/FileAttachment`; trailer `/ID` unverified | token-boundary match, list extended, `trailerId` check | keyword in stream body only after inflate (see limit 6) |
+| **F31** | **medium** | License | `payloadFromResult`/`hasFeature` accepted `ok:false && grace:true` (constructible object) | only `ok === true`; type guards; tests: feature/plan escalation, foreign pubkey, grace boundary 14d ± 1s, forged grace | no `domain` binding check (limit 9) |
+| **F32** | **medium** | API rate limit | bucket key = presented key → every attempt with a new (invalid) key got a fresh bucket; brute force unthrottled | only a **valid** key gets its own bucket (`key:sha256`), otherwise `ip:`; `/docs` no longer allowlisted; test 3×401 → 429 | behind proxy `trustProxy:false` → one IP (limit 10) |
+| **F33** | **medium** | API jobs | job records incl. output bytes never evicted (memory DoS); `get()` released jobs without owner / without key | retention 10 min + cap 1000 (`evict()`), strict owner check; test | inline worker not abortable (limit 8) |
+| **F34** | **low** | API | CORS preflight of allowed origins → 404; error texts could carry paths (`ENOENT … /root/…`); job timeout as 500; no `requestTimeout` | preflight 204 + expose headers; `publicErrorMessage()` for 4xx/job errors, 5xx generic, 504 on timeout; `requestTimeout`/`connectionTimeout`; `whenMime`/step count validated | — |
+| **F35** | **high** | Archive | bomb check only **after** `unzipSync` (everything already in RAM); `.tgz` via `gunzipSync` without limit; password ZIP without limit | `unzipSync(..., { filter })` checks central directory sizes before inflate; `gunzipLimited()` streams with cap; zip.js path checks `uncompressedSize`/ratio; tests 2 MiB bomb, 80 MiB total, gzip bomb | 7z/rar not bundled |
+| **F36** | **medium** | Archive TAR | ustar `prefix` ignored (path misassignment, `..` in prefix); device/FIFO entries as files; no total cap; no collision check | prefix joined → `safeRelPath`; only type 0/NUL/7; `maxTotal`; NFC/case collision; tests | — |
+| **F37** | **medium** | Web pipeline | `sanitizePipelineOptions` let arrays through raw (objects with `__proto__` in arrays), no depth/key/string limits, hash length unbounded, `whenMime` unvalidated, objects with foreign prototype | recursive plain-JSON sanitization (depth 6, 256 keys, 4 KiB strings, 32 steps), `decodePipelineHash()` 64 KiB + base64url regex, MIME regex; tests | — |
+| **F38** | **low** | Web SW | no origin/protocol guard (GET check only); `/api/` responses and requests with `Authorization`/`Range` could enter the cache logic | same-origin + http(s) + `/api/` passthrough + header guard; static test counts `cache.put` sites (2) | — |
+| **F39** | **low** | Desktop | Tauri CSP without `frame-ancestors`; validator only checked `fs:allow-all`/`fs:default` | CSP parity (Vitest compares directives), validator: all `fs/shell/http/process/os/…` permissions, `allow-all`, `remote`, window scope, `path_allowed()` in `read_file`/`save_file`, `'unsafe-eval'` ban | — |
+| **F40** | **low** | E2E | network whitelist took the page list from home cards (not dist), no `/en` mirror, foreign requests were only logged | page list from `apps/web/dist` (all `index.html`, 10 % `formats`/`convert`), `context.route` **aborts** foreign origins, phone-home probe (fetch + `sendBeacon` must fail) | — |
+| **F41** | **medium** | PDF verify (browser) | after F25 metadata hits carried `page: 0`; the pixel sample called `pdf.getPage(0)` → `Invalid page request`, the verify block never appeared in the browser (E2E d2 + form XObject red). `CreationDate`/`Producer` were also reported as `telefon`/`datum` hits | `pixelSample` only for pages ≥ 1 with a visible box, `sampleBoxMeans` clamps to `numPages`; `collectMetaHits` filters `isTechnicalPdfMeta`; regression test with `capabilities.canvas=true` in Node (fails with `Invalid page request` without the fix) | — |
 
-## Dokumentierte Grenzen (UI / Verify niemals falsch-grün)
+## Documented limits (UI / verify never falsely green)
 
-1. **ToUnicode fehlt** (CID/Type0 ohne CMap) und **Type3**: pdf.js liefert keinen Klartext. Verify setzt `passed: false` + Warnung „Glyph-Codes können Klartext halten“. Backlog: CMap-/Glyph-Analyse.
-2. **Clip-Text (Tr 4–7)** und **Type3**: Stream wird geblankt, Seite `hard` → Raster-Fallback. Ohne Canvas: „Rasterisierung nicht möglich“ + Verify bleibt rot.
-3. **IBAN über Bildpixel** (Scan): nur mit `ocrScanned` / Raster. Auto-Regex sieht keinen OCR-Text.
-4. **Uhr-Rückstellung** unter 24h: License bleibt gültig (kein Trusted Timestamp). Darüber fail-closed.
-5. **TSA / Modell-Download**: Nutzer-URL bzw. same-origin `/assets` — siehe Netzwerktabelle.
-6. **Sanitize-Byte-Scan** sieht nur außerhalb von `stream…endstream`. Da `savePdfRewritten` mit `useObjectStreams:false` schreibt, liegen alle Dicts unkomprimiert → der Scan ist für die Ausgabe aussagekräftig; für *Eingaben* mit Objekt-Streams nur nach Parse.
-7. **Archive-Verschachtelung**: Tiefe 0 — verschachtelte Archive werden nie rekursiv entpackt, nur gemeldet (`MAX_NESTING_DEPTH = 0`). 7z/rar nur mit optionalem libarchive.js.
-8. **API Inline-Worker** (`NEOTOOLS_API_INLINE=1`, Tests): ein hängender Job kann nicht terminiert werden; nur Worker-Threads werden bei Timeout beendet. Antwort ist trotzdem 504.
-9. **License `domain`**: wird signiert, aber zur Laufzeit nicht gegen den Host geprüft (Web-Origin ist nicht vertrauenswürdig).
-10. **Rate-Limit** ist In-Memory pro Prozess und `trustProxy:false`: hinter einem Reverse-Proxy teilen sich alle Clients mit *ungültigem* Key einen IP-Bucket (gültige Keys haben eigene Buckets). Bei Proxy-Betrieb `X-Forwarded-For` bewusst konfigurieren.
-11. **ZIP-Ratio bei Kleinstdateien**: Ein 20-KB-Textfile mit 200× Kompression löst den Ratio-Abbruch aus (Vorab-Filter greift erst ab 1 MiB, Post-Check bleibt strikt). Sicherheitsseitig konservativ, Usability-Backlog.
+1. **ToUnicode missing** (CID/Type0 without CMap) and **Type3**: pdf.js yields no plaintext. Verify sets `passed: false` + warning "glyph codes may hold plaintext". Backlog: CMap/glyph analysis.
+2. **Clipped text (Tr 4–7)** and **Type3**: stream is blanked, page `hard` → raster fallback. Without canvas: "rasterization not possible" + verify stays red.
+3. **IBAN in image pixels** (scan): only with `ocrScanned` / raster. The auto-regex sees no OCR text.
+4. **Clock rollback** under 24h: license stays valid (no trusted timestamp). Beyond that, fail-closed.
+5. **TSA / model download**: user URL or same-origin `/assets` — see network table.
+6. **Sanitize byte scan** only sees outside of `stream…endstream`. Since `savePdfRewritten` writes with `useObjectStreams:false`, all dicts are uncompressed → the scan is meaningful for the output; for *inputs* with object streams only after parsing.
+7. **Archive nesting**: depth 0 — nested archives are never extracted recursively, only reported (`MAX_NESTING_DEPTH = 0`). 7z/rar only with optional libarchive.js.
+8. **API inline worker** (`NEOTOOLS_API_INLINE=1`, tests): a hanging job cannot be terminated; only worker threads are ended on timeout. The response is still 504.
+9. **License `domain`**: signed but not checked against the host at runtime (the web origin is not trustworthy).
+10. **Rate limit** is in-memory per process and `trustProxy:false`: behind a reverse proxy all clients with an *invalid* key share one IP bucket (valid keys have their own buckets). Configure `X-Forwarded-For` deliberately when running behind a proxy.
+11. **ZIP ratio for tiny files**: a 20 KB text file with 200× compression triggers the ratio abort (the pre-filter only kicks in from 1 MiB, the post-check stays strict). Conservative from a security point of view, usability backlog.
 
-## Verifiziert am 2026-09-14
+## Verified on 2026-09-14
 
-Gelaufen (alle grün):
+Run (all green):
 
-| Befehl / Datei | Ergebnis |
+| Command / file | Result |
 |---|---|
-| `pnpm --filter @neotools/tools-pdf test` | 19 Dateien, 76 Tests — davon `test/pdf-redact-adversarial.test.ts` 20, `test/pdf-sanitize-adversarial.test.ts` 4 |
-| `pnpm --filter @neotools/license test` | 15 Tests (`test/license.test.ts`) |
-| `pnpm --filter @neotools/tools-archive test` | 14 Tests (`test/archive-pack.test.ts`) |
-| `pnpm --filter @neotools/api test` | 15 Tests (`test/api.test.ts`) |
-| `pnpm --filter @neotools/web test` | 11 Dateien, 41 Tests — davon `test/security-wave5.test.ts` 11 |
+| `pnpm --filter @neotools/tools-pdf test` | 19 files, 76 tests — of which `test/pdf-redact-adversarial.test.ts` 20, `test/pdf-sanitize-adversarial.test.ts` 4 |
+| `pnpm --filter @neotools/license test` | 15 tests (`test/license.test.ts`) |
+| `pnpm --filter @neotools/tools-archive test` | 14 tests (`test/archive-pack.test.ts`) |
+| `pnpm --filter @neotools/api test` | 15 tests (`test/api.test.ts`) |
+| `pnpm --filter @neotools/web test` | 11 files, 41 tests — of which `test/security-wave5.test.ts` 11 |
 | `node apps/desktop/scripts/validate-config.mjs` | ok |
-| `pnpm --filter @neotools/web exec playwright test e2e/wave5.spec.ts -g Form-XObject` | 1 passed (Verdikt-Zeile + Check-Zeilen, rot nur mit Begründung) |
-| `pnpm --filter @neotools/web exec playwright test e2e/network-whitelist.spec.ts` | 2 passed — alle dist-Seiten (> 220 inkl. `/en`, Tool-, Static-, `vergleich`-, `guides`-Seiten) + 10 % `formats`/`convert`, 3,5 min, 0 Fremd-Origins |
+| `pnpm --filter @neotools/web exec playwright test e2e/wave5.spec.ts -g Form-XObject` | 1 passed (verdict line + check lines, red only with a reason) |
+| `pnpm --filter @neotools/web exec playwright test e2e/network-whitelist.spec.ts` | 2 passed — all dist pages (> 220 incl. `/en`, tool, static, `vergleich`, `guides` pages) + 10 % `formats`/`convert`, 3.5 min, 0 foreign origins |
 | `pnpm -r typecheck` | ok |
-| `pnpm lint` | 0 Fehler (18 vorbestehende Warnungen in anderen Paketen) |
+| `pnpm lint` | 0 errors (18 pre-existing warnings in other packages) |
 
-Neue/erweiterte Tests in diesem Durchgang: 25 (tools-pdf 7 neu, 2 umgebaut · license 3 · archive 5 · api 5 · web 5 · e2e 2 umgebaut/verschärft).
+New/extended tests in this pass: 25 (tools-pdf 7 new, 2 rebuilt · license 3 · archive 5 · api 5 · web 5 · e2e 2 rebuilt/tightened).
 
-Kein privater Schlüssel im Repo: `rg -n "BEGIN (EC |RSA |OPENSSH |)PRIVATE" /root/Neotools --glob '!node_modules'` → keine Treffer.
+No private key in the repo: `rg -n "BEGIN (EC |RSA |OPENSSH |)PRIVATE" /root/Neotools --glob '!node_modules'` → no hits.
 
-## Neue Tests (Welle 5, beide Durchgänge)
+## New tests (wave 5, both passes)
 
-- `packages/tools-pdf/test/pdf-redact-adversarial.test.ts` — TJ-Join, Form-XObject (1 + 2 Ebenen, Dict-Keys erhalten), FreeText/Text/Popup/Link/Stamp-Annotationen inkl. RC/Subj/T/AP, Outline, XMP, StructTree, echtes inkrementelles Update (Redact + Verify-Fail), Bild-Overlay, Tr 7, Tc/Tw/Tz, IBAN mit ZWSP/NBSP/Soft-Hyphen/WJ/CRLF, ToUnicode-Fail, Type3-Fail, Overlay-only-Fail, Pixel-Skip advisory
-- `packages/tools-pdf/test/pdf-sanitize-adversarial.test.ts` — Strict-Preset, Keep-annots-Preset (Seiten-AA, Feld-AA, Outline-Launch, Link-URI), Byte-Scan-Tokengrenzen + Keyword-Liste, Roh-`/JavaScript`-Fail
-- `packages/license/test/license.test.ts` — Pubkey fehlt, validUntil/features/plan-Tamper, unbekanntes Feature, fremder Pubkey, kanonisches JSON, `alg=none`, Grace 14d-Grenze, forged grace, fail-closed, kein PEM
-- `apps/api/test/api.test.ts` — Job-Isolation + Eviction, Rate-Limit per IP für ungültige Keys, CORS-Preflight/Deny, Security-Header, `publicErrorMessage`, `safeDownloadName`, Content-Length-413, Pipeline-Whitelist
-- `packages/tools-archive/test/archive-pack.test.ts` — Backslash/UNC/Drive/`~`/NUL, ZIP-Bombe vor Inflate, Summen-Cap, gzip-Bombe, TAR-Cap, TAR Device/FIFO/Hardlink/Symlink/Prefix, Verschachtelung Tiefe 0, Kollision, Glob
-- `apps/web/test/security-wave5.test.ts` — Header-Parität `_headers`/`vercel.json`/`nginx.conf`/`server.mjs`/`middleware.ts`/Tauri, CSP-Invarianten, SW-Policy, Pipeline-Import-Limits, `decodePipelineHash`, Branding, DOMPurify, Download-Namen, Extension-Bypass
-- `apps/web/e2e/network-whitelist.spec.ts` — dist-basierte Seitenliste, Fremd-Origins abgebrochen + Fail, Phone-home-Probe
-- `apps/web/e2e/wave5.spec.ts` — pdf-redact Form-XObject: Verdikt nie leer; rot ⇒ FAIL/WARN mit Text, grün ⇒ kein FAIL, `:bytes`/`:text`-Check sichtbar
-- Desktop: `valid_deep_link` Rust-Tests; `scripts/validate-config.mjs` (Capabilities, lib.rs-Guard, CSP)
+- `packages/tools-pdf/test/pdf-redact-adversarial.test.ts` — TJ join, form XObject (1 + 2 levels, dict keys preserved), FreeText/Text/Popup/Link/Stamp annotations incl. RC/Subj/T/AP, outline, XMP, StructTree, real incremental update (redact + verify fail), image overlay, Tr 7, Tc/Tw/Tz, IBAN with ZWSP/NBSP/soft hyphen/WJ/CRLF, ToUnicode fail, Type3 fail, overlay-only fail, pixel-skip advisory
+- `packages/tools-pdf/test/pdf-sanitize-adversarial.test.ts` — strict preset, keep-annots preset (page AA, field AA, outline Launch, link URI), byte-scan token boundaries + keyword list, raw `/JavaScript` fail
+- `packages/license/test/license.test.ts` — pubkey missing, validUntil/features/plan tamper, unknown feature, foreign pubkey, canonical JSON, `alg=none`, grace 14d boundary, forged grace, fail-closed, no PEM
+- `apps/api/test/api.test.ts` — job isolation + eviction, rate limit per IP for invalid keys, CORS preflight/deny, security headers, `publicErrorMessage`, `safeDownloadName`, Content-Length 413, pipeline whitelist
+- `packages/tools-archive/test/archive-pack.test.ts` — backslash/UNC/drive/`~`/NUL, ZIP bomb before inflate, total cap, gzip bomb, TAR cap, TAR device/FIFO/hardlink/symlink/prefix, nesting depth 0, collision, glob
+- `apps/web/test/security-wave5.test.ts` — header parity `_headers`/`vercel.json`/`nginx.conf`/`server.mjs`/`middleware.ts`/Tauri, CSP invariants, SW policy, pipeline import limits, `decodePipelineHash`, branding, DOMPurify, download names, extension bypass
+- `apps/web/e2e/network-whitelist.spec.ts` — dist-based page list, foreign origins aborted + fail, phone-home probe
+- `apps/web/e2e/wave5.spec.ts` — pdf-redact form XObject: verdict never empty; red ⇒ FAIL/WARN with text, green ⇒ no FAIL, `:bytes`/`:text` check visible
+- Desktop: `valid_deep_link` Rust tests; `scripts/validate-config.mjs` (capabilities, lib.rs guard, CSP)
 
-## Netzwerk-Sweep (Laufzeitquellen)
+## Network sweep (runtime sources)
 
-`rg -n "https?://" packages apps --glob '!**/node_modules/**' --glob '!**/dist/**' --glob '!**/*.test.ts' --glob '!**/*.md'` plus `fetch(|XMLHttpRequest|WebSocket|sendBeacon|EventSource` über alle `src`-Bäume.
+`rg -n "https?://" packages apps --glob '!**/node_modules/**' --glob '!**/dist/**' --glob '!**/*.test.ts' --glob '!**/*.md'` plus `fetch(|XMLHttpRequest|WebSocket|sendBeacon|EventSource` across all `src` trees.
 
-| Stelle | URL | Klasse |
+| Location | URL | Class |
 |---|---|---|
-| `packages/tools-pdf/src/wasm-bytes.ts` (`fetchSameOrigin`) | `/assets/…` | same-origin; `https?://` wird geworfen |
-| `packages/tools-image/src/codec/wasm.ts` (`fetchSameOrigin`) | `/assets/jsquash/…` | same-origin; `https?://` wird geworfen |
-| `packages/tools-image-ai/src/wasm-bytes.ts` (`fetchSameOrigin`) | `/assets/…` | same-origin; `https?://` wird geworfen |
+| `packages/tools-pdf/src/wasm-bytes.ts` (`fetchSameOrigin`) | `/assets/…` | same-origin; `https?://` throws |
+| `packages/tools-image/src/codec/wasm.ts` (`fetchSameOrigin`) | `/assets/jsquash/…` | same-origin; `https?://` throws |
+| `packages/tools-image-ai/src/wasm-bytes.ts` (`fetchSameOrigin`) | `/assets/…` | same-origin; `https?://` throws |
 | `packages/tools-media/src/ffmpeg/wasm.ts` | `${origin}/assets/ffmpeg/…`, `core-flavor.json`, `BUILD-INFO.json` | same-origin |
 | `packages/tools-media/src/ffmpeg/font.ts`, `packages/tools-office/src/core/fonts.ts`, `packages/tools-image/src/fonts/ofl.ts` | `/assets/fonts/…` | same-origin |
-| `packages/models/src/{load,cache,paths}.ts` | `platform.assets.modelBase` (default `/assets/models`), HEAD + GET | same-origin; Remote-URL wird geworfen; Nutzer bestätigt Modell; SHA-256 geprüft |
-| `packages/tools-pdf/src/sign/create.ts` | `tsaUrl` | **Nutzer-Opt-in** (PAdES-TSA, Option) |
-| `packages/tools-dach/src/hash/rfc3161.ts` | `tsaUrl` | **Nutzer-Opt-in** (RFC 3161, Option) |
+| `packages/models/src/{load,cache,paths}.ts` | `platform.assets.modelBase` (default `/assets/models`), HEAD + GET | same-origin; remote URL throws; user confirms model; SHA-256 checked |
+| `packages/tools-pdf/src/sign/create.ts` | `tsaUrl` | **user opt-in** (PAdES TSA, option) |
+| `packages/tools-dach/src/hash/rfc3161.ts` | `tsaUrl` | **user opt-in** (RFC 3161, option) |
 | `apps/web/src/worker/tool-worker.ts` | `/presets.json` | same-origin |
-| `apps/web/public/sw.js` | Cache + same-origin fetch (Guard: Origin, http(s), kein `/api/`) | same-origin |
-| `apps/web/public/assets/{ffmpeg,tesseract,onnx}/*` | interne WASM-XHR | same-origin Assets |
-| `packages/tools-image/src/meta/read.ts` | `https://maps.google.com/?q=…` | **Doku-Link** im Report (String, kein Fetch) |
-| `apps/web/src/data/formats/*.ts`, `apps/web/src/data/specs.ts`, `packages/tools-creator/src/platform-targets.ts` | Spezifikations-/Plattform-Links | **Doku-Link** (Anker im HTML, kein Fetch) |
-| `apps/web/src/lib/branding.ts` | `releasesUrl` (GitHub Releases) | **Doku-Link**, Desktop öffnet extern nur auf Klick (`opener`) |
-| `apps/web/astro.config.ts`, `src/pages/robots.txt.ts` | `https://neotools.local` | Build-Konstante (Sitemap-Base), kein Fetch |
-| `apps/api/src/server.ts` | `http://host:port/api/v1/docs` | Log-Ausgabe |
-| `packages/tools-media/Dockerfile.ffmpeg-lgpl`, `scripts/ffmpeg-wasm/**` | GitHub-Clones, videolan | Build-Zeit (Docker), nicht Laufzeit |
-| `apps/api/test/api.test.ts`, `apps/web/playwright.config.ts` | `127.0.0.1` | Test |
-| `sendBeacon` / `WebSocket` / `EventSource` / `XMLHttpRequest` | — | keine Fundstelle in App-Quellen |
+| `apps/web/public/sw.js` | cache + same-origin fetch (guard: origin, http(s), no `/api/`) | same-origin |
+| `apps/web/public/assets/{ffmpeg,tesseract,onnx}/*` | internal WASM XHR | same-origin assets |
+| `packages/tools-image/src/meta/read.ts` | `https://maps.google.com/?q=…` | **documentation link** in the report (string, no fetch) |
+| `apps/web/src/data/formats/*.ts`, `apps/web/src/data/specs.ts`, `packages/tools-creator/src/platform-targets.ts` | specification/platform links | **documentation link** (anchor in HTML, no fetch) |
+| `apps/web/src/lib/branding.ts` | `releasesUrl` (GitHub releases) | **documentation link**, desktop opens externally only on click (`opener`) |
+| `apps/web/astro.config.ts`, `src/pages/robots.txt.ts` | `https://neotools.local` | build constant (sitemap base), no fetch |
+| `apps/api/src/server.ts` | `http://host:port/api/v1/docs` | log output |
+| `packages/tools-media/Dockerfile.ffmpeg-lgpl`, `scripts/ffmpeg-wasm/**` | GitHub clones, videolan | build time (Docker), not runtime |
+| `apps/api/test/api.test.ts`, `apps/web/playwright.config.ts` | `127.0.0.1` | test |
+| `sendBeacon` / `WebSocket` / `EventSource` / `XMLHttpRequest` | — | no occurrence in app sources |
 
-Kein unerlaubter Phone-Home entfernt (keine gefunden). E2E-Guard bricht jede Fremd-Origin ab und lässt den Test fehlschlagen.
+No unauthorized phone-home removed (none found). The E2E guard aborts every foreign origin and fails the test.
 
 ## CSP / COOP / COEP
 
-Identisch (per Vitest `security-wave5.test.ts` erzwungen) in `apps/web/public/_headers`, `vercel.json`, `deploy/docker/nginx.conf`, `apps/web/e2e/server.mjs`, `apps/web/src/middleware.ts` (Astro-Dev) und — Direktive für Direktive — Tauri `app.security.csp`:
+Identical (enforced via Vitest `security-wave5.test.ts`) in `apps/web/public/_headers`, `vercel.json`, `deploy/docker/nginx.conf`, `apps/web/e2e/server.mjs`, `apps/web/src/middleware.ts` (Astro dev) and — directive by directive — Tauri `app.security.csp`:
 
 - COOP `same-origin`, COEP `credentialless` (SharedArrayBuffer/WASM), CORP `same-origin`
-- `script-src 'self' blob: 'wasm-unsafe-eval' 'unsafe-inline'` — **kein** `unsafe-eval`
+- `script-src 'self' blob: 'wasm-unsafe-eval' 'unsafe-inline'` — **no** `unsafe-eval`
 - `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 
 ## Desktop
 
-Capabilities (`default.json`): `core:default`, `core:event`, Fenster-Fokus, `dialog`, `opener`, `updater`, `deep-link`, `tray`, `menu` — kein `fs:*`, kein `shell:*`, kein `http:*`. Datei-I/O ausschließlich über die Rust-Commands `read_file`/`save_file` mit `path_allowed()`-Allowlist (Dialog, argv, File-Association). `scripts/validate-config.mjs` bricht den Build bei jeder Abweichung ab.
+Capabilities (`default.json`): `core:default`, `core:event`, window focus, `dialog`, `opener`, `updater`, `deep-link`, `tray`, `menu` — no `fs:*`, no `shell:*`, no `http:*`. File I/O exclusively via the Rust commands `read_file`/`save_file` with the `path_allowed()` allowlist (dialog, argv, file association). `scripts/validate-config.mjs` aborts the build on any deviation.
 
-## Offene Punkte (Backlog)
+## Open items (backlog)
 
-- CMap-/Glyph-Analyse für Fonts ohne ToUnicode (heute: ehrlich rot).
-- Sanitize: Inflate der Stream-Bodies für den Keyword-Scan bei Eingaben mit Objekt-Streams.
-- Archive: Ratio-Schwelle für Kleinstdateien entschärfen (Usability), libarchive.js-Pfad mit denselben Caps.
-- API: `trustProxy`-Option per Env für Proxy-Betrieb; Rate-Limit-Store optional extern.
-- License: optionales `domain`-Binding für Self-Host-Web.
+- CMap/glyph analysis for fonts without ToUnicode (today: honestly red).
+- Sanitize: inflate stream bodies for the keyword scan on inputs with object streams.
+- Archive: relax the ratio threshold for tiny files (usability), libarchive.js path with the same caps.
+- API: `trustProxy` option via env for proxy operation; rate-limit store optionally external.
+- License: optional `domain` binding for self-hosted web.
