@@ -56,7 +56,7 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
           <I.plus />
         </button>
         {onClose && (
-          <button type="button" class="btn btn-ghost btn-icon" aria-label={w(locale, 'close')} onClick={onClose}>
+          <button type="button" class="btn btn-ghost btn-icon ws-only-mobile" aria-label={w(locale, 'close')} onClick={onClose}>
             <I.x />
           </button>
         )}

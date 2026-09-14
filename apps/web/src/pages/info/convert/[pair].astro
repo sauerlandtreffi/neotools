@@ -1,0 +1,54 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ConvertDoc from '../../../components/pages/ConvertDoc.astro';
+import { branding } from '../../../lib/branding';
+import { localePath } from '../../../lib/i18n';
+import { breadcrumbList, faqPage, howToConvert } from '../../../lib/seo-jsonld';
+import { convertFaq } from '../../../lib/format-faq';
+import {
+  buildConversionMatrix,
+  conversionPairId,
+  findConversion,
+  parseConversionPair,
+  requireFormat,
+  seoConversionEdges,
+} from '../../../data/formats';
+import { registry } from '../../../lib/registry';
+
+export function getStaticPaths() {
+  return seoConversionEdges(buildConversionMatrix(registry)).map((edge) => ({
+    params: { pair: conversionPairId(edge) },
+    props: { edge },
+  }));
+}
+
+const locale = 'de' as const;
+const parsed = parseConversionPair(Astro.params.pair!);
+if (!parsed) throw new Error('Ungültiges Konvertierungspaar');
+const from = requireFormat(parsed.from);
+const to = requireFormat(parsed.to);
+const edge = Astro.props.edge ?? findConversion(buildConversionMatrix(registry), parsed.from, parsed.to);
+if (!edge) throw new Error('Unbekanntes Paar');
+const faq = convertFaq(from, to, edge.status === 'available');
+const site = Astro.site ?? new URL('https://neotools.local');
+const path = `/convert/${conversionPairId(edge)}`;
+const jsonLd = [
+  howToConvert(locale, from, to, edge, new URL(localePath(locale, path), site).toString()),
+  faqPage(locale, faq),
+  breadcrumbList(locale, site, [
+    { name: branding.name, path: localePath(locale, '/') },
+    { name: 'Konvertieren', path: localePath(locale, '/convert') },
+    { name: `${from.id} → ${to.id}`, path: localePath(locale, path) },
+  ]),
+];
+---
+<Base
+  locale={locale}
+  title={`${from.names.de} nach ${to.names.de}`}
+  description={`${from.names.de} lokal nach ${to.names.de} wandeln. Kein Upload.`}
+  path={path}
+  jsonLd={jsonLd}
+  noindex={edge.status === 'planned'}
+>
+  <ConvertDoc locale={locale} from={from} to={to} edge={edge} faq={faq} />
+</Base>

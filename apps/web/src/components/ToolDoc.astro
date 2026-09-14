@@ -1,0 +1,131 @@
+---
+/**
+ * Documentation page body for one tool (/info/tools/{id}, pivot §11.1/7).
+ * The interactive part lives in the workspace; this page explains and links.
+ */
+import { getCollection } from 'astro:content';
+import { zodObjectFields, type ToolDefinition } from '@neotools/engine';
+import { formatsForTool } from '../data/formats';
+import { guideSlugFromId } from '../lib/guides';
+import { infoPath, localePath, t, type Locale } from '../lib/i18n';
+import { humanizeFieldName } from './ZodForm.tsx';
+
+interface Props { locale: Locale; tool: ToolDefinition }
+const { locale, tool } = Astro.props;
+const fields = zodObjectFields(tool.options);
+const related = formatsForTool(tool);
+let guides: Array<{ slug: string; title: string }> = [];
+try {
+  guides = (await getCollection('guides'))
+    .filter((entry) => entry.data.locale === locale && entry.data.tool === tool.id)
+    .map((entry) => ({ slug: guideSlugFromId(entry.id, locale), title: entry.data.title }));
+} catch {
+  guides = [];
+}
+const appHref = localePath(locale, `/${tool.id}`);
+const de = locale === 'de';
+---
+<p class="stamp" style="color: var(--accent-text)">{tool.id}</p>
+<h1 class="mt-2">{tool.title[locale]}</h1>
+<p class="mt-3 max-w-2xl" style="color: var(--muted)">{tool.description[locale]}</p>
+
+<div class="info-cta">
+  <p>{t(locale, 'openWorkspaceHint')}</p>
+  <a class="btn btn-primary" href={appHref} data-open-workspace>{t(locale, 'openWorkspace')} →</a>
+</div>
+
+<section class="mt-8">
+  <h2>{de ? 'Eingabe & Ausgabe' : 'Input & output'}</h2>
+  <dl class="mt-3 grid gap-2 text-sm" style="grid-template-columns: max-content 1fr; column-gap: 1.5rem">
+    <dt style="color: var(--muted)">{de ? 'Akzeptiert' : 'Accepts'}</dt>
+    <dd class="mono">{tool.inputs.accept.join(', ')}</dd>
+    {tool.outputs?.mime?.length ? (
+      <>
+        <dt style="color: var(--muted)">{de ? 'Erzeugt' : 'Produces'}</dt>
+        <dd class="mono">{tool.outputs.mime.join(', ')}</dd>
+      </>
+    ) : null}
+    <dt style="color: var(--muted)">{de ? 'Mehrere Dateien' : 'Multiple files'}</dt>
+    <dd>{tool.inputs.multiple ? (de ? 'ja' : 'yes') : (de ? 'nein' : 'no')}</dd>
+    {tool.workspace?.desktopOnly ? (
+      <>
+        <dt style="color: var(--muted)">{de ? 'Verfügbarkeit' : 'Availability'}</dt>
+        <dd>{de ? 'Nur Desktop-App' : 'Desktop app only'}</dd>
+      </>
+    ) : null}
+  </dl>
+</section>
+
+{fields.length > 0 && (
+  <section class="mt-8">
+    <h2>{t(locale, 'options')}</h2>
+    <table class="mt-3 w-full text-sm" style="border-collapse: collapse">
+      <thead>
+        <tr style="text-align: left; color: var(--muted)">
+          <th class="py-1 pr-4 font-medium">{de ? 'Option' : 'Option'}</th>
+          <th class="py-1 pr-4 font-medium">{de ? 'Typ' : 'Type'}</th>
+          <th class="py-1 pr-4 font-medium">{de ? 'Standard' : 'Default'}</th>
+          <th class="py-1 font-medium">{de ? 'Beschreibung' : 'Description'}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {fields.map((f) => (
+          <tr style="border-top: 1px solid var(--line)">
+            <td class="py-1.5 pr-4"><span class="font-medium">{humanizeFieldName(f.name)}</span> <span class="mono text-xs" style="color: var(--faint)">{f.name}</span></td>
+            <td class="py-1.5 pr-4 mono text-xs">{f.enumValues?.length ? f.enumValues.join(' | ') : f.kind}</td>
+            <td class="py-1.5 pr-4 mono text-xs">{f.defaultValue === undefined ? '—' : JSON.stringify(f.defaultValue)}</td>
+            <td class="py-1.5" style="color: var(--muted)">{f.description ?? ''}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+)}
+
+{tool.presets && tool.presets.length > 0 && (
+  <section class="mt-8">
+    <h2>{de ? 'Vorlagen' : 'Presets'}</h2>
+    <ul class="mt-3 grid gap-2 text-sm">
+      {tool.presets.map((p) => (
+        <li><span class="font-medium">{p.title[locale]}</span> <span class="mono text-xs" style="color: var(--faint)">{p.id}</span></li>
+      ))}
+    </ul>
+  </section>
+)}
+
+{guides.length > 0 && (
+  <section class="mt-8">
+    <h2>{t(locale, 'relatedGuides')}</h2>
+    <ul class="mt-3 grid gap-2">
+      {guides.map((guide) => (
+        <li><a href={infoPath(locale, `/guides/${guide.slug}`)}>{guide.title}</a></li>
+      ))}
+    </ul>
+  </section>
+)}
+
+{(related.inputs.length > 0 || related.outputs.length > 0) && (
+  <section class="mt-8">
+    <h2>{t(locale, 'formats')}</h2>
+    <p class="mt-2 text-sm">
+      {related.inputs.map((f) => (
+        <a class="mr-3" href={infoPath(locale, `/formats/${f.id}`)}>{f.names[locale]}</a>
+      ))}
+      {related.outputs.map((f) => (
+        <a class="mr-3" href={infoPath(locale, `/formats/${f.id}`)}>{f.names[locale]}</a>
+      ))}
+    </p>
+  </section>
+)}
+
+{tool.seo?.faq && (
+  <section class="mt-8">
+    <h2>{t(locale, 'faq')}</h2>
+    {tool.seo.faq.map((item) => (
+      <details class="mt-3">
+        <summary>{item.q[locale]}</summary>
+        <p class="mt-2" style="color: var(--muted)">{item.a[locale]}</p>
+      </details>
+    ))}
+  </section>
+)}

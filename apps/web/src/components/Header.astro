@@ -1,33 +1,40 @@
 ---
 import ThemeToggle from './ThemeToggle.tsx';
 import { branding } from '../lib/branding';
-import { localePath, switchLocalePath, t, type Locale } from '../lib/i18n';
+import { infoPath, localePath, switchLocalePath, t, type Locale } from '../lib/i18n';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const other: Locale = locale === 'de' ? 'en' : 'de';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const switchPath = switchLocalePath(path, locale);
+const nav = [
+  { href: infoPath(locale, '/tools'), label: t(locale, 'tools') },
+  { href: infoPath(locale, '/formats'), label: t(locale, 'formats') },
+  { href: infoPath(locale, '/convert'), label: t(locale, 'convert') },
+  { href: infoPath(locale, '/guides'), label: t(locale, 'guides') },
+  { href: infoPath(locale, locale === 'de' ? '/vergleich/ilovepdf' : '/compare/ilovepdf'), label: t(locale, 'compare') },
+  { href: infoPath(locale, locale === 'de' ? '/preise' : '/pricing'), label: t(locale, 'pricing') },
+  { href: infoPath(locale, locale === 'de' ? '/ueber' : '/about'), label: t(locale, 'about') },
+];
 ---
-<header class="border-b" style="border-color: var(--line); background: color-mix(in oklab, var(--card) 88%, transparent);">
-  <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-    <a href={localePath(locale, '/')} class="flex items-center gap-3 no-underline">
-      <img src={branding.logo} alt="" width="36" height="36" />
-      <div>
-        <div class="text-xl tracking-tight">{branding.name}</div>
-        <div class="stamp" style="color: var(--muted)">{t(locale, 'localBadge')}</div>
-      </div>
+<header class="info-header">
+  <div class="info-wrap info-header-row">
+    <a href={localePath(locale, '/')} class="info-brand" aria-label={branding.name}>
+      <img src={branding.logo} alt="" width="22" height="22" />
+      <span>{branding.name}</span>
+      <span class="info-brand-sep" aria-hidden="true">/</span>
+      <span class="info-brand-area">Info</span>
     </a>
-    <nav class="ml-auto flex flex-wrap items-center gap-3 text-sm">
-      <a href={localePath(locale, '/formats')}>{t(locale, 'formats')}</a>
-      <a href={localePath(locale, locale === 'de' ? '/verlauf' : '/history')}>{t(locale, 'history')}</a>
-      <a href={localePath(locale, '/reader')}>{t(locale, 'reader')}</a>
-      <a href={localePath(locale, '/pipeline')}>{t(locale, 'pipeline')}</a>
-      <a href={localePath(locale, '/watch')}>{t(locale, 'watchFolder')}</a>
-      <a href={localePath(locale, locale === 'de' ? '/lizenz' : '/license')}>{t(locale, 'license')}</a>
-      <a href={localePath(locale, locale === 'de' ? '/lizenzen' : '/licenses')}>{t(locale, 'licenses')}</a>
-      <a href={switchPath} hreflang={other} class="mono text-xs uppercase">{other}</a>
-      <ThemeToggle client:load locale={locale} />
+    <nav class="info-nav" aria-label="Info">
+      {nav.map((item) => (
+        <a href={item.href} aria-current={path === item.href || path.startsWith(`${item.href}/`) ? 'page' : undefined}>{item.label}</a>
+      ))}
     </nav>
+    <div class="info-header-tools">
+      <a href={localePath(locale, '/')} class="btn btn-primary btn-sm" data-open-app>{t(locale, 'openApp')} →</a>
+      <a href={switchPath} hreflang={other} class="mono text-xs uppercase">{other}</a>
+      <ThemeToggle client:load locale={locale} compact />
+    </div>
   </div>
 </header>

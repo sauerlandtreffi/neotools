@@ -219,7 +219,16 @@ function patch(p: Partial<WorkspaceState>): void {
 async function persist(session: SessionMeta): Promise<SessionMeta> {
   const saved = await db().save(session);
   if (workspace.value.session?.id === saved.id) patch({ session: saved });
+  touchRecent(saved);
   return saved;
+}
+
+/** Keep the bin's session list in sync without another IDB round-trip. */
+function touchRecent(session: SessionMeta): void {
+  const steps = session.files.reduce((n, f) => n + f.revisions.filter((r) => r.status === 'ok').length, 0);
+  const entry = { id: session.id, name: session.name, updatedAt: session.updatedAt, steps };
+  const rest = workspace.value.recent.filter((r) => r.id !== session.id);
+  patch({ recent: [entry, ...rest].slice(0, 8) });
 }
 
 function updateFile(session: SessionMeta, fileId: string, fn: (f: SessionFileMeta) => SessionFileMeta): SessionMeta {
@@ -261,7 +270,7 @@ export async function initWorkspace(opts: {
   tools.value = opts.tools;
   let session: SessionMeta | null = null;
   if (opts.sessionId) session = (await db().get(opts.sessionId).catch(() => undefined)) ?? null;
-  const recent = (await db().list().catch(() => [])).slice(0, 5).map((s) => ({
+  const recent = (await db().list().catch(() => [])).slice(0, 8).map((s) => ({
     id: s.id,
     name: s.name,
     updatedAt: s.updatedAt,
@@ -297,6 +306,7 @@ export async function ensureSession(): Promise<SessionMeta> {
   if (existing) return existing;
   const created = await db().create();
   patch({ session: created });
+  touchRecent(created);
   syncWorkspaceUrl({ session: created.id, tool: workspace.value.pendingToolId });
   return created;
 }
@@ -321,6 +331,7 @@ export async function newSession(): Promise<void> {
     patch({ session: created, selectedFileIds: [], selection: {}, marks: [], page: 1, pendingToolId: null, pendingOptions: {} });
     headVersion.value += 1;
   });
+  touchRecent(created);
   syncWorkspaceUrl({ session: created.id });
 }
 
@@ -372,6 +383,7 @@ export async function addIncoming(files: IncomingFile[], opts: { activate?: bool
   }
   const first = added[0];
   if (first && (opts.activate ?? true)) {
+    if (!pendingFits(first, workspace.value.pendingToolId)) patch({ pendingToolId: null, pendingOptions: {} });
     session = { ...session, activeFileId: first.id };
     session = await persist(session);
   } else {
@@ -412,9 +424,17 @@ export async function removeFile(fileId: string): Promise<void> {
   syncWorkspaceUrl({ session: next.id, tool: workspace.value.pendingToolId, file: next.activeFileId });
 }
 
+function pendingFits(file: SessionFileMeta | undefined, toolId: string | null): boolean {
+  if (!toolId || !file) return true;
+  const t = tools.value.find((x) => x.view.id === toolId);
+  if (!t) return true;
+  return t.inputs.accept.some((rule) => rule === '*/*' || rule === file.mime || (rule.endsWith('/*') && file.mime.startsWith(rule.slice(0, -1))));
+}
+
 export async function activateFile(fileId: string): Promise<void> {
   const s = workspace.value.session;
   if (!s || s.activeFileId === fileId) return;
+  if (!pendingFits(s.files.find((f) => f.id === fileId), workspace.value.pendingToolId)) patch({ pendingToolId: null, pendingOptions: {} });
   const next = await persist({ ...s, activeFileId: fileId });
   batch(() => {
     patch({ session: next, page: 1, selection: {}, marks: [], diffStepId: null });
@@ -465,6 +485,9 @@ export async function analyzeFile(fileId: string): Promise<Finding[]> {
     await persist(updateFile(cur, fileId, (f) => ({ ...f, findings, analyzedAt: Date.now() })));
     return findings;
   } catch {
+    // analysis is best-effort: mark as done so the bar never spins forever
+    const cur = workspace.value.session;
+    if (cur?.files.some((f) => f.id === fileId)) await persist(updateFile(cur, fileId, (f) => ({ ...f, analyzedAt: Date.now() }))).catch(() => undefined);
     return [];
   }
 }

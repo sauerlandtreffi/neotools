@@ -1,21 +1,21 @@
 ---
-import { getCollection } from 'astro:content';
+/**
+ * Info-area layout (pivot §11.1/6): plain documentation chrome for everything
+ * under /info — tool texts, formats, convert pairs, guides, comparisons,
+ * pricing, about, legal, licences. The app itself lives on `/` (AppBase).
+ * Pages pass their logical path (e.g. `/formats/jpg`); the `/info` prefix is
+ * added here so canonical + hreflang stay correct.
+ */
 import '../styles/global.css';
+import '../styles/info.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Seo from '../components/Seo.astro';
-import CommandPalette from '../components/CommandPalette.tsx';
-import ReaderBoot from '../components/ReaderBoot.tsx';
-import ShortcutHelp from '../components/ShortcutHelp.tsx';
 import UpdateBanner from '../components/UpdateBanner.tsx';
 import DesktopEvents from '../components/DesktopEvents.tsx';
 import { branding } from '../lib/branding';
 import { THEME_INIT_SCRIPT, brandCssVars, brandFontFaces } from '../lib/theme-vars';
-import { listPublicTools } from '../lib/visible-tools';
-import { listFormats } from '../data/formats';
-import { buildPaletteItems } from '../lib/palette';
-import { guideSlugFromId } from '../lib/guides';
-import { t, type Locale } from '../lib/i18n';
+import { INFO_PREFIX, t, type Locale } from '../lib/i18n';
 import type { ToolDefinition } from '@neotools/engine';
 
 interface Props {
@@ -30,28 +30,9 @@ interface Props {
 }
 
 const { locale, title, description, path, tool, jsonLd = [], wide = false, noindex = false } = Astro.props;
+const infoPathValue = path.startsWith(INFO_PREFIX) ? path : path === '/' ? INFO_PREFIX : `${INFO_PREFIX}${path}`;
 const themeInit = THEME_INIT_SCRIPT;
 const fontFaces = brandFontFaces(branding);
-
-const publicTools = listPublicTools();
-let guides: Array<{ slug: string; title: string }> = [];
-try {
-  const entries = await getCollection('guides');
-  guides = entries
-    .filter((entry) => entry.data.locale === locale)
-    .map((entry) => ({ slug: guideSlugFromId(entry.id, locale), title: entry.data.title }));
-} catch {
-  guides = [];
-}
-
-const itemsJson = JSON.stringify(
-  buildPaletteItems(
-    locale,
-    publicTools.map((item) => ({ id: item.id, title: item.title, description: item.description })),
-    listFormats().map((format) => ({ id: format.id, names: format.names })),
-    guides,
-  ),
-);
 ---
 <!doctype html>
 <html lang={locale} style={brandCssVars(branding)}>
@@ -62,20 +43,17 @@ const itemsJson = JSON.stringify(
     <meta name="theme-color" content={branding.colors.primary} />
     <link rel="icon" href={branding.logo} type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <Seo locale={locale} title={title} description={description} path={path} tool={tool} jsonLd={jsonLd} noindex={noindex} />
+    <Seo locale={locale} title={title} description={description} path={infoPathValue} tool={tool} jsonLd={jsonLd} noindex={noindex} />
     <script is:inline set:html={themeInit} />
     {fontFaces && <style is:inline set:html={fontFaces} />}
   </head>
-  <body class="min-h-screen antialiased">
+  <body class="info-body min-h-screen antialiased">
     <a href="#main" class="skip-link">{t(locale, 'skipToContent')}</a>
     <Header locale={locale} />
-    <main id="main" tabindex="-1" class={wide ? 'w-full px-0 pb-8 pt-0' : 'mx-auto w-full max-w-6xl px-4 pb-20 pt-8'}>
+    <main id="main" tabindex="-1" class={wide ? 'info-main info-main-wide' : 'info-main'}>
       <slot />
     </main>
-    <ReaderBoot client:load locale={locale} />
     <Footer locale={locale} />
-    <CommandPalette client:idle locale={locale} itemsJson={itemsJson} />
-    <ShortcutHelp client:idle locale={locale} />
     <UpdateBanner client:idle locale={locale} />
     <DesktopEvents client:idle />
     <script is:inline>

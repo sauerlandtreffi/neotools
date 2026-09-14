@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import preact from '@astrojs/preact';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import { writeFile } from 'node:fs/promises';
 import { defineConfig } from 'astro/config';
+import { astroRedirects, redirectsFile } from './redirects.mjs';
 
 const engine = fileURLToPath(new URL('../../packages/engine/src/index.ts', import.meta.url));
 const engineBrowser = fileURLToPath(
@@ -118,12 +120,23 @@ export default defineConfig({
         locales: { de: 'de-DE', en: 'en' },
       },
       filter(page) {
-        // Hidden tools are not generated; planned convert pages stay in the sitemap but send noindex.
-        // The workspace (`/app`, alias `/workspace`) is noindex and not a landing page.
-        return !page.includes('/offline') && !/\/(app|workspace)\/?$/.test(page);
+        // Pivot §11.1/6: only the start page (app + explanation) and the /info area are indexable.
+        // Tool deep-links `/{id}`, `/app`, `/open`, `/offline` are noindex.
+        const { pathname } = new URL(page);
+        const path = pathname.replace(/\/$/, '') || '/';
+        return path === '/' || path === '/en' || path === '/info' || path.startsWith('/info/') || path === '/en/info' || path.startsWith('/en/info/');
       },
     }),
+    {
+      name: 'neotools-redirects-file',
+      hooks: {
+        'astro:build:done': async ({ dir }) => {
+          await writeFile(new URL('_redirects', dir), redirectsFile(), 'utf8');
+        },
+      },
+    },
   ],
+  redirects: astroRedirects,
   i18n: {
     defaultLocale: 'de',
     locales: ['de', 'en'],

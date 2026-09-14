@@ -8,6 +8,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveRedirect } from '../redirects.mjs';
 
 const dist = resolve(fileURLToPath(new URL('../dist', import.meta.url)));
 const host = process.env.E2E_HOST ?? '127.0.0.1';
@@ -75,6 +76,15 @@ if (!existsSync(join(dist, 'index.html'))) {
 }
 
 const server = createServer((req, res) => {
+  const [pathOnly, query] = (req.url ?? '/').split('?');
+  // Old URLs → 301 (same map as astro.config redirects / dist/_redirects)
+  const target = resolveRedirect(decodeURIComponent(pathOnly));
+  if (target) {
+    const location = query && !target.includes('?') ? `${target}?${query}` : target;
+    res.writeHead(301, { Location: location, 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY });
+    res.end(`Moved: ${location}`);
+    return;
+  }
   const file = resolveUrl(req.url ?? '/');
   if (!file) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY });

@@ -13,30 +13,26 @@ export function localizeHref(locale: Locale, href: string): string {
   return localePath(locale, href);
 }
 
-const SWITCH: Record<string, string> = {
-  '/lizenzen': '/en/licenses',
-  '/en/licenses': '/lizenzen',
-  '/impressum': '/en/imprint',
-  '/en/imprint': '/impressum',
-  '/datenschutz': '/en/privacy',
-  '/en/privacy': '/datenschutz',
-  '/verlauf': '/en/history',
-  '/en/history': '/verlauf',
-  '/lizenz': '/en/license',
-  '/en/license': '/lizenz',
-  '/watch': '/en/watch',
-  '/en/watch': '/watch',
-  '/ueber': '/en/about',
-  '/en/about': '/ueber',
-  '/preise': '/en/pricing',
-  '/en/pricing': '/preise',
-  '/vergleich/ilovepdf': '/en/compare/ilovepdf',
-  '/en/compare/ilovepdf': '/vergleich/ilovepdf',
-  '/vergleich/smallpdf': '/en/compare/smallpdf',
-  '/en/compare/smallpdf': '/vergleich/smallpdf',
-  '/vergleich/adobe-acrobat': '/en/compare/adobe-acrobat',
-  '/en/compare/adobe-acrobat': '/vergleich/adobe-acrobat',
-};
+/** Info area prefix (pivot §11.1/6): all documentation lives under /info (de) and /en/info (en). */
+export const INFO_PREFIX = '/info';
+
+export function infoPath(locale: Locale, path = '/'): string {
+  const clean = path.startsWith('/') ? path : `/${path}`;
+  return localePath(locale, clean === '/' ? INFO_PREFIX : `${INFO_PREFIX}${clean}`);
+}
+
+const SWITCH_PAIRS: Array<[string, string]> = [
+  ['/info/lizenzen', '/en/info/licenses'],
+  ['/info/impressum', '/en/info/imprint'],
+  ['/info/datenschutz', '/en/info/privacy'],
+  ['/info/lizenz', '/en/info/license'],
+  ['/info/ueber', '/en/info/about'],
+  ['/info/preise', '/en/info/pricing'],
+  ['/info/vergleich/ilovepdf', '/en/info/compare/ilovepdf'],
+  ['/info/vergleich/smallpdf', '/en/info/compare/smallpdf'],
+  ['/info/vergleich/adobe-acrobat', '/en/info/compare/adobe-acrobat'],
+];
+const SWITCH: Record<string, string> = Object.fromEntries(SWITCH_PAIRS.flatMap(([de, en]) => [[de, en], [en, de]]));
 
 export function switchLocalePath(path: string, from: Locale): string {
   const clean = path.replace(/\/$/, '') || '/';
@@ -79,6 +75,13 @@ const dict = {
     licenses: 'Lizenzen',
     imprint: 'Impressum',
     privacy: 'Datenschutz',
+    tools: 'Werkzeuge',
+    compare: 'Vergleich',
+    pricing: 'Preise',
+    about: 'Über',
+    openApp: 'App öffnen',
+    infoHub: 'Info-Bereich',
+    infoHubLead: 'Alles Erklärende zu NeoTools: Werkzeuge, Formate, Konvertierungen, Anleitungen, Vergleiche, Preise und Rechtliches. Die App selbst läuft auf der Startseite.',
     theme: 'Darstellung',
     themeLight: 'Helles Design',
     themeDark: 'Dunkles Design',
@@ -227,6 +230,13 @@ const dict = {
     licenses: 'Licenses',
     imprint: 'Legal notice',
     privacy: 'Privacy',
+    tools: 'Tools',
+    compare: 'Compare',
+    pricing: 'Pricing',
+    about: 'About',
+    openApp: 'Open app',
+    infoHub: 'Info area',
+    infoHubLead: 'Everything explanatory about NeoTools: tools, formats, conversions, guides, comparisons, pricing and legal. The app itself runs on the start page.',
     theme: 'Theme',
     themeLight: 'Light theme',
     themeDark: 'Dark theme',

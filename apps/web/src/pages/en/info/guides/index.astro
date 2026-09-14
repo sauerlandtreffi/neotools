@@ -1,0 +1,19 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../../layouts/Base.astro';
+import { localePath } from '../../../../lib/i18n';
+import { guideSlugFromId } from '../../../../lib/guides';
+const locale = 'en' as const;
+const entries = (await getCollection('guides')).filter((e) => e.data.locale === 'en');
+---
+<Base locale={locale} title="Guides" description="Short original notes on merge, redaction, PDF/A, sanitize, HEIC and local processing" path="/guides">
+  <h1 class="text-4xl">Guides</h1>
+  <ul class="mt-8 grid gap-4">
+    {entries.map((entry) => (
+      <li class="rounded border p-4" style="border-color: var(--line)">
+        <a href={localePath(locale, `/guides/${guideSlugFromId(entry.id, locale)}`)}>{entry.data.title}</a>
+        <p class="text-sm" style="color: var(--muted)">{entry.data.description}</p>
+      </li>
+    ))}
+  </ul>
+</Base>

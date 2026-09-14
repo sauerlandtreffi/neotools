@@ -1,0 +1,14 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ToolDoc from '../../../components/ToolDoc.astro';
+import { registry, toolPaths } from '../../../lib/registry';
+
+export function getStaticPaths() {
+  return toolPaths();
+}
+const locale = 'de' as const;
+const tool = registry.require(Astro.params.toolId!);
+---
+<Base locale={locale} title={tool.title.de} description={tool.description.de} path={`/tools/${tool.id}`} tool={tool}>
+  <ToolDoc locale={locale} tool={tool} />
+</Base>

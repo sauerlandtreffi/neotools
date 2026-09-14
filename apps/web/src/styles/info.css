@@ -1,0 +1,144 @@
+/* ------------------------------------------------------------------ */
+/* Info area (/info) — plain documentation chrome (pivot §11.1/6).       */
+/* ------------------------------------------------------------------ */
+.info-body {
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.info-wrap {
+  width: min(1120px, 100% - 2 * var(--space-4));
+  margin-inline: auto;
+}
+.info-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+.info-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 52px;
+}
+.info-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+.info-brand-sep {
+  color: var(--faint);
+}
+.info-brand-area {
+  color: var(--muted);
+  font-weight: 500;
+}
+.info-nav {
+  display: flex;
+  gap: var(--space-1);
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.info-nav a {
+  padding: 6px 10px;
+  border-radius: var(--radius-m);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.info-nav a:hover {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+}
+.info-nav a[aria-current='page'] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+.info-header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.info-main {
+  width: min(880px, 100% - 2 * var(--space-4));
+  margin: 0 auto;
+  padding: var(--space-6) 0 var(--space-7);
+  flex: 1;
+}
+.info-main-wide {
+  width: min(1120px, 100% - 2 * var(--space-4));
+}
+.info-main h1 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.info-main h2 {
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  margin-top: var(--space-6);
+}
+.info-main h3 {
+  font-size: 1.05rem;
+}
+.info-footer {
+  border-top: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.info-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-4) 0;
+}
+.info-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+.info-footer-nav a {
+  color: inherit;
+}
+.info-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--card);
+  margin: var(--space-5) 0;
+}
+.info-cta p {
+  margin: 0;
+  color: var(--muted);
+  flex: 1;
+  min-width: 240px;
+}
+@media (max-width: 767px) {
+  .info-nav {
+    order: 3;
+    flex-basis: 100%;
+    padding-bottom: var(--space-2);
+  }
+  .info-header-row {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+}

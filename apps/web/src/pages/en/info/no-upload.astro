@@ -1,0 +1,19 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base locale="en" title="No upload" description="How to verify that files never leave the device" path="/no-upload">
+  <h1 class="text-4xl">No upload</h1>
+  <p class="mt-4 max-w-2xl">
+    NeoTools is a static site. Files run in a web worker on this device. There is no server endpoint that accepts bytes.
+  </p>
+  <ol class="mt-6 max-w-2xl list-decimal pl-6">
+    <li>Open DevTools (F12) → <strong>Network</strong>.</li>
+    <li>Filter to Fetch/XHR and Doc, enable “Disable cache”.</li>
+    <li>Run a tool.</li>
+    <li>There must be no request to a <em>foreign</em> host with the file as the body.</li>
+    <li>Same-origin loads (`/_astro/`, `/assets/*.wasm`) are not uploads — the indicator ignores them.</li>
+  </ol>
+  <p class="mt-4 max-w-2xl text-sm" style="color: var(--muted)">
+    The “0 bytes sent” status in the tool header comes from <span class="mono">PerformanceObserver</span> (`resource`). Only foreign origins increment the counter.
+  </p>
+</Base>

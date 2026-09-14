@@ -1,0 +1,126 @@
+---
+/**
+ * Datenschutzerklärung — Vorlage für die NeoTools-Architektur. Keine Rechtsberatung.
+ * Variablen: legal.*, hosting.*, desktop.updateCheck, contact.email.
+ */
+import Base from '../../layouts/Base.astro';
+import LandingLegalNote from '../../components/LandingLegalNote.astro';
+import { branding, brandingContactEmail, brandingSlot } from '../../lib/branding';
+import { localePath } from '../../lib/i18n';
+
+const legal = branding.legal;
+const email = brandingContactEmail(branding);
+const operator = brandingSlot(legal.operator, '[legal.operator]');
+const address = brandingSlot(legal.address, '[legal.address]');
+const mail = brandingSlot(email, '[legal.email / contact.email]');
+const hoster = brandingSlot(branding.hosting.provider, '[hosting.provider — Name des Hosters]');
+const region = brandingSlot(branding.hosting.region, '[hosting.region — z. B. DE / EU]');
+const updateCheck = branding.desktop.updateCheck;
+---
+<Base
+  locale="de"
+  title="Datenschutz"
+  description="Datenschutzerklärung (Vorlage): lokale Verarbeitung, Hosting-Logs, keine Tracker"
+  path="/datenschutz"
+>
+  <h1 class="text-4xl">Datenschutz</h1>
+  <p class="stamp mt-4" style="color: var(--accent)">Vorlage · Stand {legal.updated}</p>
+
+  <article class="prose mt-8 max-w-2xl">
+    <h2>1. Verantwortlicher</h2>
+    <p class="whitespace-pre-wrap">{operator}<br />{address}</p>
+    <p>E-Mail: {mail.includes('[') ? mail : <a href={'mailto:' + mail}>{mail}</a>}</p>
+
+    <h2>2. Keine Verarbeitung von Dateiinhalten auf Servern</h2>
+    <p>
+      Die öffentliche Web-App ist eine statische Seite. Werkzeuge laufen im Browser (Web Worker) auf
+      dem Gerät der nutzenden Person. Es gibt keinen Endpunkt, der Dateibytes entgegennimmt.
+      Inhalte von PDFs, Bildern, Videos oder Archiven werden nicht an den Betreiber dieser Seite
+      übertragen. Wie du das prüfst: <a href={localePath('de', '/no-upload')}>/no-upload</a>.
+    </p>
+    <p>
+      Wer die optionale Self-Hosting-API im eigenen Netz betreibt, verarbeitet Dateien auf den
+      eigenen Servern. Das ist dann Sache dieser Installation, nicht der Community-Webseite.
+    </p>
+
+    <h2>3. Hosting und Server-Logs</h2>
+    <p>
+      Beim Abruf von HTML, Skripten, WASM und Modellen erzeugt der Hoster übliche Verbindungsdaten:
+      IP-Adresse, Zeitpunkt, aufgerufener Pfad, User-Agent, Statuscode. Das sind technische Logs
+      des Hosters, keine Dateiinhalte.
+    </p>
+    <p>
+      Hoster: {hoster}. Region: {region}. Speicherdauer und Auftragsverarbeitung richtet der
+      Betreiber mit dem Hoster ein (AV-Vertrag, soweit die DSGVO das verlangt).
+    </p>
+    <p>
+      Rechtsgrundlage für den Seitenabruf: Art. 6 Abs. 1 lit. f DSGVO (Betrieb der Website) bzw.
+      lit. b, wenn ein Vertrag mit dem Betreiber besteht.
+    </p>
+
+    <h2>4. Cookies, localStorage, IndexedDB, OPFS</h2>
+    <p>
+      Es gibt keine Tracking-Cookies und kein Cookie-Banner-Drittanbieter-Skript.
+      Technisch nötig bzw. lokal auf dem Gerät:
+    </p>
+    <ul>
+      <li>localStorage: Darstellung (Thema), optional Lizenz-Token, UI-Zustände.</li>
+      <li>IndexedDB: Job-Metadaten, Hashes, Verlaufskopf, lokale Presets. Keine Übertragung.</li>
+      <li>
+        Origin Private File System (OPFS): große Dateien, Zwischenstände, Undo. Bleibt im Browserprofil.
+      </li>
+    </ul>
+    <p>
+      Diese Speicher sind keine Cookies. Die nutzende Person kann sie über die Browser-Einstellungen
+      oder die Verlaufsseite löschen.
+    </p>
+
+    <h2>5. Kein Tracking</h2>
+    <p>
+      Kein Google Analytics, kein Meta-Pixel, kein Plausible-Default, keine Werbenetzwerke.
+      branding.json kann einen Self-Host-Zähler vorsehen; ohne Eintrag findet keiner statt.
+    </p>
+
+    <h2>6. Optionale, von der nutzenden Person ausgelöste Verbindungen</h2>
+    <ul>
+      <li>
+        Modelle (OCR, Whisper, ONNX) werden nur vom eigenen Origin geladen
+        (<span class="mono">/assets</span>, <span class="mono">/tessdata</span>), nicht von einem CDN.
+        Ein Download startet erst nach Bestätigung, wo das Tool <span class="mono">confirmModelDownload</span> verlangt.
+      </li>
+      <li>
+        Zeitstempel (RFC 3161): <span class="mono">pdf-sign</span> und verwandte Tools rufen eine TSA-URL
+        nur auf, wenn die nutzende Person sie einträgt. Leer = nur lokal (Hash ohne Netz).
+      </li>
+      <li>Eine Chat-Funktion gibt es nicht. Es gibt keine Anbindung an eine Dritt-KI-API.</li>
+    </ul>
+
+    <h2>7. Desktop-App</h2>
+    <p>
+      Die Desktop-App (Tauri) verarbeitet Dateien lokal. Es gibt keine Telemetrie.
+      Update-Prüfung: derzeit {updateCheck ? 'eingeschaltet' : 'ausgeschaltet'}
+      (<span class="mono">desktop.updateCheck</span> in branding.json). Eine Update-Prüfung ruft nur
+      Versionsmetadaten vom konfigurierten Endpunkt ab, keine Nutzdateien.
+    </p>
+
+    <h2>8. Speicherdauer</h2>
+    <p>
+      Server: nur Hoster-Logs, Dauer laut Hoster/AV. Gerät: bis die nutzende Person Verlauf,
+      Site-Daten oder die App löscht.
+    </p>
+
+    <h2>9. Rechte der betroffenen Personen</h2>
+    <p>
+      Soweit die DSGVO gilt (insbesondere Hosting-Logs): Auskunft, Berichtigung, Löschung,
+      Einschränkung, Datenübertragbarkeit, Widerspruch, Beschwerde bei einer Aufsichtsbehörde.
+      Dateiinhalte auf dieser Community-Seite hat der Betreiber nicht — sie liegen nur auf dem Gerät.
+    </p>
+
+    <h2>10. Aufsichtsbehörde</h2>
+    <p>
+      Beschwerde bei der zuständigen Datenschutzaufsicht, in der Regel am Sitz des Verantwortlichen
+      in Deutschland. Liste der Behörden: Bundesbeauftragte für den Datenschutz und die Informationsfreiheit.
+    </p>
+  </article>
+  <LandingLegalNote locale="de" />
+</Base>

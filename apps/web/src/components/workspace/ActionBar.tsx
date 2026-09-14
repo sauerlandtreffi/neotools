@@ -120,7 +120,7 @@ export default function ActionBar({ locale }: { locale: Locale }) {
         {/* individual tools stay addressable for tests/deep-links even when their menu is closed */}
         <span class="sr-only" data-tool-list>
           {list.map((t) => (
-            <span key={t.view.id} data-tool={t.view.id} />
+            <span key={t.view.id} data-tool-id={t.view.id} />
           ))}
         </span>
       </div>
