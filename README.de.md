@@ -42,7 +42,7 @@ pnpm -r typecheck
 node scripts/check-i18n.mjs              # de/en-Dictionary + categoryLabels deckungsgleich
 ```
 
-Mitarbeit: [CONTRIBUTING.md](./CONTRIBUTING.md) · Änderungen: [CHANGELOG.md](./CHANGELOG.md) · Sicherheitsmeldungen: [SECURITY.md](./SECURITY.md) · Plugins: [docs/PLUGINS.md](./docs/PLUGINS.md) · White-Label: [docs/BRANDING.md](./docs/BRANDING.md) · Deployment: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) · Security-Review: [docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md)
+Mitarbeit: [CONTRIBUTING.de.md](./CONTRIBUTING.de.md) · Änderungen: [CHANGELOG.de.md](./CHANGELOG.de.md) · Sicherheitsmeldungen: [SECURITY.de.md](./SECURITY.de.md) · Plugins: [docs/PLUGINS.de.md](./docs/PLUGINS.de.md) · White-Label: [docs/BRANDING.de.md](./docs/BRANDING.de.md) · Deployment: [docs/DEPLOYMENT.de.md](./docs/DEPLOYMENT.de.md) · Security-Review: [docs/SECURITY-REVIEW.de.md](./docs/SECURITY-REVIEW.de.md)
 
 ## Entwicklung & Qualität
 
@@ -122,7 +122,7 @@ apps/desktop            Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Deep-Link)
 deploy/docker           nginx-static + optional API, branding.json zur Build-Zeit
 ```
 
-Tool-Zahlen je logischem Pack: siehe Tabelle oben (235 / 10 Packs). White-Label: `branding.json` (`hiddenTools`, Name, Farben, `legal.*`, Lizenz) — Details in [docs/BRANDING.md](./docs/BRANDING.md). Community-Plugins: [docs/PLUGINS.md](./docs/PLUGINS.md) (Loader Phase 5 offen).
+Tool-Zahlen je logischem Pack: siehe Tabelle oben (235 / 10 Packs). White-Label: `branding.json` (`hiddenTools`, Name, Farben, `legal.*`, Lizenz) — Details in [docs/BRANDING.de.md](./docs/BRANDING.de.md). Community-Plugins: [docs/PLUGINS.de.md](./docs/PLUGINS.de.md) (Loader Phase 5 offen).
 
 Die Engine kennt kein DOM. Platform-Adapter:
 
@@ -163,7 +163,7 @@ Impressum und Datenschutzerklärung sind Textvorlagen, **keine Rechtsberatung** 
 ## Branding
 
 `branding.json` im Repo-Root (Name, Tagline, Logo, Farben, `hiddenTools`, `footerLinks`, `legal.*`, `pricing.*`, `contact.*`, `hosting.*`, `desktop.*`, Lizenz-Token, Presets).  
-Build liest `NEOTOOLS_BRANDING=/pfad/branding.json`. Logo-Pfad und Farben werden über `safeAssetUrl`/`safeCssColor` geprüft (kein `javascript:`, kein Remote-Logo, keine CSS-Injection). Alle Felder: [docs/BRANDING.md](./docs/BRANDING.md).
+Build liest `NEOTOOLS_BRANDING=/pfad/branding.json`. Logo-Pfad und Farben werden über `safeAssetUrl`/`safeCssColor` geprüft (kein `javascript:`, kein Remote-Logo, keine CSS-Injection). Alle Felder: [docs/BRANDING.de.md](./docs/BRANDING.de.md).
 
 ## Bekannte Entscheidungen
 
@@ -197,6 +197,6 @@ node scripts/copy-wasm-assets.mjs        # qpdf / jSquash / tesseract-core
 
 ## Stand
 
-Wellen 1–5 sind in `main` (Details: [CHANGELOG.md](./CHANGELOG.md), [docs/ROADMAP.md](./docs/ROADMAP.md)). Welle 5 brachte den adversarial Security-Review mit Fix-Mandat ([docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md), F1–F41, keine offenen kritischen/hohen Findings), das Creator-Pack, 18 neue Bild- und 6 neue Media-Tools, den LGPL-FFmpeg-Build, die Launch-Seiten und 24 Guides. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`; `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
+Wellen 1–5 sind in `main` (Details: [CHANGELOG.de.md](./CHANGELOG.de.md), [docs/ROADMAP.de.md](./docs/ROADMAP.de.md)). Welle 5 brachte den adversarial Security-Review mit Fix-Mandat ([docs/SECURITY-REVIEW.de.md](./docs/SECURITY-REVIEW.de.md), F1–F41, keine offenen kritischen/hohen Findings), das Creator-Pack, 18 neue Bild- und 6 neue Media-Tools, den LGPL-FFmpeg-Build, die Launch-Seiten und 24 Guides. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`; `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
 
 In Arbeit: `/app`-Arbeitsbereich. Offen: Community-Plugin-Loader (Phase 5), `audio-stems`-Modell, WebLLM/Volltext als Showcases, Desktop-Updater-Signatur, veraPDF-äquivalente PDF/A-Validierung.
