@@ -1,0 +1,13 @@
+{
+  "identifier": "default",
+  "description": "Minimal desktop capabilities: custom file commands plus save dialog.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:allow-set-focus",
+    "core:window:allow-unminimize",
+    "dialog:default",
+    "opener:default"
+  ]
+}

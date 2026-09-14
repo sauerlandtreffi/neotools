@@ -1,0 +1,31 @@
+{
+  "name": "@neotools/cli",
+  "version": "0.1.0",
+  "description": "NeoTools CLI — dieselben Tool-Definitionen wie im Browser.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "neotools": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"import('node:fs').then(fs=>fs.chmodSync('dist/cli.js',0o755))\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "neotools": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@neotools/engine": "workspace:*",
+    "@neotools/tools-pdf": "workspace:*",
+    "@neotools/tools-forensics": "workspace:*",
+    "commander": "^13.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "pdf-lib": "^1.17.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

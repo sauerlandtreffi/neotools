@@ -1,0 +1,39 @@
+---
+import { zodObjectFields } from '@neotools/engine';
+import Base from '../../layouts/Base.astro';
+import ToolApp from '../../components/ToolApp.tsx';
+import { registry, toolPaths } from '../../lib/registry';
+
+export function getStaticPaths() {
+  return toolPaths();
+}
+
+const locale = 'en' as const;
+const tool = registry.require(Astro.params.toolId!);
+const fields = zodObjectFields(tool.options);
+const meta = {
+  id: tool.id,
+  inputs: tool.inputs,
+  presets: tool.presets,
+  ui: tool.ui ?? null,
+};
+---
+<Base locale={locale} title={tool.title.en} description={tool.description.en} path={`/${tool.id}`} tool={tool}>
+  <p class="stamp" style="color: var(--accent)">{tool.id}</p>
+  <h1 class="mt-2 text-4xl">{tool.title.en}</h1>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">{tool.description.en}</p>
+  <div class="mt-8">
+    <ToolApp client:load locale={locale} toolId={tool.id} fieldsJson={JSON.stringify(fields)} metaJson={JSON.stringify(meta)} />
+  </div>
+  {tool.seo?.faq && (
+    <section class="mt-12">
+      <h2 class="text-2xl">FAQ</h2>
+      {tool.seo.faq.map((item) => (
+        <details class="mt-3">
+          <summary>{item.q.en}</summary>
+          <p class="mt-2" style="color: var(--muted)">{item.a.en}</p>
+        </details>
+      ))}
+    </section>
+  )}
+</Base>

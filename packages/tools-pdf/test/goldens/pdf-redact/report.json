@@ -1,0 +1,11 @@
+{
+  "tool": "pdf-redact",
+  "hitCounts": {
+    "iban": 1,
+    "steuer-id": 1,
+    "email": 1,
+    "kennzeichen": 1
+  },
+  "rasterizedPages": [],
+  "verificationPassed": true
+}

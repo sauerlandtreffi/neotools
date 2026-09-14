@@ -1,0 +1,7 @@
+dist
+.astro
+node_modules
+coverage
+apps/desktop/src-tauri/target
+docs
+pnpm-lock.yaml

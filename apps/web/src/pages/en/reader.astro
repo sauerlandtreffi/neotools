@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import Reader from '../../components/Reader.tsx';
+import { tools } from '../../lib/registry';
+
+const pdfTools = tools
+  .filter((tool) => tool.inputs.accept.some((a) => a === 'application/pdf' || a === '.pdf'))
+  .map((tool) => ({ id: tool.id, title: tool.title }));
+---
+<Base locale="en" title="PDF reader" description="Local PDF reader — search, forms, save, no upload." path="/reader" wide>
+  <Reader client:load locale="en" toolsJson={JSON.stringify(pdfTools)} />
+</Base>

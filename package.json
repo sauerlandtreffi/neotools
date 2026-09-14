@@ -1,0 +1,36 @@
+{
+  "name": "neotools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lokale Browser-, CLI- und Desktop-Tools für PDFs — ohne Upload, ohne Tracking.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter @neotools/web dev",
+    "build": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli --filter @neotools/web build",
+    "test": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli test",
+    "typecheck": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli --filter @neotools/web typecheck",
+    "postinstall": "node scripts/copy-wasm-assets.mjs && node scripts/fetch-tessdata.mjs --optional",
+    "assets": "node scripts/copy-wasm-assets.mjs && node scripts/fetch-tessdata.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0",
+    "vitest": "^3.2.4"
+  }
+}

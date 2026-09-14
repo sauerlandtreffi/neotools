@@ -1,0 +1,39 @@
+---
+import ThemeToggle from './ThemeToggle.tsx';
+import { branding } from '../lib/branding';
+import { localePath, t, type Locale } from '../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const other: Locale = locale === 'de' ? 'en' : 'de';
+const map: Record<string, string> = {
+  '/lizenzen': '/en/licenses',
+  '/licenses': '/lizenzen',
+  '/impressum': '/en/imprint',
+  '/imprint': '/impressum',
+  '/datenschutz': '/en/privacy',
+  '/privacy': '/datenschutz',
+};
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const switchPath =
+  map[path] ??
+  (locale === 'de' ? `/en${path === '/' ? '' : path}` : path.replace(/^\/en/, '') || '/');
+---
+<header class="border-b" style="border-color: var(--line); background: color-mix(in oklab, var(--card) 88%, transparent);">
+  <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+    <a href={localePath(locale, '/')} class="flex items-center gap-3 no-underline">
+      <img src={branding.logo} alt="" width="36" height="36" />
+      <div>
+        <div class="text-xl tracking-tight">{branding.name}</div>
+        <div class="stamp" style="color: var(--muted)">{t(locale, 'localBadge')}</div>
+      </div>
+    </a>
+    <nav class="ml-auto flex items-center gap-3 text-sm">
+      <a href={localePath(locale, '/reader')}>{t(locale, 'reader')}</a>
+      <a href={localePath(locale, '/pipeline')}>{t(locale, 'pipeline')}</a>
+      <a href={localePath(locale, locale === 'de' ? '/lizenzen' : '/licenses')}>{t(locale, 'licenses')}</a>
+      <a href={switchPath} hreflang={other} class="mono text-xs uppercase">{other}</a>
+      <ThemeToggle client:load locale={locale} />
+    </nav>
+  </div>
+</header>

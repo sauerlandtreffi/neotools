@@ -1,0 +1,9 @@
+---
+import Base from '../layouts/Base.astro';
+import { branding } from '../lib/branding';
+---
+<Base locale="de" title="Impressum" description="Impressum" path="/impressum">
+  <h1 class="text-4xl">Impressum</h1>
+  <p class="stamp mt-4" style="color: var(--accent)">TODO</p>
+  <p class="mt-4 max-w-xl whitespace-pre-wrap">{branding.impressum}</p>
+</Base>

@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.astro/
+.output/
+.vercel/
+.netlify/
+*.tsbuildinfo
+
+# Desktop / Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+src-tauri/target/
+target/
+*.AppImage
+*.deb
+*.rpm
+*.dmg
+
+# OCR language data (downloaded; too large to commit)
+apps/web/public/tessdata/*
+!apps/web/public/tessdata/.gitkeep
+**/tessdata/*.traineddata
+**/tessdata/*.traineddata.gz
+**/tessdata/*.traineddata.xz
+
+# Copied self-hosted WASM / worker assets (scripts/copy-wasm-assets.mjs)
+apps/web/public/assets/qpdf/*
+!apps/web/public/assets/qpdf/.gitkeep
+apps/web/public/assets/jsquash/*
+!apps/web/public/assets/jsquash/.gitkeep
+apps/web/public/assets/tesseract/*
+!apps/web/public/assets/tesseract/.gitkeep
+
+# Env / local secrets
+.env
+.env.*
+!.env.example
+branding.local.json
+
+# Tests / coverage / Playwright
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Logs & caches
+*.log
+.turbo
+.cache
+.eslintcache
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+.idea/
+.vscode/

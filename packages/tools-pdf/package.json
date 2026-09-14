@@ -1,0 +1,44 @@
+{
+  "name": "@neotools/tools-pdf",
+  "version": "0.1.0",
+  "description": "PDF-Werkzeuge für NeoTools (pdf-lib + pdfjs-dist).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@cantoo/pdf-lib": "^2.11.0",
+    "@jspawn/qpdf-wasm": "0.0.2",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/png": "^3.1.1",
+    "@neotools/engine": "workspace:*",
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "tesseract.js": "^7.0.0",
+    "zod": "^3.24.2"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "^0.1.80"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

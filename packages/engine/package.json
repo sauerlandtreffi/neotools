@@ -1,0 +1,39 @@
+{
+  "name": "@neotools/engine",
+  "version": "0.1.0",
+  "description": "Isomorphe Tool-Engine für NeoTools (Browser + Node).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./platform/browser": {
+      "types": "./dist/platform/browser.d.ts",
+      "import": "./dist/platform/browser.js"
+    },
+    "./platform/node": {
+      "types": "./dist/platform/node.d.ts",
+      "import": "./dist/platform/node.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "comlink": "^4.4.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

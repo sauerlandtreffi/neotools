@@ -1,0 +1,15 @@
+{
+  "name": "NeoTools",
+  "tagline": {
+    "de": "Werkzeuge, die den Rechner nicht verlassen.",
+    "en": "Tools that never leave your machine."
+  },
+  "logo": "/logo.svg",
+  "colors": {
+    "primary": "#10221c",
+    "accent": "#3ee0b4",
+    "ink": "#e8efe9"
+  },
+  "impressum": "TODO: Impressumsangaben ergänzen (Name, Anschrift, Kontakt).",
+  "privacy": "TODO: Datenschutztext ergänzen. Verarbeitung erfolgt lokal im Browser; es gibt kein Tracking."
+}

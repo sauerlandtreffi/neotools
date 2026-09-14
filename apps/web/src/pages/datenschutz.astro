@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import { branding } from '../lib/branding';
+---
+<Base locale="de" title="Datenschutz" description="Datenschutzerklärung" path="/datenschutz">
+  <h1 class="text-4xl">Datenschutz</h1>
+  <p class="stamp mt-4" style="color: var(--accent)">TODO</p>
+  <p class="mt-4 max-w-xl whitespace-pre-wrap">{branding.privacy}</p>
+  <p class="mt-6 max-w-xl">
+    Dateien werden im Browser (Web Worker) verarbeitet. Es gibt kein Analytics, kein Tracking und keinen Upload zu einem Server.
+  </p>
+</Base>

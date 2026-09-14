@@ -1,0 +1,28 @@
+---
+import { tools } from '../lib/registry';
+import { categoryLabels, localePath, type Locale } from '../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const categories = [...new Set(tools.map((t) => t.category))];
+---
+<section id="tools">
+  {categories.map((cat) => (
+    <div class="mb-10">
+      <h2 class="stamp mb-3" style="color: var(--muted)">{categoryLabels[locale][cat] ?? cat}</h2>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {tools.filter((tool) => tool.category === cat).map((tool) => (
+          <a
+            href={localePath(locale, `/${tool.id}`)}
+            class="block rounded-lg border p-4 no-underline transition hover:-translate-y-0.5"
+            style="border-color: var(--line); background: var(--card)"
+          >
+            <div class="mono text-xs" style="color: var(--accent)">{tool.id}</div>
+            <h3 class="mt-1 text-xl">{tool.title[locale]}</h3>
+            <p class="mt-2 text-sm" style="color: var(--muted)">{tool.description[locale]}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  ))}
+</section>

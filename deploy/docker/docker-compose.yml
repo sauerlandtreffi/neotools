@@ -1,0 +1,10 @@
+services:
+  neotools:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        NEOTOOLS_BRANDING: /src/branding.json
+    ports:
+      - "8080:80"
+    restart: unless-stopped

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import ToolGrid from '../components/ToolGrid.astro';
+import HomeSearch from '../components/HomeSearch.tsx';
+import { branding } from '../lib/branding';
+import { localePath, t } from '../lib/i18n';
+import { tools } from '../lib/registry';
+
+const locale = 'de' as const;
+const toolsJson = JSON.stringify(
+  tools.map((tool) => ({ id: tool.id, title: tool.title, description: tool.description })),
+);
+---
+<Base locale={locale} title={branding.name} description={branding.tagline.de} path="/">
+  <section class="mb-12 grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-end">
+    <div>
+      <p class="stamp" style="color: var(--accent)">{t(locale, 'localBadge')}</p>
+      <h1 class="mt-2 text-5xl leading-tight tracking-tight">{branding.tagline.de}</h1>
+      <p class="mt-4 max-w-xl text-lg" style="color: var(--muted)">
+        Zusammenführen, teilen, drehen, Metadaten, Sanitize — alles im Browser, per CLI oder Self-Hosting.
+        Kein Wasserzeichen, kein CDN zur Laufzeit.
+        <a class="ml-1" href={localePath(locale, '/reader')}>{t(locale, 'reader')}</a>
+      </p>
+    </div>
+    <HomeSearch client:load locale={locale} toolsJson={toolsJson} />
+  </section>
+  <ToolGrid locale={locale} />
+</Base>

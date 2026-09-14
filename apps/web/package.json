@@ -1,0 +1,40 @@
+{
+  "name": "@neotools/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "predev": "node ../../scripts/copy-wasm-assets.mjs && node ../../scripts/fetch-tessdata.mjs --optional",
+    "prebuild": "node ../../scripts/copy-wasm-assets.mjs && node ../../scripts/fetch-tessdata.mjs --optional",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "test": "vitest run --config vitest.config.ts",
+    "check:reader": "node ../../scripts/check-reader-dist.mjs"
+  },
+  "dependencies": {
+    "@astrojs/preact": "^4.1.1",
+    "@astrojs/sitemap": "^3.5.1",
+    "@neotools/engine": "workspace:*",
+    "@neotools/tools-pdf": "workspace:*",
+    "@neotools/tools-forensics": "workspace:*",
+    "@tauri-apps/api": "^2.9.1",
+    "astro": "^5.13.7",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "comlink": "^4.4.2",
+    "fflate": "^0.8.2",
+    "preact": "^10.27.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^22.18.1",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

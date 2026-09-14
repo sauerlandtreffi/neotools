@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NeoTools">
+  <rect width="512" height="512" rx="80" fill="#10221c"/>
+  <path d="M118 372V140h70l80 128 80-128h70v232h-58V228L288 364h-40L176 228v144H118z" fill="#3ee0b4"/>
+  <rect x="118" y="404" width="276" height="28" rx="4" fill="#f3efe4"/>
+</svg>

@@ -1,0 +1,21 @@
+---
+import { zodObjectFields } from '@neotools/engine';
+import Base from '../layouts/Base.astro';
+import PipelineBuilder from '../components/PipelineBuilder.tsx';
+import { tools } from '../lib/registry';
+
+const catalog = tools.map((tool) => ({
+  id: tool.id,
+  title: tool.title,
+  fields: zodObjectFields(tool.options),
+}));
+---
+<Base locale="de" title="Pipeline" description="Mehrere Werkzeuge hintereinander, teilbar per URL-Hash" path="/pipeline">
+  <h1 class="text-4xl">Pipeline</h1>
+  <p class="mt-3 max-w-2xl" style="color: var(--muted)">
+    Schritte verketten, Optionen setzen, ausführen. Der Link speichert die Pipeline im Hash <span class="mono">#p=</span>.
+  </p>
+  <div class="mt-8">
+    <PipelineBuilder client:load locale="de" catalogJson={JSON.stringify(catalog)} />
+  </div>
+</Base>
