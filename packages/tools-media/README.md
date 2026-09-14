@@ -1,68 +1,70 @@
+🇬🇧 English · [🇩🇪 Deutsch](./README.de.md)
+
 # `@neotools/tools-media`
 
-FFmpeg-Pack (`pack: 'media'`) — Video- und Audio-Kern plus deklarative Presets.
+FFmpeg pack (`pack: 'media'`) — video and audio core plus declarative presets.
 
-## FFmpeg-Lizenz
+## FFmpeg license
 
-Der Browser- und Node-WASM-Pfad lädt **standardmäßig** den eigenen LGPL-Core
-(`vendor/ffmpeg-lgpl/`, kopiert nach `/assets/ffmpeg/` und `/assets/ffmpeg/lgpl/`).
-Nur wenn dieser Core fehlt, fällt der Loader auf das npm-Paket `@ffmpeg/core` zurück.
+The browser and Node WASM path loads our own LGPL core **by default**
+(`vendor/ffmpeg-lgpl/`, copied to `/assets/ffmpeg/` and `/assets/ffmpeg/lgpl/`).
+Only if this core is missing does the loader fall back to the npm package `@ffmpeg/core`.
 
-| Komponente | SPDX | Status |
+| Component | SPDX | Status |
 |---|---|---|
-| `@ffmpeg/ffmpeg` JS-Wrapper | MIT | genutzt |
-| Eigener Core (`Dockerfile.ffmpeg-lgpl`) | **LGPL-2.1-or-later (eigener Build)** | Ziel; kein `--enable-gpl` |
-| `@ffmpeg/core` 0.12.x (npm) | **GPL-2.0-or-later (temporär)** | Fallback, klar gekennzeichnet |
-| `@diffusion-studio/ffmpeg-lgpl-base` | FFmpeg LGPL, npm MIT | geprüft: altes 0.11-Format, **keine** libvpx/libopus/libass — nicht als 0.12-Core nutzbar |
+| `@ffmpeg/ffmpeg` JS wrapper | MIT | used |
+| Own core (`Dockerfile.ffmpeg-lgpl`) | **LGPL-2.1-or-later (own build)** | target; no `--enable-gpl` |
+| `@ffmpeg/core` 0.12.x (npm) | **GPL-2.0-or-later (temporary)** | fallback, clearly labeled |
+| `@diffusion-studio/ffmpeg-lgpl-base` | FFmpeg LGPL, npm MIT | checked: old 0.11 format, **no** libvpx/libopus/libass — not usable as a 0.12 core |
 
-`getFfmpegCoreLicense()` / `MEDIA_LICENSES` schalten dynamisch:
+`getFfmpegCoreLicense()` / `MEDIA_LICENSES` switch dynamically:
 
-- LGPL-Core vorhanden: `LGPL-2.1-or-later (eigener Build)`
-- sonst: `GPL-2.0-or-later (temporär)`
+- LGPL core present: `LGPL-2.1-or-later (eigener Build)`
+- otherwise: `GPL-2.0-or-later (temporär)`
 
-### Warum LGPL?
+### Why LGPL?
 
-Der offizielle `@ffmpeg/core` von ffmpeg.wasm ist **GPL**, weil er x264/x265 (und weitere GPL-Teile) einlinkt. NeoTools will den Core im Browser bündeln, ohne die gesamte App unter GPL zu stellen. Deshalb ein **eigener** Build von FFmpeg n5.1.4 + ffmpeg.wasm-v0.12.10-Glue **ohne** `--enable-gpl`.
+The official `@ffmpeg/core` from ffmpeg.wasm is **GPL** because it links x264/x265 (and further GPL parts). NeoTools wants to bundle the core in the browser without putting the whole app under the GPL. Hence an **own** build of FFmpeg n5.1.4 + ffmpeg.wasm v0.12.10 glue **without** `--enable-gpl`.
 
-`--enable-version3` wird nicht gesetzt (LGPL-2.1, nicht v3).
+`--enable-version3` is not set (LGPL-2.1, not v3).
 
-### Was der LGPL-Core kann
+### What the LGPL core can do
 
-libvpx (VP8/VP9), libopus, libvorbis, libmp3lame, libass (+ FreeType, FriBidi, HarfBuzz), natives AAC, FLAC, PCM, zlib; Filter u. a. `subtitles`, `loudnorm`, `scale`, `crop`, `palettegen`/`paletteuse`, `showspectrumpic`/`showwavespic`, `sidechaincompress`, `atempo`, `asetrate`, `tonemap`, `blackdetect`/`freezedetect`/`scdet`, `tile`, `thumbnail`, `concat`, `deshake` (LGPL-Alternative zu vidstab), `yadif`, `unsharp`.
+libvpx (VP8/VP9), libopus, libvorbis, libmp3lame, libass (+ FreeType, FriBidi, HarfBuzz), native AAC, FLAC, PCM, zlib; filters including `subtitles`, `loudnorm`, `scale`, `crop`, `palettegen`/`paletteuse`, `showspectrumpic`/`showwavespic`, `sidechaincompress`, `atempo`, `asetrate`, `tonemap`, `blackdetect`/`freezedetect`/`scdet`, `tile`, `thumbnail`, `concat`, `deshake` (LGPL alternative to vidstab), `yadif`, `unsharp`.
 
-### Was fehlt (bewusst)
+### What is missing (deliberately)
 
-| Fehlt | Ersatz |
+| Missing | Replacement |
 |---|---|
-| **H.264-Encode** (kein libx264) | WebCodecs `VideoEncoder` `avc1.*` + `mp4-muxer` (MIT) |
-| HEVC-Encode (kein libx265) | nicht im Browser-Core |
-| libfdk-aac | natives FFmpeg-AAC |
+| **H.264 encode** (no libx264) | WebCodecs `VideoEncoder` `avc1.*` + `mp4-muxer` (MIT) |
+| HEVC encode (no libx265) | not in the browser core |
+| libfdk-aac | native FFmpeg AAC |
 | rubberband | `asetrate` + `atempo` |
 | vidstab | `deshake` |
-| GPL-Filter `hqdn3d`, `cropdetect`, `eq` | nur mit System-FFmpeg (typisch GPL) oder manuellem Crop / anderem Denoise |
+| GPL filters `hqdn3d`, `cropdetect`, `eq` | only with system FFmpeg (typically GPL) or manual crop / another denoise |
 
-### Core bauen / holen
+### Building / fetching the core
 
 ```bash
-# Docker, ~30–60 min, schreibt vendor/ffmpeg-lgpl/ (gitignored, > 2 MB)
+# Docker, ~30–60 min, writes vendor/ffmpeg-lgpl/ (gitignored, > 2 MB)
 bash packages/tools-media/scripts/build-ffmpeg-lgpl.sh
 
-# oder Artefakt der GH-Action .github/workflows/ffmpeg-lgpl.yml
+# or the artifact of the GH Action .github/workflows/ffmpeg-lgpl.yml
 node scripts/fetch-ffmpeg-lgpl.mjs
 ```
 
-Das Dockerfile ist von [ffmpegwasm/ffmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm) **v0.12.10** abgeleitet (deren Skripte setzen `EM_TOOLCHAIN_FILE` auf `$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake`). Sidecars: `BUILD-INFO.json` (Configure-Flags, Versionen, SHA-256), `LICENSE.txt`.
+The Dockerfile is derived from [ffmpegwasm/ffmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm) **v0.12.10** (their scripts set `EM_TOOLCHAIN_FILE` to `$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake`). Sidecars: `BUILD-INFO.json` (configure flags, versions, SHA-256), `LICENSE.txt`.
 
-Kein CDN. `scripts/copy-wasm-assets.mjs` ersetzt `/assets/ffmpeg/ffmpeg-core.*` durch den LGPL-Core, wenn vorhanden.
+No CDN. `scripts/copy-wasm-assets.mjs` replaces `/assets/ffmpeg/ffmpeg-core.*` with the LGPL core when present.
 
-H.264-**Decode** wo möglich: WebCodecs + `mp4box.js` (BSD-3), sonst FFmpeg.
+H.264 **decode** where possible: WebCodecs + `mp4box.js` (BSD-3), otherwise FFmpeg.
 
 ## Node
 
-Bevorzugt System-`ffmpeg` (`PATH`, Capability `ffmpegNative`).  
-`NEOTOOLS_FFMPEG_NATIVE=0` erzwingt den WASM-Pfad (Tests ohne System-FFmpeg). Tests nutzen dann `vendor/ffmpeg-lgpl` in-process (`createFFmpegCore` + `wasmBinary`).
+Prefers the system `ffmpeg` (`PATH`, capability `ffmpegNative`).  
+`NEOTOOLS_FFMPEG_NATIVE=0` forces the WASM path (tests without system FFmpeg). Tests then use `vendor/ffmpeg-lgpl` in-process (`createFFmpegCore` + `wasmBinary`).
 
-## API für Pack `speech`
+## API for the `speech` pack
 
 ```ts
 import { extractAudio, probe } from '@neotools/tools-media';
@@ -73,4 +75,4 @@ const info = await probe(file, ctx);
 
 ## `audio-stems`
 
-Offen: kein MIT/Apache-ONNX in vertretbarer Größe gebündelt.
+Open: no MIT/Apache ONNX model of reasonable size bundled.

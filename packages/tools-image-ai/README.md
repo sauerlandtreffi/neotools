@@ -1,4 +1,6 @@
+🇬🇧 English · [🇩🇪 Deutsch](./README.de.md)
+
 # `@neotools/tools-image-ai`
 
-KI/CV-Bildwerkzeuge (Hintergrund, Auto-Blur, Doc-Repair, Screenshot-Werkstatt, Upscale, Denoise, Alt-Text).  
-Raster-I/O kommt aus `@neotools/tools-image`. Modell-Matrix und Lizenzrecherche: `docs/reports/tools-image-ai.md`.
+AI/CV image tools (background, auto-blur, doc repair, screenshot workshop, upscale, denoise, alt text).  
+Raster I/O comes from `@neotools/tools-image`. Model matrix and license research: `docs/reports/tools-image-ai.md`.

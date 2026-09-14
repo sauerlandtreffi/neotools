@@ -26,7 +26,7 @@ docker compose -f deploy/docker/docker-compose.yml up --build
 
 ## 3. Branding
 
-`NEOTOOLS_BRANDING` zeigt auf eine JSON-Datei (siehe `deploy/docker/README.md` und [BRANDING.de.md](./BRANDING.de.md)). `hiddenTools` gilt zur Build-Zeit. `license` / `licensePubkey` werden eingebettet; leer = Community.
+`NEOTOOLS_BRANDING` zeigt auf eine JSON-Datei (siehe `deploy/docker/README.de.md` und [BRANDING.de.md](./BRANDING.de.md)). `hiddenTools` gilt zur Build-Zeit. `license` / `licensePubkey` werden eingebettet; leer = Community.
 
 ## 4. Team-Presets
 
