@@ -33,7 +33,7 @@ const fontFaces = brandFontFaces(branding);
     <link rel="icon" href={branding.logo} type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <Seo locale={locale} title={title} description={description} path={path} noindex={noindex} canonical={canonical} jsonLd={jsonLd} />
-    <link rel="preload" href="/workspace-tools.json" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/workspace-tools.json" as="fetch" />
     <script is:inline set:html={THEME_INIT_SCRIPT} />
     {fontFaces && <style is:inline set:html={fontFaces} />}
   </head>

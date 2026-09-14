@@ -83,16 +83,25 @@ export default function PdfCanvas({ locale }: Props) {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el || !doc) return;
+    let dead = false;
     const compute = async () => {
-      const p = await doc.doc.getPage(1);
-      const vp = p.getViewport({ scale: 1 });
-      const avail = el.clientWidth - 32;
-      setFitScale(Math.max(0.3, Math.min(3, avail / vp.width)));
+      try {
+        const p = await doc.doc.getPage(1);
+        if (dead) return;
+        const vp = p.getViewport({ scale: 1 });
+        const avail = el.clientWidth - 32;
+        setFitScale(Math.max(0.3, Math.min(3, avail / vp.width)));
+      } catch {
+        // document was swapped/destroyed mid-measure (step applied) — the next doc recomputes
+      }
     };
     void compute();
     const ro = new ResizeObserver(() => void compute());
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      dead = true;
+      ro.disconnect();
+    };
   }, [doc]);
 
   const scale = (fitScale ?? 1) * s.zoom;

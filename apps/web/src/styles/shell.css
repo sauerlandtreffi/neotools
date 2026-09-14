@@ -857,3 +857,14 @@ html[data-ws-expanded] .landing {
     display: inline-flex !important;
   }
 }
+.ws-actionbar-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ws-action-active {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

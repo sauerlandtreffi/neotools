@@ -217,8 +217,16 @@ function patch(p: Partial<WorkspaceState>): void {
 }
 
 async function persist(session: SessionMeta): Promise<SessionMeta> {
+  // Optimistic: publish the new meta *before* the IDB round-trip so concurrent
+  // writers (page count from the canvas, findings from analysis, head moves)
+  // always build on the latest state instead of overwriting each other.
+  if (workspace.value.session?.id === session.id) patch({ session });
   const saved = await db().save(session);
-  if (workspace.value.session?.id === saved.id) patch({ session: saved });
+  if (workspace.value.session?.id === saved.id && saved !== session) {
+    const cur = workspace.value.session;
+    // keep fields that changed meanwhile (updatedAt/bytes come from the store)
+    patch({ session: cur ? { ...cur, updatedAt: saved.updatedAt, bytes: saved.bytes } : saved });
+  }
   touchRecent(saved);
   return saved;
 }
@@ -400,11 +408,18 @@ export async function addIncoming(files: IncomingFile[], opts: { activate?: bool
 }
 
 export async function addBrowserFiles(list: File[]): Promise<void> {
-  const incoming: IncomingFile[] = [];
-  for (const file of list) {
-    incoming.push({ name: file.name, mime: file.type || guessMime(file.name), bytes: new Uint8Array(await file.arrayBuffer()) });
+  if (!list.length) return;
+  try {
+    const incoming: IncomingFile[] = [];
+    for (const file of list) {
+      incoming.push({ name: file.name, mime: file.type || guessMime(file.name), bytes: new Uint8Array(await file.arrayBuffer()) });
+    }
+    await addIncoming(incoming);
+  } catch (err) {
+    // never fail silently: storage quota, unreadable file, OPFS unavailable …
+    const msg = err instanceof Error ? err.message : String(err);
+    toast('err', workspace.value.locale === 'de' ? `Datei konnte nicht geöffnet werden: ${msg}` : `Could not open file: ${msg}`);
   }
-  await addIncoming(incoming);
 }
 
 export async function removeFile(fileId: string): Promise<void> {
