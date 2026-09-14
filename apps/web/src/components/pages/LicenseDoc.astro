@@ -1,5 +1,6 @@
 ---
 import { collectLicenses } from '@neotools/engine';
+import { getFfmpegCoreFlavor } from '@neotools/tools-media';
 import { registry } from '../../lib/registry';
 import { groupLicenses, hasCopyleft } from '../../lib/licenses-view';
 import { t, type Locale } from '../../lib/i18n';
@@ -9,6 +10,7 @@ const { locale } = Astro.props;
 const items = collectLicenses(registry);
 const groups = groupLicenses(items);
 const copyleft = hasCopyleft(items);
+const ffmpegNote = getFfmpegCoreFlavor() === 'lgpl' ? 'ffmpegSourceOfferLgpl' : 'ffmpegSourceOffer';
 const labels = {
   permissive: { de: 'Permissiv', en: 'Permissive' },
   copyleft: { de: 'Copyleft (LGPL/GPL)', en: 'Copyleft (LGPL/GPL)' },
@@ -29,7 +31,7 @@ const labels = {
   <aside class="mt-6 rounded-lg border p-4" style="border-color: var(--line)">
     <h2 class="text-xl">{t(locale, 'sourceOffer')}</h2>
     <p class="mt-2 text-sm">{t(locale, 'copyleftNote')}</p>
-    <p class="mt-2 text-sm">{t(locale, 'ffmpegSourceOffer')}</p>
+    <p class="mt-2 text-sm">{t(locale, ffmpegNote)}</p>
   </aside>
 )}
 

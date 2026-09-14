@@ -143,21 +143,41 @@ try {
   const requireMedia = createRequire(join(root, 'packages/tools-media/package.json'));
   const destFfmpeg = join(root, 'apps/web/public/assets/ffmpeg');
   await mkdir(destFfmpeg, { recursive: true });
-  const lgplJs = join(root, 'packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js');
-  const lgplWasm = join(root, 'packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm');
-  const { access } = await import('node:fs/promises');
+  const lgplDir = join(root, 'packages/tools-media/vendor/ffmpeg-lgpl');
+  const lgplJs = join(lgplDir, 'ffmpeg-core.js');
+  const lgplWasm = join(lgplDir, 'ffmpeg-core.wasm');
+  const { access, writeFile } = await import('node:fs/promises');
   let usedLgpl = false;
   try {
     await access(lgplJs);
     await access(lgplWasm);
     await copy(lgplJs, join(destFfmpeg, 'ffmpeg-core.js'));
     await copy(lgplWasm, join(destFfmpeg, 'ffmpeg-core.wasm'));
+    const destLgpl = join(destFfmpeg, 'lgpl');
+    await mkdir(destLgpl, { recursive: true });
+    await copy(lgplJs, join(destLgpl, 'ffmpeg-core.js'));
+    await copy(lgplWasm, join(destLgpl, 'ffmpeg-core.wasm'));
+    for (const extra of ['BUILD-INFO.json', 'LICENSE.txt']) {
+      try {
+        await copy(join(lgplDir, extra), join(destFfmpeg, extra));
+        await copy(join(lgplDir, extra), join(destLgpl, extra));
+      } catch {
+        // optional sidecar
+      }
+    }
+    const flavor = JSON.stringify({ flavor: 'lgpl', license: 'LGPL-2.1-or-later (eigener Build)' }, null, 2);
+    await writeFile(join(destFfmpeg, 'core-flavor.json'), `${flavor}\n`);
+    await writeFile(join(destLgpl, 'core-flavor.json'), `${flavor}\n`);
     usedLgpl = true;
-    console.log('ffmpeg assets: LGPL vendor core');
+    console.log('ffmpeg assets: LGPL vendor core (replaced + /assets/ffmpeg/lgpl/)');
   } catch {
     const stEsm = join(dirname(requireMedia.resolve('@ffmpeg/core')), '..', 'esm');
     await copy(join(stEsm, 'ffmpeg-core.js'), join(destFfmpeg, 'ffmpeg-core.js'));
     await copy(join(stEsm, 'ffmpeg-core.wasm'), join(destFfmpeg, 'ffmpeg-core.wasm'));
+    await writeFile(
+      join(destFfmpeg, 'core-flavor.json'),
+      `${JSON.stringify({ flavor: 'gpl', license: 'GPL-2.0-or-later (temporär)' }, null, 2)}\n`,
+    );
     console.log('ffmpeg assets: official @ffmpeg/core ESM (GPL temporary)');
   }
   try {

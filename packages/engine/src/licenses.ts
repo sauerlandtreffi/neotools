@@ -44,14 +44,20 @@ export const PLATFORM_LICENSES: ToolLicense[] = [
     license: 'MIT',
     url: 'https://github.com/ffmpegwasm/ffmpeg.wasm',
   },
+  { name: '@ffmpeg/util', license: 'MIT', url: 'https://github.com/ffmpegwasm/ffmpeg.wasm' },
   {
-    name: '@ffmpeg/core (WASM, temporär offizieller Build)',
-    license: 'GPL-2.0-or-later (temporär, ersetzen durch LGPL-Build)',
+    name: '@ffmpeg/core (WASM, npm-Fallback falls kein eigener Core)',
+    license: 'GPL-2.0-or-later (temporär)',
     url: 'https://github.com/ffmpegwasm/ffmpeg.wasm',
   },
   {
-    name: 'FFmpeg (Ziel-Build ohne x264/x265)',
-    license: 'LGPL-2.1-or-later',
+    name: '@ffmpeg/core-mt (Multithread-WASM, npm-Fallback falls kein eigener Core)',
+    license: 'GPL-2.0-or-later (temporär)',
+    url: 'https://github.com/ffmpegwasm/ffmpeg.wasm',
+  },
+  {
+    name: 'FFmpeg WASM-Core (eigener Build ohne x264/x265)',
+    license: 'LGPL-2.1-or-later (eigener Build)',
     url: 'https://ffmpeg.org/legal.html',
   },
   { name: 'mp4-muxer', license: 'MIT', url: 'https://github.com/Vanilagy/mp4-muxer' },
@@ -97,6 +103,11 @@ export const PLATFORM_LICENSES: ToolLicense[] = [
   { name: 'sql.js', license: 'MIT', url: 'https://github.com/sql-js/sql.js' },
   { name: 'Source Serif 4', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-serif' },
   { name: 'Source Code Pro', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-code-pro' },
+  { name: 'NeoTools contour tracer (Potrace-inspired, original)', license: 'MIT', url: 'https://opensource.org/licenses/MIT' },
+  { name: 'three.js (Community-Plugin 3d-lite, nicht gebündelt)', license: 'MIT', url: 'https://github.com/mrdoob/three.js' },
+  { name: 'draco (Community-Plugin 3d-lite, nicht gebündelt)', license: 'Apache-2.0', url: 'https://github.com/google/draco' },
+  { name: 'meshoptimizer (Community-Plugin 3d-lite, nicht gebündelt)', license: 'MIT', url: 'https://github.com/zeux/meshoptimizer' },
+  { name: 'basis_universal (Community-Plugin 3d-lite, nicht gebündelt)', license: 'Apache-2.0', url: 'https://github.com/BinomialLLC/basis_universal' },
 ];
 
 export function collectLicenses(registry: Registry, extra: ToolLicense[] = PLATFORM_LICENSES): ToolLicense[] {

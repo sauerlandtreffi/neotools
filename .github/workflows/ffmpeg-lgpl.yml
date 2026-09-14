@@ -19,6 +19,7 @@ jobs:
         run: bash packages/tools-media/scripts/build-ffmpeg-lgpl.sh
         env:
           FFMPEG_LGPL_OUT: ${{ github.workspace }}/packages/tools-media/vendor/ffmpeg-lgpl
+          FFMPEG_LGPL_LOG: ${{ github.workspace }}/ffmpeg-lgpl-build.log
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -27,6 +28,15 @@ jobs:
           path: |
             packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js
             packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm
+            packages/tools-media/vendor/ffmpeg-lgpl/BUILD-INFO.json
+            packages/tools-media/vendor/ffmpeg-lgpl/LICENSE.txt
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-lgpl-build-log
+          path: ffmpeg-lgpl-build.log
 
       - name: Publish release assets
         if: github.ref == 'refs/heads/main'
@@ -35,10 +45,13 @@ jobs:
           tag_name: ffmpeg-lgpl
           name: FFmpeg WASM LGPL core
           body: |
-            Self-hosted `@ffmpeg/ffmpeg` 0.12-compatible core built **without** `--enable-gpl` / x264 / x265.
+            Self-hosted `@ffmpeg/ffmpeg` 0.12-compatible **ESM** core (`createFFmpegCore`) built **without** `--enable-gpl` / x264 / x265.
+            Dockerfile: `packages/tools-media/Dockerfile.ffmpeg-lgpl` (derived from ffmpegwasm/ffmpeg.wasm v0.12.10).
             Reproduce: `packages/tools-media/scripts/build-ffmpeg-lgpl.sh`
             Fetch: `node scripts/fetch-ffmpeg-lgpl.mjs`
           files: |
             packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js
             packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm
+            packages/tools-media/vendor/ffmpeg-lgpl/BUILD-INFO.json
+            packages/tools-media/vendor/ffmpeg-lgpl/LICENSE.txt
           make_latest: false

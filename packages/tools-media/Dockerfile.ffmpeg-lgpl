@@ -1,70 +1,83 @@
-# LGPL FFmpeg WASM core for @ffmpeg/ffmpeg 0.12 (createFFmpegCore).
-# No --enable-gpl, no x264/x265. ST core only.
-# docker build -f packages/tools-media/Dockerfile.ffmpeg-lgpl -t neotools-ffmpeg-lgpl packages/tools-media
-# docker run --rm -v "$PWD/packages/tools-media/vendor/ffmpeg-lgpl:/out" neotools-ffmpeg-lgpl
+# syntax=docker/dockerfile:1
+# LGPL FFmpeg WASM core for @ffmpeg/ffmpeg 0.12 (createFFmpegCore, ESM).
+# Derived from ffmpegwasm/ffmpeg.wasm v0.12.10 Dockerfile (MIT).
+# No --enable-gpl, no x264/x265/vidstab/rubberband/fdk. ST by default; MT via BUILD_MT=1.
+#
+#   docker build -f packages/tools-media/Dockerfile.ffmpeg-lgpl \
+#     --build-arg FFMPEG_ST=yes -t neotools-ffmpeg-lgpl packages/tools-media
+#   docker run --rm -v "$PWD/packages/tools-media/vendor/ffmpeg-lgpl:/out" neotools-ffmpeg-lgpl
+
 FROM emscripten/emsdk:3.1.40 AS emsdk-base
 ARG EXTRA_CFLAGS
 ARG EXTRA_LDFLAGS
+ARG FFMPEG_ST=yes
+ARG FFMPEG_MT
 ENV INSTALL_DIR=/opt
 ENV FFMPEG_VERSION=n5.1.4
-ENV FFMPEG_ST=1
-ENV EM_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+ENV EMSDK=/emsdk
+ENV EM_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 ENV CFLAGS="-I$INSTALL_DIR/include $CFLAGS $EXTRA_CFLAGS"
 ENV CXXFLAGS="$CFLAGS"
 ENV LDFLAGS="-L$INSTALL_DIR/lib $LDFLAGS $CFLAGS $EXTRA_LDFLAGS"
-ENV EM_PKG_CONFIG_PATH=$INSTALL_DIR/lib/pkgconfig
+ENV EM_PKG_CONFIG_PATH=$INSTALL_DIR/lib/pkgconfig:/emsdk/upstream/emscripten/system/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$EM_PKG_CONFIG_PATH
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel git ca-certificates && \
+ENV FFMPEG_ST=$FFMPEG_ST
+ENV FFMPEG_MT=$FFMPEG_MT
+RUN test -f "$EM_TOOLCHAIN_FILE" && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      pkg-config autoconf automake libtool ragel git ca-certificates \
+      build-essential python3 && \
     rm -rf /var/lib/apt/lists/*
-RUN git clone --depth 1 https://github.com/ffmpegwasm/ffmpeg.wasm.git /opt/ffmpeg.wasm
-RUN embuilder build sdl2
 
+COPY scripts/ffmpeg-wasm/build /opt/ffmpeg.wasm-build
+
+# Build libvpx (ffmpegwasm fork — emscripten patches)
 FROM emsdk-base AS libvpx-builder
 WORKDIR /src
 RUN git clone --depth 1 -b v1.13.1 https://github.com/ffmpegwasm/libvpx.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/libvpx.sh
+    bash -x /opt/ffmpeg.wasm-build/libvpx.sh
 
 FROM emsdk-base AS lame-builder
 WORKDIR /src
 RUN git clone --depth 1 https://github.com/ffmpegwasm/lame.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/lame.sh
+    bash -x /opt/ffmpeg.wasm-build/lame.sh
 
 FROM emsdk-base AS ogg-builder
 WORKDIR /src
 RUN git clone --depth 1 -b v1.3.4 https://github.com/ffmpegwasm/Ogg.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/ogg.sh
+    bash -x /opt/ffmpeg.wasm-build/ogg.sh
 
 FROM emsdk-base AS opus-builder
 WORKDIR /src
 RUN git clone --depth 1 -b v1.3.1 https://github.com/ffmpegwasm/opus.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/opus.sh
+    bash -x /opt/ffmpeg.wasm-build/opus.sh
 
 FROM emsdk-base AS vorbis-builder
 COPY --from=ogg-builder $INSTALL_DIR $INSTALL_DIR
 WORKDIR /src
 RUN git clone --depth 1 -b v1.3.3 https://github.com/ffmpegwasm/vorbis.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/vorbis.sh
+    bash -x /opt/ffmpeg.wasm-build/vorbis.sh
 
 FROM emsdk-base AS zlib-builder
 WORKDIR /src
 RUN git clone --depth 1 -b v1.2.11 https://github.com/ffmpegwasm/zlib.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/zlib.sh
+    bash -x /opt/ffmpeg.wasm-build/zlib.sh
 
 FROM emsdk-base AS freetype2-builder
 WORKDIR /src
 RUN git clone --depth 1 -b VER-2-10-4 https://github.com/ffmpegwasm/freetype2.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/freetype2.sh
+    bash -x /opt/ffmpeg.wasm-build/freetype2.sh
 
 FROM emsdk-base AS fribidi-builder
 WORKDIR /src
 RUN git clone --depth 1 -b v1.0.9 https://github.com/fribidi/fribidi.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/fribidi.sh
+    bash -x /opt/ffmpeg.wasm-build/fribidi.sh
 
 FROM emsdk-base AS harfbuzz-builder
 WORKDIR /src
 RUN git clone --depth 1 -b 5.2.0 https://github.com/harfbuzz/harfbuzz.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/harfbuzz.sh
+    bash -x /opt/ffmpeg.wasm-build/harfbuzz.sh
 
 FROM emsdk-base AS libass-builder
 COPY --from=freetype2-builder $INSTALL_DIR $INSTALL_DIR
@@ -72,7 +85,7 @@ COPY --from=fribidi-builder $INSTALL_DIR $INSTALL_DIR
 COPY --from=harfbuzz-builder $INSTALL_DIR $INSTALL_DIR
 WORKDIR /src
 RUN git clone --depth 1 -b 0.15.0 https://github.com/libass/libass.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/libass.sh
+    bash -x /opt/ffmpeg.wasm-build/libass.sh
 
 FROM emsdk-base AS ffmpeg-builder
 COPY --from=libvpx-builder $INSTALL_DIR $INSTALL_DIR
@@ -83,10 +96,8 @@ COPY --from=zlib-builder $INSTALL_DIR $INSTALL_DIR
 COPY --from=libass-builder $INSTALL_DIR $INSTALL_DIR
 WORKDIR /src
 RUN git clone --depth 1 -b n5.1.4 https://github.com/FFmpeg/FFmpeg.git /src && \
-    bash -x /opt/ffmpeg.wasm/build/ffmpeg.sh \
-      --disable-gpl \
-      --disable-nonfree \
-      --disable-postproc \
+    bash -x /opt/ffmpeg.wasm-build/ffmpeg.sh \
+      --enable-avfilter \
       --enable-libvpx \
       --enable-libmp3lame \
       --enable-libvorbis \
@@ -94,17 +105,118 @@ RUN git clone --depth 1 -b n5.1.4 https://github.com/FFmpeg/FFmpeg.git /src && \
       --enable-zlib \
       --enable-libfreetype \
       --enable-libfribidi \
-      --enable-libass
+      --enable-libass \
+      --enable-filter=subtitles \
+      --enable-filter=ass \
+      --enable-filter=loudnorm \
+      --enable-filter=scale \
+      --enable-filter=crop \
+      --enable-filter=palettegen \
+      --enable-filter=paletteuse \
+      --enable-filter=showspectrumpic \
+      --enable-filter=showwavespic \
+      --enable-filter=sidechaincompress \
+      --enable-filter=atempo \
+      --enable-filter=asetrate \
+      --enable-filter=tonemap \
+      --enable-filter=blackdetect \
+      --enable-filter=freezedetect \
+      --enable-filter=scdet \
+      --enable-filter=tile \
+      --enable-filter=thumbnail \
+      --enable-filter=concat \
+      --enable-filter=deshake \
+      --enable-filter=unsharp \
+      --enable-filter=yadif \
+      --enable-filter=chromakey \
+      --enable-filter=colorkey
+# Refuse a GPL / x264 leak before linking wasm. FFmpeg 5.x writes config.h at src root.
+# GPL-only filters (hqdn3d, cropdetect, eq) stay off — no --enable-gpl.
+# FFmpeg >= 5.1 moves component flags (filters/codecs) to config_components.h.
+RUN CONFIG_H=/src/config.h; \
+    test -f "$CONFIG_H" || CONFIG_H=/src/ffbuild/config.h; \
+    test -f "$CONFIG_H"; \
+    COMP_H=/src/config_components.h; test -f "$COMP_H" || COMP_H="$CONFIG_H"; \
+    echo "=== relevant CONFIG_* ==="; \
+    cat "$CONFIG_H" "$COMP_H" | grep -E '#define CONFIG_(GPL|LIBX264|LIBX265|LIBASS|LIBVPX|LIBMP3LAME|LIBOPUS|SUBTITLES_FILTER|ASS_FILTER|LOUDNORM_FILTER|SCALE_FILTER|HQDN3D_FILTER|CROPDETECT_FILTER) ' || true; \
+    grep -E '#define CONFIG_GPL[[:space:]]+0' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBX264[[:space:]]+0' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBX265[[:space:]]+0' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBASS[[:space:]]+1' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBVPX[[:space:]]+1' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBMP3LAME[[:space:]]+1' "$CONFIG_H"; \
+    grep -E '#define CONFIG_LIBOPUS[[:space:]]+1' "$CONFIG_H"; \
+    grep -E '#define CONFIG_SUBTITLES_FILTER[[:space:]]+1' "$COMP_H"; \
+    grep -E '#define CONFIG_LOUDNORM_FILTER[[:space:]]+1' "$COMP_H"; \
+    ! grep -qE '#define CONFIG_(HQDN3D|CROPDETECT|EQ)_FILTER[[:space:]]+1' "$COMP_H"
 
 FROM ffmpeg-builder AS ffmpeg-wasm-builder
-RUN mkdir -p /src/src && \
-    cp -a /opt/ffmpeg.wasm/src/bind /src/src/bind && \
-    cp -a /opt/ffmpeg.wasm/src/fftools /src/src/fftools
+COPY scripts/ffmpeg-wasm/src/bind /src/src/bind
+COPY scripts/ffmpeg-wasm/src/fftools /src/src/fftools
+COPY scripts/ffmpeg-wasm/build/ffmpeg-wasm.sh /src/build-wasm.sh
+COPY scripts/ffmpeg-wasm/LICENSE.txt /src/LICENSE.txt
 WORKDIR /src
 ENV FFMPEG_LIBS="-lvpx -lmp3lame -logg -lvorbis -lvorbisenc -lvorbisfile -lopus -lz -lfreetype -lfribidi -lharfbuzz -lass"
-RUN mkdir -p /src/dist/umd && \
-    bash -x /opt/ffmpeg.wasm/build/ffmpeg-wasm.sh $FFMPEG_LIBS -o dist/umd/ffmpeg-core.js
+RUN embuilder build sdl2 && \
+    mkdir -p /src/dist/esm && \
+    bash -x /src/build-wasm.sh $FFMPEG_LIBS -sEXPORT_ES6 -o dist/esm/ffmpeg-core.js && \
+    test -f /src/dist/esm/ffmpeg-core.js && \
+    test -f /src/dist/esm/ffmpeg-core.wasm
+RUN python3 - <<'PY'
+import hashlib, json, os, pathlib, time
+root = pathlib.Path("/src/dist/esm")
+info = {
+    "name": "neotools-ffmpeg-lgpl",
+    "compatibleWith": "@ffmpeg/ffmpeg 0.12.x",
+    "exportName": "createFFmpegCore",
+    "modularize": True,
+    "thread": "st" if os.environ.get("FFMPEG_ST") else ("mt" if os.environ.get("FFMPEG_MT") else "st"),
+    "ffmpegVersion": os.environ.get("FFMPEG_VERSION", "n5.1.4"),
+    "ffmpegwasmTag": "v0.12.10",
+    "emscripten": "3.1.40",
+    "license": "LGPL-2.1-or-later",
+    "builtAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "configureFlags": [
+        "--target-os=none", "--arch=x86_32", "--enable-cross-compile",
+        "--disable-asm", "--disable-stripping", "--disable-programs",
+        "--disable-doc", "--disable-debug", "--disable-runtime-cpudetect",
+        "--disable-autodetect",
+        "--disable-pthreads", "--disable-w32threads", "--disable-os2threads",
+        "--enable-libvpx", "--enable-libmp3lame", "--enable-libvorbis",
+        "--enable-libopus", "--enable-zlib", "--enable-libfreetype",
+        "--enable-libfribidi", "--enable-libass",
+    ],
+    "linkFlags": ["-sINITIAL_MEMORY=64MB", "-sALLOW_MEMORY_GROWTH", "-sSTACK_SIZE=5MB", "-sWASM_BIGINT", "-sMODULARIZE", "-sEXPORT_ES6"],
+    "filtersNote": "all LGPL-compatible filters are compiled in (no --disable-filters); GPL-only filters (hqdn3d, cropdetect, eq, boxblur, delogo, mpdecimate, ...) are absent",
+    "requiredFilters": [
+        "subtitles", "ass", "loudnorm", "scale", "crop", "palettegen", "paletteuse", "showspectrumpic",
+        "showwavespic", "sidechaincompress", "atempo", "asetrate", "tonemap", "blackdetect", "freezedetect",
+        "scdet", "tile", "thumbnail", "concat", "deshake", "unsharp", "yadif", "chromakey", "colorkey",
+    ],
+    "libraries": {
+        "libvpx": "v1.13.1",
+        "lame": "ffmpegwasm/lame master",
+        "ogg": "v1.3.4",
+        "opus": "v1.3.1",
+        "vorbis": "v1.3.3",
+        "zlib": "v1.2.11",
+        "freetype2": "VER-2-10-4",
+        "fribidi": "v1.0.9",
+        "harfbuzz": "5.2.0",
+        "libass": "0.15.0",
+    },
+    "omittedGpl": ["libx264", "libx265", "libfdk-aac", "librubberband", "libvidstab", "libpostproc", "hqdn3d", "cropdetect", "eq"],
+    "sha256": {},
+}
+for name in ("ffmpeg-core.js", "ffmpeg-core.wasm"):
+    data = (root / name).read_bytes()
+    info["sha256"][name] = hashlib.sha256(data).hexdigest()
+    info.setdefault("bytes", {})[name] = len(data)
+(root / "BUILD-INFO.json").write_text(json.dumps(info, indent=2) + "\n")
+print(json.dumps(info, indent=2))
+PY
+RUN cp /src/LICENSE.txt /src/dist/esm/LICENSE.txt
 
 FROM debian:bookworm-slim
-COPY --from=ffmpeg-wasm-builder /src/dist/umd /core
-CMD ["sh", "-c", "mkdir -p /out && cp /core/ffmpeg-core.js /core/ffmpeg-core.wasm /out/ && ls -l /out"]
+COPY --from=ffmpeg-wasm-builder /src/dist/esm /core
+CMD ["sh", "-c", "mkdir -p /out && cp /core/ffmpeg-core.js /core/ffmpeg-core.wasm /core/BUILD-INFO.json /core/LICENSE.txt /out/ && ls -l /out"]

@@ -6,7 +6,18 @@ const WASM_WARN_BYTES = 256 * 1024 * 1024;
 
 let nativeCached: boolean | null = null;
 
+function nativeDisabledByEnv(): boolean {
+  if (typeof process === 'undefined') return false;
+  const raw = process.env.NEOTOOLS_FFMPEG_NATIVE;
+  return raw === '0' || raw === 'false';
+}
+
+export function resetNativeFfmpegCache(): void {
+  nativeCached = null;
+}
+
 export async function hasNativeFfmpeg(): Promise<boolean> {
+  if (nativeDisabledByEnv()) return false;
   if (nativeCached !== null) return nativeCached;
   if (typeof process === 'undefined' || !process.versions?.node) {
     nativeCached = false;
