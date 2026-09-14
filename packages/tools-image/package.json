@@ -1,0 +1,52 @@
+{
+  "name": "@neotools/tools-image",
+  "version": "0.1.0",
+  "description": "Bild-Werkzeuge für NeoTools (jSquash, eigene Codecs, Metadaten).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./codec": {
+      "types": "./dist/codec/index.d.ts",
+      "import": "./dist/codec/index.js"
+    }
+  },
+  "files": ["dist", "assets"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@jsquash/avif": "^2.1.1",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/jxl": "^1.3.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "@neotools/engine": "workspace:*",
+    "@neotools/parsers": "workspace:*",
+    "fflate": "^0.8.3",
+    "gifenc": "^1.0.3",
+    "gifuct-js": "^2.1.2",
+    "heic-decode": "^2.1.0",
+    "opentype.js": "^1.3.4",
+    "upng-js": "^2.1.0",
+    "utif": "^3.1.0",
+    "zod": "^3.24.2"
+  },
+  "optionalDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

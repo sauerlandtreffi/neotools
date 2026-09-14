@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "u2netp",
+      "tools": ["image-remove-background"],
+      "kind": "onnx",
+      "backend": "ort",
+      "url": "https://huggingface.co/edgetools/u2netp/resolve/main/u2netp.onnx",
+      "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+      "sizeBytes": 4574861,
+      "license": "Apache-2.0",
+      "origin": "xuebinqin/U-2-Net (Apache-2.0), rembg v0.0.0 asset, mirrored at edgetools/u2netp",
+      "localName": "u2netp.onnx",
+      "input": {
+        "layout": "NCHW",
+        "width": 320,
+        "height": 320,
+        "color": "RGB",
+        "normalize": "imagenet"
+      },
+      "note": "Default background-removal model. Small, commercially usable."
+    },
+    {
+      "id": "isnet-general-q8",
+      "tools": ["image-remove-background"],
+      "kind": "onnx",
+      "backend": "ort",
+      "url": "https://huggingface.co/SacredNoir/isnet-general-use-onnx/resolve/main/isnet-general-use-q8.onnx",
+      "sha256": "feed6f32a5e707ca7e939576b2d891b23fb9eb4114749657a5efc64e8651e43a",
+      "sizeBytes": 44436071,
+      "license": "Apache-2.0",
+      "origin": "xuebinqin/DIS IS-Net general-use (Apache-2.0); ONNX via x-Liola-x; q8 redistributed by SacredNoir",
+      "localName": "isnet-general-q8.onnx",
+      "input": {
+        "layout": "NCHW",
+        "width": 1024,
+        "height": 1024,
+        "color": "RGB",
+        "normalize": "minus_one_one"
+      },
+      "note": "Optional HQ model (~44 MB). Not onnx-community/ISNet-ONNX (that HF card is AGPL)."
+    },
+    {
+      "id": "yunet-face",
+      "tools": ["image-auto-blur"],
+      "kind": "onnx",
+      "backend": "ort",
+      "url": "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
+      "sha256": "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4",
+      "sizeBytes": 232589,
+      "license": "Apache-2.0",
+      "origin": "OpenCV zoo YuNet face_detection_yunet_2023mar (Apache-2.0)",
+      "localName": "yunet-face.onnx",
+      "input": {
+        "layout": "NCHW",
+        "width": 160,
+        "height": 120,
+        "color": "RGB",
+        "normalize": "zero_one"
+      },
+      "note": "Face detector. InsightFace SCRFD/RetinaFace weights rejected (non-commercial). Ultralytics YOLOv8-face rejected (AGPL)."
+    },
+    {
+      "id": "yolos-tiny",
+      "tools": ["image-auto-blur"],
+      "kind": "transformers",
+      "backend": "transformers",
+      "url": "https://huggingface.co/Xenova/yolos-tiny/resolve/main/onnx/model_quantized.onnx",
+      "sizeBytes": 25000000,
+      "license": "Apache-2.0",
+      "origin": "hustvl/yolos-tiny (Apache-2.0) via Xenova/yolos-tiny",
+      "localName": "yolos-tiny",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "onnx/model_quantized.onnx"
+      ],
+      "note": "Person detector (COCO). Optional; used to enlarge blur regions. No remote load at runtime."
+    },
+    {
+      "id": "swin2sr-x2",
+      "tools": ["image-upscale"],
+      "kind": "onnx",
+      "backend": "ort",
+      "url": "https://huggingface.co/Xenova/swin2SR-lightweight-x2-64/resolve/main/onnx/model_quantized.onnx",
+      "sizeBytes": 4000000,
+      "license": "Apache-2.0",
+      "origin": "caidas/swin2SR-lightweight-x2-64 (Apache-2.0) via Xenova",
+      "localName": "swin2sr-x2.onnx",
+      "input": {
+        "layout": "NCHW",
+        "width": 64,
+        "height": 64,
+        "color": "RGB",
+        "normalize": "zero_one"
+      },
+      "note": "Showcase super-resolution x2. Real-ESRGAN (BSD-3) is license-ok but Swin2SR is the smaller Apache default. SHA pinned on first fetch if missing."
+    },
+    {
+      "id": "vit-gpt2-caption",
+      "tools": ["image-alt-text"],
+      "kind": "transformers",
+      "backend": "transformers",
+      "url": "https://huggingface.co/Xenova/vit-gpt2-image-captioning/resolve/main/onnx/model_quantized.onnx",
+      "sizeBytes": 98000000,
+      "license": "Apache-2.0",
+      "origin": "nlpconnect/vit-gpt2-image-captioning (Apache-2.0) via Xenova",
+      "localName": "vit-gpt2-caption",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "onnx/decoder_model_merged_quantized.onnx",
+        "onnx/encoder_model_quantized.onnx"
+      ],
+      "note": "Local English captions. BLIP (BSD-3) is an alternative, not the default."
+    },
+    {
+      "id": "opus-mt-en-de",
+      "tools": ["image-alt-text"],
+      "kind": "transformers",
+      "backend": "transformers",
+      "url": "https://huggingface.co/Xenova/opus-mt-en-de/resolve/main/onnx/model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-en-de (Apache-2.0) via Xenova",
+      "localName": "opus-mt-en-de",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ],
+      "note": "English→German translation for alt text."
+    }
+  ]
+}

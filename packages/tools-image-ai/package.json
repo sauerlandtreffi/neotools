@@ -1,0 +1,46 @@
+{
+  "name": "@neotools/tools-image-ai",
+  "version": "0.1.0",
+  "description": "KI- und CV-Bildwerkzeuge für NeoTools (Hintergrund, Blur, Dokument-Repair, Screenshot-Werkstatt).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./models.json": "./src/models/models.json"
+  },
+  "files": ["dist", "src/models/models.json", "scripts"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "fetch-models": "node scripts/fetch-models.mjs",
+    "copy-onnx": "node scripts/copy-onnx-assets.mjs"
+  },
+  "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/webp": "^1.5.0",
+    "@neotools/engine": "workspace:*",
+    "@neotools/tools-image": "workspace:*",
+    "fflate": "^0.8.3",
+    "onnxruntime-web": "^1.22.0",
+    "pdf-lib": "^1.17.1",
+    "zod": "^3.24.2"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.7.2",
+    "@neotools/tools-pdf": "workspace:*",
+    "onnxruntime-node": "^1.22.0",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

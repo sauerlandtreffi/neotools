@@ -1,0 +1,7 @@
+# Downloaded models (never commit >2 MB binaries)
+.models/
+*.onnx
+!src/models/models.json
+
+# Local cache copies
+.cache/
