@@ -21,6 +21,9 @@ import { pdfCompare } from './tools/pdf-compare.js';
 import { pdfA } from './tools/pdf-a.js';
 import { pdfAktenbundler } from './tools/pdf-aktenbundler.js';
 import { pdfSign } from './tools/pdf-sign.js';
+import { pdfFormMailmerge } from './tools/pdf-form-mailmerge.js';
+import { pdfAttachmentStamp } from './tools/pdf-attachment-stamp.js';
+import { pdfUa } from './tools/pdf-ua.js';
 
 export const pdfTools: ToolDefinition[] = [
   pdfMerge,
@@ -44,6 +47,9 @@ export const pdfTools: ToolDefinition[] = [
   pdfA,
   pdfAktenbundler,
   pdfSign,
+  pdfFormMailmerge,
+  pdfAttachmentStamp,
+  pdfUa,
 ];
 
 export function registerPdfTools(registry: Registry): Registry {
@@ -77,7 +83,15 @@ export {
   pdfA,
   pdfAktenbundler,
   pdfSign,
+  pdfFormMailmerge,
+  pdfAttachmentStamp,
+  pdfUa,
 };
+
+export { formatExhibitStamp } from './stamp/exhibit.js';
+export { inspectPdfUa } from './ua/inspect.js';
+export { repairPdfUa } from './ua/repair.js';
+export { fillAcroForm } from './forms/fill.js';
 
 export { inspectPdf } from './inspect.js';
 export type { PdfInspection } from './inspect.js';

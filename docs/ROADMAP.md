@@ -341,3 +341,15 @@ WP-19/20/25 + Rename erledigt
 - Whisper (Transformers.js v3, WebGPU→WASM, Node ORT), Untertitel-Parser/Writer, Cutlist/Kapitel/Notes, OCR-Frames, Bleep-Liste, a11y-AD-Entwurf.
 - Decoder ohne FFmpeg: WAV/PCM, MP3, OGG/Opus, FLAC; Browser `decodeAudioData`; Node-Video → Hinweis + optional `@neotools/tools-media`.
 
+## Status Pack `dach` Phase 4 + Pack `pdf` Phase 4 + Pack `archive` (Welle 4)
+
+- **E-Rechnung Validierung:** XSD **nein** (Default; `scripts/fetch-schemas.mjs` lädt OASIS/KoSIT nach `assets/schemas/`, gitignored). Schematron/SaxonJS **nein** (optional, nicht gebündelt). Stattdessen: Wohlgeformtheit + Profil (CII/UBL, MINIMUM…XRECHNUNG) + EN-16931-BT-Tabelle + **~60 TypeScript-BR** (BR-01…BR-65 Kern, BR-CO-10/14/15/16/17, BR-DE-*, BR-IBAN-01) + Arithmetik. Kein falsch-grün.
+- **Tools DACH:** `dach-erechnung-validate` / `generate` (CII+UBL+PDF/A-3b Factur-X, `verify`-Hook) / `paper-to-erechnung` / `receipt-split` / `receipt-export` (DATEV EXTF 700) / `statement-camt` (CAMT.053+MT940) / `gobd` / `deadline` (§§ 187–193 BGB) / `team-presets` (Zod+Ed25519).
+- **`applyTeamPresets(registry, presets)`** (`packages/engine/src/presets.ts`): Defaults unter Caller-Optionen mergen, `locked[toolId]` erzwingen, `hiddenTools` weglassen, `watermarkText`/`batesPrefix` wenn Option existiert. `getAppliedPresets` / `requiredPipelines` für Agent P (Web/Docker lädt/enforced). Tool `dach-team-presets` validiert/normalisiert/signiert.
+- **PDF Phase 4:** `pdf-form-mailmerge` (CSV/XLSX→AcroForm), `pdf-attachment-stamp` (Anlage K/B, additiv zu Aktenbundler), `pdf-ua` (Check + Repair Lang/Titel/MarkInfo/Tabs/pdfuaid; **kein** Content-Stream-MCID-Tagging).
+- **Pack `archive`** `@neotools/tools-archive`, Kategorie `archive-pack` / „Archive & Ordner“: 11 Tools (ZIP/TAR/GZ nativ via fflate; 7z/RAR/ISO nur dynamisch libarchive.js). Zip-Slip-Block, Zip-Bomb-Ratio-Warnung, Sidecar-Wrangler, Hash-Duplikate, Space-Radar, Ordner-Diff, SHA-256-Manifest.
+- **Lizenzen:** fflate MIT, `@zip.js/zip.js` BSD-3, `@noble/ed25519`+`@noble/hashes` MIT, SheetJS Community Apache-2.0, libarchive.js MIT (dynamic), 7z-wasm LGPL-2.1 (dynamic, nicht gebündelt), KoSIT Apache-2.0 / SaxonJS MPL-2.0 / libxml2-wasm MIT (optional fetch, nicht Default). Keine AGPL, keine CDN-Schemas.
+- **Grenzen:** Keine volle XSD/Schematron-Kette offline; PDF-UA ohne echte Tags/MCIDs; 7z-Schreiben nicht nativ; Factur-X-XML nach pdf-a-Convert best-effort (`NeoFacturX`-Stream); Team-Presets-Enforcement im UI ist Agent P.
+- **Tests:** Generator→Validator grün; injizierte Summe/Leitweg/IBAN; PDF/A-3-Extraktion; DATEV-Header-Snapshot; CAMT/MT940-Struktur; BGB-Fristen; GoBD verify/tamper; Ed25519 + locked option; Mailmerge n→n; PDF-UA Repair weniger Befunde; ZIP/TAR, Zip-Slip, Bomb-Ratio, Sidecars, Ordner-Diff.
+- **Commit:** `feat(dach,archive,pdf): e-invoice, receipts, gobd, pdf-ua, archive pack (wave 4)` (Hash nach Commit).
+

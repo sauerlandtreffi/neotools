@@ -18,6 +18,8 @@ export { createToolContext, throwIfAborted } from './context.js';
 export { collectLicenses, PLATFORM_LICENSES } from './licenses.js';
 export { zodObjectFields, kebab } from './zod-fields.js';
 export type { FormField, FieldKind } from './zod-fields.js';
+export { applyTeamPresets, getAppliedPresets, mergePresetOptions, teamPresetsSchema } from './presets.js';
+export type { TeamPresets } from './presets.js';
 export { ENGINE_VERSION, MIME } from './types.js';
 export {
   bytesToBase64Url,

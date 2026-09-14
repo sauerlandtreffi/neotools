@@ -22,6 +22,7 @@ import { registerImageAiTools } from '@neotools/tools-image-ai';
 import { registerImageTools } from '@neotools/tools-image';
 import { registerDachTools } from '@neotools/tools-dach';
 import { registerSpeechTools } from '@neotools/tools-speech';
+import { registerArchiveTools } from '@neotools/tools-archive';
 import { addZodOptions, optionsFromFlags } from './flags.js';
 import { batchOf, describeTool, hasBatchErrors, jsonResult, printTable } from './format.js';
 import { listModelCatalog, runModelsFetch } from './models-cmd.js';
@@ -49,7 +50,7 @@ export async function runCli(
   argv: string[],
   io = { stdout: console.log.bind(console), stderr: console.error.bind(console) },
 ): Promise<number> {
-  const registry = registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry())))));
+  const registry = registerArchiveTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))));
   let code = EXIT_OK;
   const program = new Command();
   program.exitOverride();

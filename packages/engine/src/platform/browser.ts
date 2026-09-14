@@ -40,11 +40,15 @@ export function browserPlatform(): Platform {
       ocr: true,
       webgpu: typeof navigator !== 'undefined' && 'gpu' in navigator,
       onnx: true,
+      ffmpegNative: false,
+      webcodecs: typeof globalThis.VideoEncoder === 'function',
+      directoryPicker: true,
     },
     encodeRaster,
     assets: {
       modelBase: '/assets/models',
       onnxWasmBase: '/assets/onnx',
+      ffmpegBase: '/assets/ffmpeg',
     },
   };
 }

@@ -1,0 +1,8 @@
+{
+  "id": "n26",
+  "name": "N26",
+  "date": "(\\d{4}-\\d{2}-\\d{2}|\\d{2}\\.\\d{2}\\.\\d{4})",
+  "amount": "(-?\\d+[.,]\\d{2})",
+  "skip": "Balance|Saldo|N26",
+  "balance": "(?:Balance|Saldo)[:\\s]+(-?\\d+[.,]\\d{2})"
+}

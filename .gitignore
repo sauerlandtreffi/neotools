@@ -75,3 +75,9 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# E-invoice official XSD / Schematron (fetch-schemas.mjs, too large)
+packages/tools-dach/assets/schemas/**
+!packages/tools-dach/assets/schemas/.gitkeep
+!packages/tools-dach/assets/schemas/README.md
+apps/web/public/assets/einvoice-schemas/**

@@ -86,4 +86,9 @@ export const PDF_LICENSES: ToolLicense[] = [
     license: 'MIT',
     url: 'https://github.com/Hopding/fontkit',
   },
+  {
+    name: 'SheetJS Community (xlsx)',
+    license: 'Apache-2.0',
+    url: 'https://github.com/SheetJS/sheetjs',
+  },
 ];

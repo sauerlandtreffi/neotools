@@ -1,0 +1,34 @@
+{
+  "name": "@neotools/tools-archive",
+  "version": "0.1.0",
+  "description": "Archive- und Ordner-Werkzeuge (ZIP/TAR, Duplikate, Sidecars, Checksums).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@neotools/engine": "workspace:*",
+    "@neotools/parsers": "workspace:*",
+    "@zip.js/zip.js": "^2.7.62",
+    "fflate": "^0.8.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

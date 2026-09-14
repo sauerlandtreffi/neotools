@@ -7,8 +7,9 @@ import { modelStatus, registerImageAiTools } from '@neotools/tools-image-ai';
 import { registerImageTools } from '@neotools/tools-image';
 import { registerDachTools } from '@neotools/tools-dach';
 import { registerSpeechTools } from '@neotools/tools-speech';
+import { registerArchiveTools } from '@neotools/tools-archive';
 
-const registry = registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry())))));
+const registry = registerArchiveTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))));
 void loadPdfjs();
 
 export interface WorkerFile {

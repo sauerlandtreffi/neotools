@@ -43,6 +43,9 @@ export function nodePlatform(): Platform {
       ocr: true,
       webgpu: false,
       onnx: true,
+      ffmpegNative: false,
+      webcodecs: false,
+      directoryPicker: false,
     },
     async encodeRaster(req: RenderPageRequest) {
       return tryNapiEncode(req);
@@ -53,12 +56,24 @@ export function nodePlatform(): Platform {
   };
 }
 
+async function detectFfmpegNative(): Promise<boolean> {
+  try {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    await promisify(execFile)('ffmpeg', ['-version'], { timeout: 8000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function nodePlatformReady(): Promise<Platform> {
   const canvas = await detectNapi();
+  const ffmpegNative = await detectFfmpegNative();
   const base = nodePlatform();
   return {
     ...base,
-    capabilities: { ...base.capabilities, canvas },
+    capabilities: { ...base.capabilities, canvas, ffmpegNative },
   };
 }
 

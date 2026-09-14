@@ -11,16 +11,19 @@ export default function DropZone({
   assessments,
   onFiles,
   onClear,
+  directory,
 }: {
   locale: Locale;
   accept: string;
   multiple: boolean;
+  directory?: boolean;
   files: WorkerFile[];
   assessments: ExtensionAssessment[];
   onFiles: (files: File[]) => Promise<void>;
   onClear: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dirRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
@@ -62,6 +65,39 @@ export default function DropZone({
       >
         {t(locale, 'choose')}
       </button>
+      {directory && (
+        <button
+          type="button"
+          class="mt-4 ml-2 rounded-md border px-4 py-2"
+          style={{ borderColor: 'var(--line)' }}
+          onClick={() => {
+            if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
+              void (async () => {
+                try {
+                  const handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker();
+                  const collected: File[] = [];
+                  const walk = async (dir: FileSystemDirectoryHandle, prefix: string): Promise<void> => {
+                    for await (const [name, entry] of dir as unknown as AsyncIterable<[string, FileSystemHandle]>) {
+                      if (entry.kind === 'file') {
+                        const file = await (entry as FileSystemFileHandle).getFile();
+                        collected.push(new File([file], prefix ? `${prefix}/${name}` : name, { type: file.type }));
+                      } else if (entry.kind === 'directory') {
+                        await walk(entry as FileSystemDirectoryHandle, prefix ? `${prefix}/${name}` : name);
+                      }
+                    }
+                  };
+                  await walk(handle, handle.name);
+                  if (collected.length) void onFiles(collected);
+                } catch {
+                  dirRef.current?.click();
+                }
+              })();
+            } else dirRef.current?.click();
+          }}
+        >
+          {t(locale, 'chooseFolder')}
+        </button>
+      )}
       <input
         ref={inputRef}
         class="sr-only"
@@ -74,6 +110,23 @@ export default function DropZone({
           if (list.length) void onFiles(list);
         }}
       />
+      {directory && (
+        <input
+          ref={dirRef}
+          class="sr-only"
+          type="file"
+          // @ts-expect-error webkitdirectory is non-standard
+          webkitdirectory="true"
+          multiple
+          onChange={(e) => {
+            const list = [...((e.target as HTMLInputElement).files ?? [])].map((f) => {
+              const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath;
+              return rel ? new File([f], rel, { type: f.type }) : f;
+            });
+            if (list.length) void onFiles(list);
+          }}
+        />
+      )}
       <ul class="mx-auto mt-4 max-w-md text-left text-sm" aria-live="polite">
         {files.length === 0 && <li style={{ color: 'var(--muted)' }}>{t(locale, 'empty')}</li>}
         {files.map((f, i) => {

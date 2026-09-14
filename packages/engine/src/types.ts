@@ -40,6 +40,12 @@ export interface PlatformCapabilities {
   webgpu?: boolean;
   /** ONNX Runtime (web or node) may be used. */
   onnx?: boolean;
+  /** System `ffmpeg` binary is on PATH (Node / CLI). */
+  ffmpegNative?: boolean;
+  /** WebCodecs VideoEncoder / VideoDecoder available. */
+  webcodecs?: boolean;
+  /** Folder picker (webkitdirectory / File System Access). */
+  directoryPicker?: boolean;
 }
 
 export interface PlatformAssets {
@@ -49,6 +55,8 @@ export interface PlatformAssets {
   modelBase?: string;
   /** Same-origin or filesystem base for onnxruntime WASM files. */
   onnxWasmBase?: string;
+  /** Same-origin or filesystem base for self-hosted ffmpeg.wasm cores. */
+  ffmpegBase?: string;
 }
 
 export interface Platform {
@@ -85,6 +93,8 @@ export interface ToolInputs {
   multiple: boolean;
   min?: number;
   max?: number;
+  /** Show folder picker when the platform exposes `directoryPicker`. */
+  directory?: boolean;
 }
 
 export interface ToolOutputs {
@@ -154,6 +164,8 @@ export interface ProvenanceManifest {
 export interface PipelineStep {
   toolId: string;
   options: unknown;
+  /** Light branch: only files whose MIME matches run this step; others pass through. */
+  whenMime?: string[];
 }
 
 export interface PipelineSpec {
@@ -182,6 +194,31 @@ export const MIME = {
   tiff: 'image/tiff',
   svg: 'image/svg+xml',
   ico: 'image/x-icon',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska',
+  mov: 'video/quicktime',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  opus: 'audio/opus',
+  flac: 'audio/flac',
+  m4a: 'audio/mp4',
+  zip: 'application/zip',
+  xml: 'application/xml',
+  csv: 'text/csv',
+  ics: 'text/calendar',
+  html: 'text/html',
   srt: 'application/x-subrip',
   vtt: 'text/vtt',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  epub: 'application/epub+zip',
+  yaml: 'application/yaml',
+  vcf: 'text/vcard',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
+  otf: 'font/otf',
 } as const;

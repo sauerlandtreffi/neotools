@@ -6,10 +6,10 @@ import ZodForm from './ZodForm';
 import VerificationBlock from './VerificationBlock';
 import RedactEditor from './RedactEditor';
 import ImageBoxEditor from './ImageBoxEditor';
+import MediaTrimEditor from './MediaTrimEditor';
 import DropZone from './DropZone';
 import NetworkStatus from './NetworkStatus';
 import ModelConfirm from './ModelConfirm';
-import TranscriptEditor from './TranscriptEditor';
 import { localePath, t, type Locale } from '../lib/i18n';
 import { createToolWorker, downloadBytes, zipDownload, type WorkerFile } from '../lib/worker-client';
 import { putHandoffResult, takeHandoff } from '../lib/desktop-handoff';
@@ -17,14 +17,17 @@ import { getBrowserHistoryStore } from '../lib/history';
 import { readToolQuery } from '../lib/options-url';
 import { bytesToBlob } from '../lib/bytes-blob';
 import MarkdownOutput from './MarkdownOutput';
+import TranscriptEditor from './TranscriptEditor';
+import DocPreview from './DocPreview';
 
 export interface ToolMeta {
   id: string;
-  inputs: { accept: string[]; multiple: boolean };
+  inputs: { accept: string[]; multiple: boolean; directory?: boolean };
   presets?: Array<{ id: string; title: Record<'de' | 'en', string>; options: Record<string, unknown> }>;
   ui?: { editor?: string };
   initialOptions?: Record<string, unknown>;
   initialPreset?: string;
+  lockedKeys?: string[];
 }
 
 interface Props {
@@ -188,6 +191,7 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
           locale={locale}
           accept={meta.inputs.accept.join(',')}
           multiple={meta.inputs.multiple}
+          directory={Boolean(meta.inputs.directory)}
           files={files}
           assessments={assessments}
           onFiles={addFiles}
@@ -238,7 +242,7 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
       {phase === 'input' && (
         <section>
           <h2 class="stamp mb-2">{t(locale, 'options')}</h2>
-          <ZodForm fields={fields} values={values} onChange={setValues} />
+          <ZodForm fields={fields} values={values} locked={meta.lockedKeys} onChange={setValues} />
         </section>
       )}
 
@@ -255,8 +259,22 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
         <TranscriptEditor locale={locale} outputs={outputs} />
       )}
 
+      {meta.ui?.editor === 'doc-preview' && phase === 'input' && (
+        <DocPreview locale={locale} toolId={toolId} values={values} onChangeValues={setValues} onGenerate={() => void run()} />
+      )}
+
       {meta.ui?.editor === 'image-boxes' && files[0] && phase === 'input' && (
         <ImageBoxEditor locale={locale} file={files[0]} values={values} onChangeValues={setValues} />
+      )}
+
+      {meta.ui?.editor === 'media-trim' && files[0] && phase === 'input' && (
+        <MediaTrimEditor locale={locale} file={files[0]} values={values} onChangeValues={setValues} />
+      )}
+
+      {phase === 'input' && files.some((f) => f.data.byteLength > 500 * 1024 * 1024) && (
+        <aside class="rounded-lg border p-4 text-sm" style={{ borderColor: '#c45c26' }} role="status">
+          {t(locale, 'mobileMediaWarn')}
+        </aside>
       )}
 
       {(meta.ui?.editor === 'redact' || toolId === 'pdf-redact') && files[0] && phase === 'input' && (
@@ -283,7 +301,10 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
             type="button"
             class="rounded-md px-4 py-2 font-medium"
             style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
-            disabled={!files.length || (risky && !riskOk)}
+            disabled={
+              (!files.length && !(meta.ui?.editor === 'doc-preview' && String(values.source ?? '').trim())) ||
+              (risky && !riskOk)
+            }
             onClick={run}
           >
             {t(locale, 'run')}
@@ -418,7 +439,17 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
 
 function defaultsFrom(fields: FormField[]): Record<string, unknown> {
   const o: Record<string, unknown> = {};
-  for (const f of fields) if (f.defaultValue !== undefined) o[f.name] = f.defaultValue;
+  for (const f of fields) {
+    if (f.kind === 'object' && f.fields?.length) {
+      o[f.name] = { ...defaultsFrom(f.fields), ...(f.defaultValue && typeof f.defaultValue === 'object' ? (f.defaultValue as Record<string, unknown>) : {}) };
+      continue;
+    }
+    if (f.kind === 'array' && f.itemKind === 'object' && Array.isArray(f.defaultValue)) {
+      o[f.name] = f.defaultValue;
+      continue;
+    }
+    if (f.defaultValue !== undefined) o[f.name] = f.defaultValue;
+  }
   return o;
 }
 
@@ -436,6 +467,16 @@ function guessMime(name: string): string {
   if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic';
   if (lower.endsWith('.ico')) return 'image/x-icon';
   if (lower.endsWith('.jxl')) return 'image/jxl';
+  if (lower.endsWith('.wav') || lower.endsWith('.wave')) return 'audio/wav';
+  if (lower.endsWith('.mp3')) return 'audio/mpeg';
+  if (lower.endsWith('.ogg')) return 'audio/ogg';
+  if (lower.endsWith('.opus')) return 'audio/opus';
+  if (lower.endsWith('.flac')) return 'audio/flac';
+  if (lower.endsWith('.m4a')) return 'audio/mp4';
+  if (lower.endsWith('.mp4')) return 'video/mp4';
+  if (lower.endsWith('.webm')) return 'video/webm';
+  if (lower.endsWith('.srt')) return 'application/x-subrip';
+  if (lower.endsWith('.vtt')) return 'text/vtt';
   return 'application/octet-stream';
 }
 

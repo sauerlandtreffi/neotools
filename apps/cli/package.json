@@ -28,6 +28,7 @@
     "commander": "^13.1.0",
     "zod": "^3.24.2",
     "@neotools/tools-speech": "workspace:*",
+    "@neotools/tools-archive": "workspace:*",
     "@neotools/models": "workspace:*"
   },
   "devDependencies": {

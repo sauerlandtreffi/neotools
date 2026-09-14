@@ -1,0 +1,8 @@
+{
+  "id": "postbank",
+  "name": "Postbank",
+  "date": "(\\d{2}\\.\\d{2}\\.\\d{4})",
+  "amount": "(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})",
+  "skip": "Saldo|Postbank|Seite",
+  "balance": "Saldo[:\\s]+(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})"
+}

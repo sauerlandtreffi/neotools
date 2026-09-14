@@ -48,6 +48,7 @@ const dict = {
     drop: 'Dateien hierher ziehen, einfügen oder wählen',
     dropHint: 'Nichts verlässt dieses Gerät.',
     choose: 'Dateien wählen',
+    chooseFolder: 'Ordner wählen',
     presets: 'Voreinstellungen',
     options: 'Optionen',
     run: 'Ausführen',
@@ -143,6 +144,7 @@ const dict = {
     boxes: 'Bereiche',
     before: 'Vorher',
     after: 'Nachher',
+    mobileMediaWarn: 'Datei über 500 MB — auf Mobilgeräten vor der Verarbeitung Speicher und Akku prüfen.',
   },
   en: {
     search: 'Search tools',
@@ -153,6 +155,7 @@ const dict = {
     drop: 'Drop, paste or choose files',
     dropHint: 'Nothing leaves this device.',
     choose: 'Choose files',
+    chooseFolder: 'Choose folder',
     presets: 'Presets',
     options: 'Options',
     run: 'Run',
@@ -248,6 +251,7 @@ const dict = {
     boxes: 'Boxes',
     before: 'Before',
     after: 'After',
+    mobileMediaWarn: 'File over 500 MB — on mobile, check memory and battery before processing.',
   },
 } as const;
 
@@ -271,6 +275,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
     archive: 'Archivierung',
     office: 'Office',
     dach: 'DACH-Business & Recht',
+    'archive-pack': 'Archive & Ordner',
     compare: 'Vergleichen',
     organize: 'Ordnen',
     security: 'Sicherheit',
@@ -294,6 +299,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
     archive: 'Archive',
     office: 'Office',
     dach: 'DACH business & law',
+    'archive-pack': 'Archives & folders',
     compare: 'Compare',
     organize: 'Organize',
     security: 'Security',
