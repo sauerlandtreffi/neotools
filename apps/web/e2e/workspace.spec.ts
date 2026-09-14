@@ -70,6 +70,11 @@ test('w2) /app: drop → analyse → schwärzen → komprimieren → seite lösc
   // export drawer → download
   await page.locator('[data-open-export]').first().click();
   await expect(page.locator('[data-export-drawer]')).toBeVisible();
+  // fail-closed: compress invalidated the redact verification → unknown; "Jetzt prüfen" runs share-safe report-only
+  await expect(page.locator('[data-sharesafe-light="unknown"]')).toBeVisible();
+  await page.locator('[data-sharesafe-check]').click();
+  await expect(page.locator('[data-sharesafe-light="yes"]')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('[data-thumb]')).toHaveCount(3); // report-only step never replaced the document
   const download = page.waitForEvent('download');
   await page.locator('[data-export-download]').click();
   const file = await download;

@@ -72,7 +72,7 @@ export default function ExportDrawer({ locale }: { locale: Locale }) {
           </button>
         </header>
         <div class="grid gap-4 p-4">
-          <div class="ws-sharesafe" data-safe={safe}>
+          <div class="ws-sharesafe" data-safe={safe} data-sharesafe-light={safe}>
             <div class="flex items-center gap-2">
               <span class="ws-light" data-light={safe} aria-hidden="true" />
               <VerifySeal locale={locale} verification={file.head >= 0 ? file.revisions[file.head]?.verification : undefined} compact={false} />
