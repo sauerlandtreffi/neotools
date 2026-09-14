@@ -12,6 +12,7 @@
     "preview": "astro preview",
     "typecheck": "astro check",
     "test": "vitest run --config vitest.config.ts",
+    "e2e": "playwright test",
     "check:reader": "node ../../scripts/check-reader-dist.mjs"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22.18.1",
     "tailwindcss": "^4.1.13",

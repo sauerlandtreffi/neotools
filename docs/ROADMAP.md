@@ -284,3 +284,10 @@ Jedes WP: eigener Branch, DoD am Ende des Blocks, kein „halb in einem anderen 
 
 WP-19/20/25 + Rename erledigt
 
+## Status QA / Integration (WP-37)
+
+- Git-Repo auf `main` initialisiert (erster Commit: wave 1+2). Kein Remote.
+- ESLint (flat) + Prettier root-weit; Root-Scripts `dev`/`build`/`test`/`typecheck`/`lint`/`e2e`/`cli`.
+- Playwright-Smokes in `apps/web/e2e/` gegen Static-Server mit Produktions-Headern; CI `.github/workflows/ci.yml` (build, test, typecheck, lint, chromium-smoke, Report-Artefakt bei Fehler). `desktop.yml` unverändert.
+- Offener Browser-Bug (nicht gefixt): `packages/tools-pdf/src/pdfjs.ts` setzt `GlobalWorkerOptions.workerSrc` nicht — Auto-Treffer/`run(pdf-redact)` im Tool-Worker scheitert; Smoke `d2` ist `test.fixme`.
+

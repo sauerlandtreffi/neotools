@@ -12,20 +12,26 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "pnpm --filter @neotools/web dev",
-    "build": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli --filter @neotools/web build",
-    "test": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli test",
-    "typecheck": "pnpm -r --filter @neotools/engine --filter @neotools/tools-pdf --filter @neotools/tools-forensics --filter @neotools/cli --filter @neotools/web typecheck",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "e2e": "node apps/web/e2e/ensure-dist.mjs && pnpm --filter @neotools/web e2e",
+    "cli": "pnpm --filter @neotools/cli neotools",
     "postinstall": "node scripts/copy-wasm-assets.mjs && node scripts/fetch-tessdata.mjs --optional",
     "assets": "node scripts/copy-wasm-assets.mjs && node scripts/fetch-tessdata.mjs",
-    "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "globals": "^16.3.0",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.6.2",

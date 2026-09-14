@@ -2,6 +2,26 @@ dist
 .astro
 node_modules
 coverage
-apps/desktop/src-tauri/target
+test-results
+playwright-report
+blob-report
+apps/desktop/src-tauri
 docs
 pnpm-lock.yaml
+apps/web/public
+deploy
+
+# Parallel-owned source — do not reformat while other agents land packs/UI.
+packages
+apps/cli
+apps/desktop
+apps/web/src
+apps/web/test
+apps/web/astro.config.ts
+apps/web/tsconfig.json
+apps/web/vercel.json
+apps/web/vitest.config.ts
+scripts
+*.md
+!README.md
+.editorconfig

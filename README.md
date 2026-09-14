@@ -20,6 +20,40 @@ pnpm -r test
 pnpm -r typecheck
 ```
 
+## Entwicklung & Qualität
+
+Root-Aliase (von `/` aus):
+
+| Befehl                                        | Zweck                                                             |
+| --------------------------------------------- | ----------------------------------------------------------------- |
+| `pnpm dev`                                    | Astro-Dev der Web-App (`@neotools/web`)                           |
+| `pnpm build` / `pnpm test` / `pnpm typecheck` | `pnpm -r` über alle Workspace-Pakete mit dem jeweiligen Script    |
+| `pnpm lint`                                   | ESLint flat config (root)                                         |
+| `pnpm format` / `pnpm format:check`           | Prettier                                                          |
+| `pnpm e2e`                                    | Playwright-Smokes gegen `apps/web/dist` (baut bei fehlendem Dist) |
+| `pnpm cli`                                    | Alias auf `apps/cli` (`neotools`)                                 |
+
+Playwright braucht einmalig Chromium:
+
+```bash
+pnpm --filter @neotools/web exec playwright install chromium --with-deps
+```
+
+`--with-deps` installiert Systembibliotheken (Ubuntu). Schlägt das fehl: `playwright install chromium` und fehlende Libs per `apt` (typisch `libnss3`, `libnspr4`, `libatk1.0-0`, `libatk-bridge2.0-0`, `libcups2`, `libdrm2`, `libxkbcommon0`, `libxcomposite1`, `libxdamage1`, `libxfixes3`, `libxrandr2`, `libgbm1`, `libasound2`, `libpango-1.0-0`, `libcairo2`).
+
+Die Smokes laufen gegen einen kleinen Static-Server (`apps/web/e2e/server.mjs`), nicht gegen `astro preview`: Preview wendet `public/_headers` nicht an. Der Server setzt dieselben COOP/COEP/`credentialless`-Header wie nginx / Vercel.
+
+**Git:** Branch `main`, kein Remote. Lokal `user.name`/`user.email` nur im Repo (`NeoTools Bot` / `bot@neotools.local`). Ignoriert u. a.:
+
+- `node_modules/`, `dist/`, `.astro/` — Build/Install-Artefakte
+- `apps/desktop/src-tauri/target/`, `apps/desktop/src-tauri/gen/` — Cargo/Tauri-Ausgabe
+- `apps/web/public/tessdata/*` (außer `.gitkeep`) und `**/tessdata/*.traineddata*` — heruntergeladene OCR-Modelle, mehrere MB
+- `apps/web/public/assets/{qpdf,jsquash,tesseract}/*` — Kopien aus `scripts/copy-wasm-assets.mjs` (u. a. Tesseract-WASM ≫ 2 MB)
+- `*.log`, `.env*`, `coverage/`, `test-results/`, `playwright-report/`
+- OS-/Editor-Dateien (`.DS_Store`, `Thumbs.db`, `.idea/`, `.vscode/`)
+
+`.gitattributes` markiert `*.wasm` / `*.pdf` als binary und normalisiert Text auf LF.
+
 CLI nach dem Build:
 
 ```bash
