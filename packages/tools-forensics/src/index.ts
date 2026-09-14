@@ -24,6 +24,33 @@ export const forensicsTools: ToolDefinition[] = [
   forensicsProvenance,
 ];
 
+/**
+ * Workspace hints (FRONTEND-REDESIGN §2.15 A): all forensics tools are
+ * report-only inspections and never replace the document bytes.
+ */
+const FORENSICS_WORKSPACE_PRIORITY: Record<string, number> = {
+  'forensics-share-safe': 75,
+  'forensics-hidden-data': 400,
+  'forensics-identify': 410,
+  'forensics-autopsy': 420,
+  'forensics-hash': 430,
+  'forensics-fake-ext': 440,
+  'forensics-fingerprint': 450,
+  'forensics-watermark-find': 460,
+  'forensics-provenance': 470,
+  'forensics-bytes-compare': 480,
+};
+
+for (const tool of forensicsTools) {
+  if (tool.workspace) continue;
+  tool.workspace = {
+    family: ['pdf', 'image', 'media', 'office', 'archive', 'data'],
+    verb: tool.id === 'forensics-bytes-compare' ? 'compare' : 'inspect',
+    priority: FORENSICS_WORKSPACE_PRIORITY[tool.id] ?? 1000,
+    ...(tool.id === 'forensics-bytes-compare' ? { multiFile: true, requires: ['fileIds'] as const } : {}),
+  };
+}
+
 export function registerForensicsTools(registry: Registry): Registry {
   for (const tool of forensicsTools) registry.register(tool);
   return registry;

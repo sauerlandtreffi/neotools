@@ -29,13 +29,11 @@ export default function OpenApp({ locale, toolsJson }: Props) {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) return;
           const nextMime = file.type || guess(file.name);
-          if (nextMime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          const isPdf = nextMime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+          if (isPdf || nextMime.startsWith('image/')) {
             void (async () => {
-              await putHandoff(
-                { name: file.name, mime: 'application/pdf', bytes: new Uint8Array(await file.arrayBuffer()) },
-                { returnTo: 'reader' },
-              );
-              location.assign(`${localePath(locale, '/reader')}?open=1`);
+              await putHandoff({ name: file.name, mime: isPdf ? 'application/pdf' : nextMime, bytes: new Uint8Array(await file.arrayBuffer()) });
+              location.assign(`${localePath(locale, '/app')}?open=1`);
             })();
             return;
           }

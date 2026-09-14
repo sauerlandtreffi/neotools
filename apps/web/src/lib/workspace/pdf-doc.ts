@@ -21,6 +21,7 @@ export interface PdfDoc {
 
 const cache = new Map<string, Promise<PdfDoc>>();
 const MAX_DOCS = 3;
+const inflight = new WeakMap<HTMLCanvasElement, { cancel(): void }>();
 
 /** Open (and memoize) a pdf.js document for an OPFS ref. */
 export function openPdf(ref: string, bytes: Uint8Array): Promise<PdfDoc> {
@@ -102,8 +103,21 @@ export async function renderPage(
   canvas.style.height = `${Math.floor(viewport.height)}px`;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('canvas');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  await page.render({ canvasContext: ctx, viewport }).promise;
+  // One render per canvas at a time: cancel an in-flight task before starting the next
+  // (overlapping renders leave pdf.js' save/transform stack in a flipped state).
+  inflight.get(canvas)?.cancel();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const task = page.render({ canvasContext: ctx, viewport, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined });
+  inflight.set(canvas, task);
+  try {
+    await task.promise;
+  } catch (err) {
+    if ((err as { name?: string })?.name === 'RenderingCancelledException') return { viewport, page };
+    throw err;
+  } finally {
+    if (inflight.get(canvas) === task) inflight.delete(canvas);
+  }
   pd.pageSizes.set(pageNo, { width: viewport.width / scale, height: viewport.height / scale });
   return { viewport, page };
 }

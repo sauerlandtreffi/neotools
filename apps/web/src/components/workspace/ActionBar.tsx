@@ -12,7 +12,7 @@ import {
 } from '../../lib/workspace/store';
 import { I } from './Icons';
 
-const PRIMARY_COUNT = 8;
+const PRIMARY_COUNT = 6;
 
 export function toolsForActive(): WorkspaceToolMeta[] {
   const file = activeFile.value;

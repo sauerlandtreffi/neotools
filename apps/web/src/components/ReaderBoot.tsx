@@ -12,10 +12,12 @@ export default function ReaderBoot({ locale }: Props) {
     void (async () => {
       const desktop = await getDesktop();
       if (!desktop.available) return;
+      // Desktop double-click / "Öffnen" → workspace (FRONTEND-REDESIGN §6.6). The
+      // workspace island reads the file itself via `read_opened_file` (`?desktop=1`).
       stop = await desktop.listenOpenFile(() => {
         const here = location.pathname.replace(/\/$/, '') || '/';
-        const reader = localePath(locale, '/reader');
-        if (here !== reader) location.assign(`${reader}?desktop=1`);
+        const app = localePath(locale, '/app');
+        if (here !== app) location.assign(`${app}?desktop=1`);
       });
     })();
     return () => stop();

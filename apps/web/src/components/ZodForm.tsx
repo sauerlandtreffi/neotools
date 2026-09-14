@@ -19,6 +19,24 @@ function LockIcon() {
   );
 }
 
+const ACRONYMS = new Set(['dpi', 'ocr', 'pdf', 'id', 'url', 'json', 'xml', 'iban', 'crf', 'mb', 'kb', 'ner', 'a']);
+
+/** `targetSizeMb` → "Target size MB", `stripMetadata` → "Strip metadata". */
+export function humanizeFieldName(name: string): string {
+  const words = name
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => (ACRONYMS.has(word.toLowerCase()) && word.length <= 4 ? word.toUpperCase() : word.toLowerCase()));
+  if (!words.length) return name;
+  const first = words[0]!;
+  words[0] = first === first.toUpperCase() ? first : first.charAt(0).toUpperCase() + first.slice(1);
+  return words.join(' ');
+}
+
 function isPasswordField(field: FormField): boolean {
   const hint = `${field.description ?? ''} ${field.name}`.toLowerCase();
   return hint.includes('password');
@@ -85,11 +103,11 @@ function FieldInput({
     const obj = (value && typeof value === 'object' && !Array.isArray(value) ? value : (field.defaultValue as Record<string, unknown>) ?? {}) as Record<string, unknown>;
     return (
       <fieldset class="mt-1 grid gap-2 rounded border p-2 sm:col-span-2" style={{ borderColor: 'var(--line)' }}>
-        <legend class="mono text-xs">{field.name}</legend>
+        <legend class="label" title={field.name}>{humanizeFieldName(field.name)}</legend>
         {field.fields.map((child) => (
           <label key={child.name} class="block text-sm">
-            <span class="mono text-xs" style={{ color: 'var(--muted)' }}>
-              {child.name}
+            <span class="label" title={child.name}>
+              {humanizeFieldName(child.name)}
             </span>
             <FieldInput
               field={child}
@@ -114,8 +132,8 @@ function FieldInput({
             </legend>
             {field.fields!.map((child) => (
               <label key={child.name} class="block text-sm">
-                <span class="mono text-xs" style={{ color: 'var(--muted)' }}>
-                  {child.name}
+                <span class="label" title={child.name}>
+                  {humanizeFieldName(child.name)}
                 </span>
                 <FieldInput
                   field={child}
@@ -193,8 +211,8 @@ export default function ZodForm({ fields, values, onChange, locked = [] }: Props
         const isLocked = lockedSet.has(field.name);
         return (
           <label key={field.name} class={field.kind === 'object' || (field.kind === 'array' && field.itemKind === 'object') ? 'block text-sm sm:col-span-2' : 'block text-sm'} htmlFor={`opt-${field.name}`}>
-            <span class="mono text-xs" style={{ color: 'var(--muted)' }}>
-              {field.name}
+            <span class="label" style={{ color: 'var(--muted)' }} title={field.description ? `${field.name} — ${field.description}` : field.name}>
+              {humanizeFieldName(field.name)}
               {isLocked ? <LockIcon /> : null}
             </span>
             <FieldInput

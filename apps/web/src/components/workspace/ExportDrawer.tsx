@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Locale } from '../../lib/i18n';
 import { downloadBytes, zipDownload } from '../../lib/worker-client';
 import { fmtBytes, w } from '../../lib/workspace/i18n';
-import { activeFile, activeName, collectExport, setUi, shareSafeState, toast, workspace } from '../../lib/workspace/store';
+import { activeFile, activeName, busy, collectExport, runStep, setUi, shareSafeChecklist, shareSafeState, toast, tools, workspace } from '../../lib/workspace/store';
 import type { ExportSpec } from '../../lib/workspace/types';
 import { I } from './Icons';
 import VerifySeal from './VerifySeal';
@@ -25,6 +25,8 @@ export default function ExportDrawer({ locale }: { locale: Locale }) {
 
   if (!s.exportOpen || !file) return null;
   const safe = shareSafeState(file);
+  const checklist = shareSafeChecklist(file).filter((c) => c.present);
+  const canCheck = tools.value.some((t) => t.view.id === 'forensics-share-safe');
   const selectedCount = s.selectedFileIds.length;
   const total = s.session?.files.length ?? 0;
   const multi = spec.what !== 'head' || spec.includeProvenance;
@@ -71,10 +73,38 @@ export default function ExportDrawer({ locale }: { locale: Locale }) {
         </header>
         <div class="grid gap-4 p-4">
           <div class="ws-sharesafe" data-safe={safe}>
-            <VerifySeal locale={locale} verification={file.head >= 0 ? file.revisions[file.head]?.verification : undefined} compact={false} />
+            <div class="flex items-center gap-2">
+              <span class="ws-light" data-light={safe} aria-hidden="true" />
+              <VerifySeal locale={locale} verification={file.head >= 0 ? file.revisions[file.head]?.verification : undefined} compact={false} />
+              {canCheck && (
+                <button
+                  type="button"
+                  class="btn btn-sm ml-auto"
+                  disabled={busy.value}
+                  data-sharesafe-check
+                  onClick={() => void runStep('forensics-share-safe', {}, { selection: {}, label: w(locale, 'shareSafeCheck') })}
+                >
+                  {busy.value ? <I.spinner size={13} /> : <I.eye size={13} />} {w(locale, 'shareSafeCheck')}
+                </button>
+              )}
+            </div>
             <p class="text-xs" style={{ color: 'var(--muted)' }}>
               {w(locale, 'shareSafe')}: {safe === 'yes' ? w(locale, 'shareSafeYes') : safe === 'no' ? w(locale, 'shareSafeNo') : w(locale, 'shareSafeUnknown')}
             </p>
+            {checklist.length > 0 && (
+              <ul class="ws-checklist" data-sharesafe-list>
+                {checklist.map((c) => (
+                  <li key={c.id} data-severity={c.severity}>
+                    <I.warn size={12} /> {c.label[locale] ?? c.label.de}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {safe === 'no' && (
+              <p class="text-xs" role="status" style={{ color: 'var(--warn-text)' }}>
+                {w(locale, 'shareSafeBanner')}
+              </p>
+            )}
           </div>
 
           <div class="grid gap-1" role="radiogroup" aria-label={w(locale, 'export')}>

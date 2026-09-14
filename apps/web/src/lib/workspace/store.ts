@@ -531,6 +531,24 @@ export function applySelectionByFields(
   return next;
 }
 
+const REPORT_MIMES = new Set(['application/json', 'text/plain', 'text/markdown', 'text/csv', 'text/html', 'application/xml', 'text/xml']);
+
+/**
+ * Which output becomes the next document revision: same MIME as the document
+ * first; `inspect` tools never replace bytes; otherwise the first non-report
+ * output (e.g. compress → PDF, images-to-pdf → PDF).
+ */
+export function pickPrimaryOutput<T extends { mime: string }>(
+  outputs: T[],
+  file: Pick<SessionFileMeta, 'mime'>,
+  view?: Pick<WorkspaceToolView, 'verb'>,
+): T | undefined {
+  const same = outputs.find((o) => o.mime === file.mime);
+  if (same) return same;
+  if (view?.verb === 'inspect') return undefined;
+  return outputs.find((o) => !REPORT_MIMES.has(o.mime) && !o.mime.startsWith('text/'));
+}
+
 function extractVerification(report: Record<string, unknown> | undefined): VerificationReport | undefined {
   const v = report?.verification as VerificationReport | undefined;
   return v && Array.isArray(v.checks) ? v : undefined;
@@ -602,9 +620,7 @@ export async function runStep(
     if (ref.data) record.inputHash = await sha256Hex(ref.data);
     const job = runToolJob(toolId, [ref], finalOptions, undefined, opts.label ?? meta?.view.title[state.locale] ?? toolId);
     const result = await job.promise;
-    const primary =
-      result.outputs.find((o) => o.mime === file.mime) ??
-      result.outputs.find((o) => o.mime !== 'application/json' && o.mime !== 'text/plain');
+    const primary = pickPrimaryOutput(result.outputs, file, meta?.view);
     const sidecars: NonNullable<StepRecord['sidecars']> = [];
     let idx = 0;
     for (const o of result.outputs) {
@@ -866,11 +882,40 @@ export async function collectExport(spec: ExportSpec): Promise<ExportItem[]> {
 /** Share-safe traffic light from the head verification (fail-closed; unknown when no verify ran). */
 export function shareSafeState(file: SessionFileMeta | null): 'yes' | 'no' | 'unknown' {
   if (!file || file.head < 0) return 'unknown';
-  const rec = file.revisions[file.head];
-  const v = rec?.verification;
-  if (!v) return 'unknown';
-  if (v.passed && (v.warnings?.length ?? 0) === 0) return 'yes';
-  return 'no';
+  // Walk back over report-only steps (they do not change bytes) until a byte-changing head.
+  for (let i = file.head; i >= 0; i--) {
+    const rec = file.revisions[i];
+    if (!rec || rec.status !== 'ok') continue;
+    const light = shareSafeLight(rec);
+    if (light) return light === 'green' ? 'yes' : 'no';
+    const v = rec.verification;
+    if (v) return v.passed && (v.warnings?.length ?? 0) === 0 ? 'yes' : 'no';
+    if (rec.snapshot) return 'unknown';
+  }
+  return 'unknown';
+}
+
+/** Traffic light of a `forensics-share-safe` step (report-only), if that is what the record is. */
+export function shareSafeLight(rec: StepRecord | undefined): 'green' | 'yellow' | 'red' | null {
+  if (!rec || rec.toolId !== 'forensics-share-safe') return null;
+  const files = (rec.report as { files?: Array<{ light?: string }> } | undefined)?.files;
+  const light = files?.[0]?.light;
+  return light === 'green' || light === 'yellow' || light === 'red' ? light : null;
+}
+
+/** Share-safe checklist rows of the most recent `forensics-share-safe` step at/below head. */
+export function shareSafeChecklist(file: SessionFileMeta | null): Array<{ id: string; label: Record<string, string>; present: boolean; severity: string }> {
+  if (!file) return [];
+  for (let i = file.head; i >= 0; i--) {
+    const rec = file.revisions[i];
+    if (!rec || rec.status !== 'ok') continue;
+    if (rec.toolId === 'forensics-share-safe') {
+      const files = (rec.report as { files?: Array<{ checklist?: Array<{ id: string; label: Record<string, string>; present: boolean; severity: string }> }> } | undefined)?.files;
+      return files?.[0]?.checklist ?? [];
+    }
+    if (rec.snapshot) return [];
+  }
+  return [];
 }
 
 /* ------------------------------------------------------------------ */

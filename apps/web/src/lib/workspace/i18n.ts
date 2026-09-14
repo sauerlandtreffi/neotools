@@ -42,6 +42,11 @@ const W = {
   shareSafeYes: { de: 'Verifiziert — kann weitergegeben werden.', en: 'Verified — safe to share.' },
   shareSafeNo: { de: 'Verifikation fehlgeschlagen — vor Weitergabe prüfen.', en: 'Verification failed — check before sharing.' },
   shareSafeUnknown: { de: 'Noch nicht verifiziert (kein Schritt mit Prüfung).', en: 'Not verified yet (no verified step).' },
+  shareSafeCheck: { de: 'Jetzt prüfen', en: 'Check now' },
+  shareSafeBanner: {
+    de: 'Download trotzdem möglich — Funde oben zuerst bereinigen (Sanitize / Schwärzen).',
+    en: 'Download still possible — clean up the findings above first (sanitize / redact).',
+  },
   verified: { de: 'Verifiziert', en: 'Verified' },
   notVerified: { de: 'Nicht verifiziert', en: 'Not verified' },
   verifyFailed: { de: 'Prüfung fehlgeschlagen', en: 'Check failed' },

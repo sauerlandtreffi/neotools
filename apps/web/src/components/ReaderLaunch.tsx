@@ -12,13 +12,16 @@ function isPdf(file: { name: string; type: string }): boolean {
 
 export default function ReaderLaunch({ locale }: Props) {
   useEffect(() => {
+    // Legacy PWA handler / share-target entry: park the file in the handoff slot
+    // and continue in the workspace (FRONTEND-REDESIGN §3.5).
     const send = async (file: File) => {
-      if (!isPdf(file)) return false;
-      await putHandoff(
-        { name: file.name, mime: 'application/pdf', bytes: new Uint8Array(await file.arrayBuffer()) },
-        { returnTo: 'reader' },
-      );
-      location.assign(`${localePath(locale, '/reader')}?open=1`);
+      if (!isPdf(file) && !file.type.startsWith('image/')) return false;
+      await putHandoff({
+        name: file.name,
+        mime: isPdf(file) ? 'application/pdf' : file.type,
+        bytes: new Uint8Array(await file.arrayBuffer()),
+      });
+      location.assign(`${localePath(locale, '/app')}?open=1`);
       return true;
     };
 

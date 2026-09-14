@@ -18,10 +18,17 @@ export const GET: APIRoute = () => {
     theme_color: branding.colors.primary,
     lang: branding.defaultLocale,
     icons: [{ src: branding.logo, sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+    // Files opened from the OS land in the workspace (`launchQueue` consumer in WorkspaceApp);
+    // `/open` stays as a redirecting entry for installed PWAs.
     file_handlers: [
       {
-        action: '/open',
-        accept: { 'application/pdf': ['.pdf'] },
+        action: '/app',
+        accept: {
+          'application/pdf': ['.pdf'],
+          'image/png': ['.png'],
+          'image/jpeg': ['.jpg', '.jpeg'],
+          'image/webp': ['.webp'],
+        },
       },
     ],
     share_target: {
@@ -32,7 +39,7 @@ export const GET: APIRoute = () => {
         files: [{ name: 'files', accept: ['application/pdf', 'image/png', 'image/jpeg'] }],
       },
     },
-    shortcuts,
+    shortcuts: [{ name: 'Workspace', url: '/app' }, ...shortcuts],
     launch_handler: { client_mode: 'focus-existing' },
   };
   return new Response(JSON.stringify(manifest, null, 2), {

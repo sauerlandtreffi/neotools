@@ -905,6 +905,38 @@ label[data-disabled='true'] {
   accent-color: var(--accent);
 }
 
+/* share-safe traffic light + checklist (export drawer) */
+.ws-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--faint) 25%, transparent);
+  flex-shrink: 0;
+}
+.ws-light[data-light='yes'] {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ok) 25%, transparent);
+}
+.ws-light[data-light='no'] {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--warn) 25%, transparent);
+}
+.ws-checklist {
+  display: grid;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: var(--warn-text);
+}
+.ws-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ws-checklist li[data-severity='block'] {
+  font-weight: 600;
+}
+
 /* ---------- palette ---------- */
 .ws-palette-backdrop {
   place-items: start center;
@@ -1048,11 +1080,52 @@ label[data-disabled='true'] {
   .ws-main {
     border: 0;
   }
+  /* thumbs become a horizontal strip above the canvas (FRONTEND-REDESIGN §2.5) */
   .ws-doc-row {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .ws-thumbs {
+    flex-direction: row;
+    align-items: stretch;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    max-height: 124px;
+  }
+  .ws-thumbs > .ws-panel-head {
     display: none;
+  }
+  .ws-thumbs-tools {
+    flex-direction: column;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+    justify-content: center;
+  }
+  .ws-thumbs-tools .btn-primary {
+    margin-left: 0;
+    padding: 0 6px;
+  }
+  .ws-thumbs-list {
+    grid-auto-flow: column;
+    grid-auto-columns: 64px;
+    align-items: start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+  .ws-thumb {
+    scroll-snap-align: start;
+  }
+  .ws-brand-app,
+  .ws-topbar > .ws-topbar-sep {
+    display: none;
+  }
+  .ws-brand-name {
+    font-size: 0.95rem;
+  }
+  .ws-session-name {
+    max-width: 18ch;
+    padding-left: 0;
   }
   .ws-only-mobile {
     display: inline-flex;

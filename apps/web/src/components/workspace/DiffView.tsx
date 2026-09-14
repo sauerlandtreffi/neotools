@@ -15,6 +15,7 @@ export default function DiffView({ locale }: { locale: Locale }) {
   const stepId = s.diffStepId;
   const beforeRef = useRef<HTMLCanvasElement>(null);
   const afterRef = useRef<HTMLCanvasElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState(50);
   const [sizes, setSizes] = useState<{ a: number; b: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -34,10 +35,12 @@ export default function DiffView({ locale }: { locale: Locale }) {
       const [da, db] = await Promise.all([openPdf(inRef, a), openPdf(outRef, b)]);
       if (dead) return;
       const page = Math.min(s.page, da.numPages, db.numPages);
-      const width = Math.min(900, (beforeRef.current?.parentElement?.clientWidth ?? 800) - 32);
+      // size from the dialog body (the clipped "before" layer has no intrinsic width yet)
+      const avail = wrapRef.current?.clientWidth ?? 800;
+      const maxH = Math.max(320, (typeof innerHeight === 'number' ? innerHeight : 800) * 0.9 - 180);
       const p = await da.doc.getPage(page);
       const base = p.getViewport({ scale: 1 });
-      const scale = width / base.width;
+      const scale = Math.min((Math.min(940, avail - 24)) / base.width, maxH / base.height);
       await Promise.all([renderPage(da, page, beforeRef.current!, scale), renderPage(db, page, afterRef.current!, scale)]);
     })().catch((e) => !dead && setErr(e instanceof Error ? e.message : String(e)));
     return () => {
@@ -64,7 +67,7 @@ export default function DiffView({ locale }: { locale: Locale }) {
             {err}
           </p>
         )}
-        <div class="ws-diff">
+        <div class="ws-diff" ref={wrapRef}>
           <div class="ws-diff-stage">
             <canvas ref={afterRef} class="ws-diff-after" />
             <div class="ws-diff-before" style={{ width: `${pos}%` }}>
