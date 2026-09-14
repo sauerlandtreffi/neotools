@@ -1,10 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import HistoryApp from '../components/HistoryApp.tsx';
+import SessionsList from '../components/SessionsList.tsx';
 ---
 <Base locale="de" title="Verlauf" description="Lokale Läufe, Undo, Journal ohne Dateiinhalte" path="/verlauf">
   <h1 class="text-4xl">Verlauf</h1>
   <div class="mt-8">
+    <SessionsList client:load locale="de" />
+  </div>
+  <div class="mt-12">
     <HistoryApp client:load locale="de" />
   </div>
 </Base>

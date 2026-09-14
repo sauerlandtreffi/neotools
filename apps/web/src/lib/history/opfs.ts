@@ -1,8 +1,8 @@
 import type { HistoryBlobStore } from './types';
 
-async function rootDir(): Promise<FileSystemDirectoryHandle> {
+async function rootDir(name = 'history'): Promise<FileSystemDirectoryHandle> {
   const root = await navigator.storage.getDirectory();
-  return root.getDirectoryHandle('history', { create: true });
+  return root.getDirectoryHandle(name, { create: true });
 }
 
 async function walkWrite(
@@ -65,27 +65,38 @@ export function opfsAvailable(): boolean {
   return typeof navigator !== 'undefined' && Boolean(navigator.storage?.getDirectory);
 }
 
-export function opfsBlobStore(): HistoryBlobStore {
+/** OPFS-backed blob store rooted at `/<root>/` (history: `history`, workspace: `sessions`). */
+export function opfsBlobStore(root = 'history'): HistoryBlobStore {
   return {
     async write(key, data) {
-      await walkWrite(await rootDir(), key.split('/'), data);
+      await walkWrite(await rootDir(root), key.split('/'), data);
     },
     async read(key) {
-      return walkRead(await rootDir(), key.split('/'));
+      return walkRead(await rootDir(root), key.split('/'));
     },
     async delete(key) {
-      await walkDelete(await rootDir(), key.split('/'));
+      await walkDelete(await rootDir(root), key.split('/'));
     },
     async list(prefix = '') {
-      return collectKeys(await rootDir(), prefix);
+      return collectKeys(await rootDir(root), prefix);
     },
     async clear() {
-      const root = await navigator.storage.getDirectory();
+      const top = await navigator.storage.getDirectory();
       try {
-        await root.removeEntry('history', { recursive: true });
+        await top.removeEntry(root, { recursive: true });
       } catch {
         // ignore
       }
     },
   };
+}
+
+/** Remove a whole subtree (`sessions/<id>`) — cheaper than deleting keys one by one. */
+export async function opfsRemoveTree(root: string, sub: string): Promise<void> {
+  try {
+    const dir = await rootDir(root);
+    await dir.removeEntry(sub, { recursive: true });
+  } catch {
+    // missing is fine
+  }
 }

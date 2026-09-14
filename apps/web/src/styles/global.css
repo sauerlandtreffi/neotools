@@ -1,8 +1,47 @@
 @import 'tailwindcss';
 
+/* ------------------------------------------------------------------ */
+/* Self-hosted UI sans (OFL-1.1, apps/web/public/assets/fonts).        */
+/* No CDN. Serif stays for marketing headlines (display), sans for UI.  */
+/* ------------------------------------------------------------------ */
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/source-sans-3-latin-400-normal.woff2') format('woff2'),
+    url('/assets/fonts/source-sans-3-latin-400-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/source-sans-3-latin-400-italic.woff2') format('woff2'),
+    url('/assets/fonts/source-sans-3-latin-400-italic.woff') format('woff');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/fonts/source-sans-3-latin-700-normal.woff2') format('woff2'),
+    url('/assets/fonts/source-sans-3-latin-700-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/source-code-pro-latin-400-normal.woff2') format('woff2'),
+    url('/assets/fonts/source-code-pro-latin-400-normal.woff') format('woff');
+}
+
 @theme {
   --font-sans: 'Iowan Old Style', Palatino, 'Palatino Linotype', 'Book Antiqua', ui-serif, serif;
-  --font-mono: 'IBM Plex Mono', 'Cascadia Mono', ui-monospace, monospace;
+  --font-ui: var(--font-ui-brand, 'Source Sans 3'), 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-brand, 'Iowan Old Style'), Palatino, 'Palatino Linotype', ui-serif, serif;
+  --font-mono: 'Source Code Pro', 'IBM Plex Mono', 'Cascadia Mono', ui-monospace, monospace;
   --color-ink: #10221c;
   --color-paper: #f3efe4;
   --color-mint: #3ee0b4;
@@ -11,26 +50,119 @@
   --color-fog: #d7d2c4;
 }
 
+/* ------------------------------------------------------------------ */
+/* Design tokens (FRONTEND-REDESIGN §4.2). Semantic first, brand second. */
+/* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
+
+  /* surfaces */
   --bg: #f3efe4;
+  --bg-app: #ebe6d8;
+  --card: #fffdf6;
+  --card-2: #f7f3e8;
+  --line: #cfc8b6;
+  --line-strong: #a9a08a;
+
+  /* text */
   --fg: #10221c;
   --muted: #4a5a54;
-  --card: #fffdf6;
-  --line: #cfc8b6;
-  --accent: #1f8f74;
+  --faint: #7a867f;
+
+  /* brand + semantic */
+  --accent: var(--brand-accent-light, #1f8f74);
   --accent-fg: #06281f;
+  /* accent as *text* on paper needs ≥4.5:1 — darker than the fill colour */
+  --accent-text: #17705b;
+  --ok: #1b7f4e;
+  --ok-fg: #ffffff;
+  --warn: #c45c26;
+  --warn-text: #9f4419;
+  --warn-fg: #ffffff;
+  --info: #2f6fed;
+  --info-text: #2455b8;
+  --lock: #6b5c3e;
+  --net-zero: #1b7f4e;
+  --net-foreign: #c45c26;
+  --selection: color-mix(in oklab, var(--info) 22%, transparent);
+
+  /* spacing / radius */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 16px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 360ms;
+
+  /* elevation */
+  --shadow-1: 0 1px 2px rgb(16 34 28 / 0.08), 0 1px 1px rgb(16 34 28 / 0.04);
+  --shadow-2: 0 6px 24px rgb(16 34 28 / 0.12), 0 2px 6px rgb(16 34 28 / 0.06);
+  --shadow-3: 0 16px 48px rgb(16 34 28 / 0.18);
+
+  /* layers */
+  --z-sticky: 20;
+  --z-drawer: 40;
+  --z-palette: 50;
+  --z-toast: 60;
+
+  --focus: 2px solid var(--accent-text);
+  --touch: 44px;
 }
 
 :root.dark {
   color-scheme: dark;
   --bg: #0c1210;
+  --bg-app: #0a0f0d;
+  --card: #141a18;
+  --card-2: #1a2320;
+  --line: #2a3531;
+  --line-strong: #3f4d47;
   --fg: #e8efe9;
   --muted: #9aaea6;
-  --card: #141a18;
-  --line: #2a3531;
-  --accent: #3ee0b4;
+  --faint: #6f817a;
+  --accent: var(--brand-accent-dark, #3ee0b4);
   --accent-fg: #06281f;
+  --accent-text: #5ee8c2;
+  --ok: #3fbf7f;
+  --ok-fg: #06281f;
+  --warn: #e0764a;
+  --warn-text: #f09468;
+  --warn-fg: #1a0d06;
+  --info: #6c9bff;
+  --info-text: #8fb3ff;
+  --lock: #c7b08a;
+  --net-zero: #3fbf7f;
+  --net-foreign: #e0764a;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-2: 0 6px 24px rgb(0 0 0 / 0.55);
+  --shadow-3: 0 16px 48px rgb(0 0 0 / 0.7);
+  --focus: 2px solid var(--accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html,
@@ -47,8 +179,27 @@ body {
     linear-gradient(180deg, transparent 0, transparent 40%, color-mix(in oklab, var(--fg) 4%, transparent));
 }
 
+/* Workspace / app chrome: UI sans, denser, no marketing gradient. */
+body.app-body {
+  font-family: var(--font-ui);
+  background: var(--bg-app);
+  background-image: none;
+  font-feature-settings: 'tnum' 1, 'cv01' 1;
+  overscroll-behavior: none;
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+.font-display {
+  font-family: var(--font-display);
+}
 .mono {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 .stamp {
@@ -63,9 +214,12 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
 [role='dialog']:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: var(--focus);
   outline-offset: 2px;
+  border-radius: var(--radius-s);
 }
 
 .sr-only {
@@ -80,6 +234,23 @@ textarea:focus-visible,
   border: 0;
 }
 
+.skip-link {
+  position: absolute;
+  left: var(--space-3);
+  top: -100px;
+  z-index: var(--z-toast);
+  padding: var(--space-2) var(--space-3);
+  background: var(--card);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-2);
+  transition: top var(--dur-1) var(--ease-out);
+}
+.skip-link:focus {
+  top: var(--space-3);
+}
+
 .prose :is(h2, h3) {
   margin-top: 1.4em;
   font-size: 1.25rem;
@@ -92,4 +263,221 @@ textarea:focus-visible,
   width: 100%;
   margin-top: 1em;
   font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shared primitives used by the workspace and (progressively) the site.  */
+/* ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--card-2);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 88%, var(--fg));
+  border-color: color-mix(in oklab, var(--accent) 88%, var(--fg));
+}
+.btn-danger {
+  border-color: var(--warn);
+  color: var(--warn-text);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+  border-color: transparent;
+}
+.btn-sm {
+  min-height: 30px;
+  padding: 0 var(--space-2);
+  font-size: 0.8125rem;
+}
+.btn-icon {
+  width: 36px;
+  padding: 0;
+}
+.btn-lg {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  font-size: 0.95rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+}
+.chip:hover {
+  border-color: var(--line-strong);
+}
+.chip[aria-pressed='true'],
+.chip.is-on {
+  background: color-mix(in oklab, var(--accent) 18%, var(--card));
+  border-color: var(--accent);
+}
+.chip-high {
+  border-color: var(--warn);
+  color: var(--warn-text);
+}
+.chip-warn {
+  border-color: color-mix(in oklab, var(--warn) 60%, var(--line));
+}
+
+.field {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.875rem;
+}
+.field:disabled {
+  opacity: 0.6;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Landing → workspace handoff banner (tool pages). */
+.ws-handoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--line));
+  border-radius: var(--radius-l);
+  background: color-mix(in oklab, var(--accent) 10%, var(--card));
+  box-shadow: var(--shadow-1);
+  animation: nt-fade-in var(--dur-2) var(--ease-out) both;
+}
+@media (max-width: 640px) {
+  .ws-handoff {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Motion primitives — opacity/transform only. */
+@keyframes nt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nt-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nt-pop {
+  0% {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes nt-seal-stroke {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes nt-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+.anim-fade-in {
+  animation: nt-fade-in var(--dur-2) var(--ease-out) both;
+}
+.anim-slide-up {
+  animation: nt-slide-up var(--dur-3) var(--ease-out) both;
+}
+.anim-pop {
+  animation: nt-pop var(--dur-2) var(--ease-out) both;
+}
+.anim-ring {
+  animation: nt-ring var(--dur-3) var(--ease-out) both;
+}
+
+::selection {
+  background: var(--selection);
 }

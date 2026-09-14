@@ -229,6 +229,9 @@ importers:
       '@neotools/tools-speech':
         specifier: workspace:*
         version: link:../../packages/tools-speech
+      '@preact/signals':
+        specifier: ^2.11.2
+        version: 2.11.2(preact@10.29.8)
       '@tauri-apps/api':
         specifier: ^2.9.1
         version: 2.11.1

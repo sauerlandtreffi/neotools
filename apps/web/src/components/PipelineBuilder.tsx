@@ -305,7 +305,7 @@ export default function PipelineBuilder({ locale, catalogJson, libraryJson, requ
       />
 
       {typeErrors.length > 0 && (
-        <ul class="text-sm" style={{ color: '#c45c26' }} data-mime-errors>
+        <ul class="text-sm" style={{ color: 'var(--warn-text)' }} data-mime-errors>
           {typeErrors.map((msg) => (
             <li key={msg}>{msg}</li>
           ))}
@@ -367,7 +367,7 @@ export default function PipelineBuilder({ locale, catalogJson, libraryJson, requ
           </div>
         </div>
       )}
-      {error && <p style={{ color: '#c45c26' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--warn-text)' }}>{error}</p>}
       {historyId && (
         <p class="text-sm">
           {t(locale, 'historySaved')} ·{' '}

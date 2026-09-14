@@ -2,6 +2,7 @@ import type { Registry } from './registry.js';
 import { createProvenance, attachProvenance } from './provenance.js';
 import { createToolContext, throwIfAborted } from './context.js';
 import { runTool } from './run-tool.js';
+import { advanceHandle, handleFromBytes, type DocumentHandle } from './document-handle.js';
 import type {
   NeoFile,
   PipelineSpec,
@@ -125,11 +126,25 @@ export function decodePipelineHash(hash: string): PipelineSpec | null {
   return deserializePipeline(json);
 }
 
+export interface PipelineRunHooks {
+  /**
+   * Called after each executed step with the intermediate outputs as document
+   * handles (workspace snapshots / step stack). Skipped steps are not reported.
+   */
+  onStep?(info: {
+    index: number;
+    toolId: string;
+    handles: DocumentHandle[];
+    result: ToolResult;
+  }): void | Promise<void>;
+}
+
 export async function runPipeline(
   registry: Registry,
   spec: PipelineSpec,
   files: NeoFile[],
   ctx: ToolContext = createToolContext(),
+  hooks: PipelineRunHooks = {},
 ): Promise<ToolResult> {
   const typeErrors = validatePipeline(registry, spec);
   if (typeErrors.length) {
@@ -140,6 +155,10 @@ export async function runPipeline(
   let last: ToolResult = { outputs: files, warnings: [] };
   const warnings: string[] = [];
   const reports: unknown[] = [];
+  // One logical handle per input, carried across steps so packs may reuse `parsed`.
+  let handles: DocumentHandle[] = await Promise.all(
+    files.map(async (f) => handleFromBytes(f.name, await f.bytes(), f.mime)),
+  );
 
   for (let i = 0; i < spec.steps.length; i++) {
     throwIfAborted(ctx.signal);
@@ -157,12 +176,15 @@ export async function runPipeline(
       current = passthrough;
       continue;
     }
-    last = await runTool(tool, ctx, selected, options);
+    const stepCtx: ToolContext = selected.length === 1 && handles[0] ? { ...ctx, document: handles[0] } : ctx;
+    last = await runTool(tool, stepCtx, selected, options);
     const provenance = await createProvenance(tool.id, options, selected);
     last.report = attachProvenance(last.report, provenance);
     warnings.push(...last.warnings);
     if (last.report) reports.push({ toolId: tool.id, report: last.report });
     current = [...last.outputs, ...passthrough];
+    handles = await nextHandles(handles, last.outputs);
+    if (hooks.onStep) await hooks.onStep({ index: i, toolId: tool.id, handles, result: last });
   }
 
   ctx.progress(1, 'Fertig');
@@ -171,6 +193,23 @@ export async function runPipeline(
     warnings,
     report: { steps: reports, batch: last.report?.['batch'] },
   };
+}
+
+/** Advance the primary handle with the first payload output; extra outputs become fresh handles. */
+async function nextHandles(previous: DocumentHandle[], outputs: NeoFile[]): Promise<DocumentHandle[]> {
+  const payload = outputs.filter((o) => !PIPELINE_SIDECAR_MIMES.has(o.mime));
+  const out: DocumentHandle[] = [];
+  for (let i = 0; i < payload.length; i++) {
+    const file = payload[i]!;
+    const bytes = await file.bytes();
+    const prev = previous[i];
+    out.push(
+      prev
+        ? advanceHandle(prev, { name: file.name, mime: file.mime, bytes })
+        : handleFromBytes(file.name, bytes, file.mime),
+    );
+  }
+  return out;
 }
 
 export type { PipelineSpec, PipelineStep, PipelineTypeError };

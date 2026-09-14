@@ -1,7 +1,17 @@
 import { expose } from 'comlink';
-import { applyTeamPresets, createToolContext, neoFileFromBytes, runTool, type Registry } from '@neotools/engine';
+import {
+  applyTeamPresets,
+  createToolContext,
+  neoFileFromBytes,
+  runTool,
+  type Finding,
+  type NeoFile,
+  type PreviewFrame,
+  type PreviewRequest,
+  type Registry,
+} from '@neotools/engine';
 import { browserPlatform } from '@neotools/engine/platform/browser';
-import { createPdfRegistry, previewRedactHits, loadPdfjs } from '@neotools/tools-pdf';
+import { analyzePdf, createPdfRegistry, previewRedactHits, loadPdfjs } from '@neotools/tools-pdf';
 import { registerForensicsTools } from '@neotools/tools-forensics';
 
 let registry: Registry = registerForensicsTools(createPdfRegistry());
@@ -151,10 +161,38 @@ export interface WorkerFile {
   data: Uint8Array;
 }
 
+/**
+ * Input reference for the worker pool: bytes inline (< 64 MiB) or an OPFS
+ * path the worker reads itself (large files, no double copy in the page).
+ */
+export interface WorkerFileRef {
+  name: string;
+  mime: string;
+  data?: Uint8Array;
+  opfsPath?: string;
+}
+
+async function readOpfsPath(path: string): Promise<Uint8Array> {
+  const root = await navigator.storage.getDirectory();
+  const parts = path.split('/').filter(Boolean);
+  let dir: FileSystemDirectoryHandle = root;
+  for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+  const handle = await dir.getFileHandle(parts[parts.length - 1]!);
+  return new Uint8Array(await (await handle.getFile()).arrayBuffer());
+}
+
+async function toNeoFile(ref: WorkerFileRef): Promise<NeoFile> {
+  if (ref.data) return neoFileFromBytes(ref.name, ref.data, ref.mime);
+  if (ref.opfsPath) return neoFileFromBytes(ref.name, await readOpfsPath(ref.opfsPath), ref.mime);
+  throw new Error(`Datei ohne Inhalt: ${ref.name}`);
+}
+
+const ANALYZE_TIMEOUT_MS = 2000;
+
 export interface WorkerApi {
   run(
     toolId: string,
-    files: WorkerFile[],
+    files: WorkerFileRef[],
     options: unknown,
     onProgress?: (value: number, message?: string) => void,
   ): Promise<{
@@ -163,8 +201,8 @@ export interface WorkerApi {
     report?: Record<string, unknown>;
   }>;
   runPipeline(
-    spec: { steps: Array<{ toolId: string; options: unknown }> },
-    files: WorkerFile[],
+    spec: { steps: Array<{ toolId: string; options: unknown; whenMime?: string[] }> },
+    files: WorkerFileRef[],
     onProgress?: (value: number, message?: string) => void,
   ): Promise<{
     outputs: WorkerFile[];
@@ -172,9 +210,15 @@ export interface WorkerApi {
     report?: Record<string, unknown>;
   }>;
   previewRedact(
-    file: WorkerFile,
+    file: WorkerFileRef,
     options: unknown,
   ): Promise<{ hits: unknown[]; warnings: string[]; pages: number }>;
+  /** Warm a pack (and pdf.js) in this worker so the first run does not pay the import. */
+  warm(kind: string): Promise<void>;
+  /** Fast findings for the FindingBar; times out after 2 s and returns what it has. */
+  analyze(file: WorkerFileRef): Promise<Finding[]>;
+  /** Optional tool preview (`tool.preview`); empty array when the tool has none. */
+  preview(toolId: string, files: WorkerFileRef[], req: PreviewRequest): Promise<PreviewFrame[]>;
   modelStatus(toolId: string): Promise<
     Array<{
       id: string;
@@ -196,12 +240,7 @@ const api: WorkerApi = {
       platform: browserPlatform(),
       progress: (v, m) => onProgress?.(v, m),
     });
-    const result = await runTool(
-      tool,
-      ctx,
-      files.map((f) => neoFileFromBytes(f.name, f.data, f.mime)),
-      options ?? {},
-    );
+    const result = await runTool(tool, ctx, await Promise.all(files.map(toNeoFile)), options ?? {});
     const outputs: WorkerFile[] = [];
     for (const file of result.outputs) {
       outputs.push({ name: file.name, mime: file.mime, data: await file.bytes() });
@@ -216,12 +255,7 @@ const api: WorkerApi = {
       platform: browserPlatform(),
       progress: (v, m) => onProgress?.(v, m),
     });
-    const result = await runPipeline(
-      registry,
-      spec,
-      files.map((f) => neoFileFromBytes(f.name, f.data, f.mime)),
-      ctx,
-    );
+    const result = await runPipeline(registry, spec, await Promise.all(files.map(toNeoFile)), ctx);
     const outputs: WorkerFile[] = [];
     for (const file of result.outputs) {
       outputs.push({ name: file.name, mime: file.mime, data: await file.bytes() });
@@ -244,7 +278,8 @@ const api: WorkerApi = {
           | 'custom'
         >)
       : (['iban', 'steuer-id', 'sv-nummer', 'ausweisnummer', 'kennzeichen', 'email', 'telefon'] as const);
-    return previewRedactHits(file.data, {
+    const data = await (await toNeoFile(file)).bytes();
+    return previewRedactHits(data, {
       mode: (parsed.mode as 'auto' | 'manual' | 'both') ?? 'auto',
       patterns: [...patterns],
       customRegex: Array.isArray(parsed.customRegex) ? (parsed.customRegex as string[]) : undefined,
@@ -254,6 +289,39 @@ const api: WorkerApi = {
         : [],
       ocrScanned: Boolean(parsed.ocrScanned),
     });
+  },
+  async warm(kind) {
+    await presetsReady;
+    if (kind === 'pdfjs') {
+      await loadPdfjs();
+      return;
+    }
+    await ensurePack(kind);
+  },
+  async analyze(file) {
+    await presetsReady;
+    const bytes = await (await toNeoFile(file)).bytes();
+    const timeout = new Promise<Finding[]>((resolve) => setTimeout(() => resolve([]), ANALYZE_TIMEOUT_MS));
+    if (file.mime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      return Promise.race([analyzePdf(bytes).catch(() => [] as Finding[]), timeout]);
+    }
+    // Generic path: every loaded tool that accepts the mime and has an analyze hook.
+    const ctx = createToolContext({ platform: browserPlatform() });
+    const neo = neoFileFromBytes(file.name, bytes, file.mime);
+    const runs = registry
+      .list()
+      .filter((t) => t.analyze && t.inputs.accept.some((a) => a === '*/*' || a === file.mime || (a.endsWith('/*') && file.mime.startsWith(a.slice(0, -1)))))
+      .map((t) => t.analyze!(ctx, neo).catch(() => [] as Finding[]));
+    if (!runs.length) return [];
+    return Promise.race([Promise.all(runs).then((all) => all.flat()), timeout]);
+  },
+  async preview(toolId, files, req) {
+    await presetsReady;
+    await ensureTool(toolId);
+    const tool = registry.require(toolId);
+    if (!tool.preview) return [];
+    const ctx = createToolContext({ platform: browserPlatform() });
+    return tool.preview(ctx, await Promise.all(files.map(toNeoFile)), req);
   },
   async modelStatus(toolId) {
     await ensureTool(toolId);

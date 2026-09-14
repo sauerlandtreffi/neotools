@@ -137,7 +137,7 @@ export default function WatchApp({ locale, pubkey, embedded }: Props) {
   useEffect(() => () => stop(), []);
 
   if (!supported) {
-    return <p style={{ color: '#c45c26' }}>{t(locale, 'watchUnsupported')}</p>;
+    return <p style={{ color: 'var(--warn-text)' }}>{t(locale, 'watchUnsupported')}</p>;
   }
 
   return (

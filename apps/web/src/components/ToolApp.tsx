@@ -19,6 +19,7 @@ import { bytesToBlob } from '../lib/bytes-blob';
 import MarkdownOutput from './MarkdownOutput';
 import TranscriptEditor from './TranscriptEditor';
 import DocPreview from './DocPreview';
+import { handoffToWorkspace, workspaceSupports } from '../lib/workspace/handoff';
 
 export interface ToolMeta {
   id: string;
@@ -62,6 +63,7 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
   const [assessments, setAssessments] = useState<ExtensionAssessment[]>([]);
   const [riskOk, setRiskOk] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [handingOff, setHandingOff] = useState(false);
   const session = useRef<ReturnType<typeof createToolWorker> | null>(null);
 
   useEffect(() => {
@@ -203,8 +205,36 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
         />
       )}
 
+      {phase === 'input' && files.length > 0 && files.every((f) => workspaceSupports(f.mime)) && (
+        <aside class="ws-handoff" role="status" data-workspace-handoff>
+          <div class="min-w-0">
+            <strong>{t(locale, 'openWorkspace')}</strong>
+            <p class="text-sm" style={{ color: 'var(--muted)' }}>
+              {t(locale, 'openWorkspaceHint')}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={handingOff}
+            data-workspace-handoff-go
+            onClick={() => {
+              setHandingOff(true);
+              void handoffToWorkspace(locale, toolId, files, values)
+                .then((url) => location.assign(url))
+                .catch((err) => {
+                  setHandingOff(false);
+                  setError(err instanceof Error ? err.message : String(err));
+                });
+            }}
+          >
+            {t(locale, 'workspace')} →
+          </button>
+        </aside>
+      )}
+
       {risky && phase === 'input' && (
-        <aside class="rounded-lg border p-4" style={{ borderColor: '#c45c26' }} role="alert">
+        <aside class="rounded-lg border p-4" style={{ borderColor: 'var(--warn)' }} role="alert">
           <strong>{t(locale, 'riskBanner')}</strong>
           <ul class="mt-2 list-disc pl-5 text-sm">
             {assessments.flatMap((item) =>
@@ -272,7 +302,7 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
       )}
 
       {phase === 'input' && files.some((f) => f.data.byteLength > 500 * 1024 * 1024) && (
-        <aside class="rounded-lg border p-4 text-sm" style={{ borderColor: '#c45c26' }} role="status">
+        <aside class="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--warn)' }} role="status">
           {t(locale, 'mobileMediaWarn')}
         </aside>
       )}
@@ -324,7 +354,7 @@ export default function ToolApp({ locale, toolId, fieldsJson, metaJson }: Props)
           </div>
         </div>
       )}
-      {error && <p style={{ color: '#c45c26' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--warn-text)' }}>{error}</p>}
       {warnings.map((w) => (
         <p key={w} class="text-sm" style={{ color: 'var(--muted)' }}>
           {w}

@@ -1,0 +1,12 @@
+---
+import AppBase from '../../layouts/AppBase.astro';
+import WorkspaceApp from '../../components/workspace/WorkspaceApp.tsx';
+import { branding } from '../../lib/branding';
+import { workspaceToolsMeta } from '../../lib/workspace/meta';
+
+const locale = 'en' as const;
+const toolsJson = JSON.stringify(workspaceToolsMeta());
+---
+<AppBase locale={locale} title="Workspace" description="Every tool in one tab – locally in your browser." path="/app">
+  <WorkspaceApp client:load locale={locale} toolsJson={toolsJson} brandName={branding.name} logo={branding.logo} />
+</AppBase>

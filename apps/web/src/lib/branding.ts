@@ -5,6 +5,24 @@ export interface BrandingColors {
   primary: string;
   accent: string;
   ink: string;
+  /** Accent used as fill/text on the light (paper) surface; derived from `accent` when omitted. */
+  accentLight?: string;
+}
+
+/** White-label font file — only same-origin paths under /assets are accepted. */
+export interface BrandingFontFile {
+  family: string;
+  src: string;
+  weight?: number;
+  style?: 'normal' | 'italic';
+}
+
+export interface BrandingFonts {
+  /** UI sans family name (workspace chrome). */
+  ui?: string;
+  /** Display serif family name (marketing headlines). */
+  display?: string;
+  files?: BrandingFontFile[];
 }
 
 export interface BrandingFooterLink {
@@ -53,6 +71,7 @@ export interface Branding {
   tagline: { de: string; en: string };
   logo: string;
   colors: BrandingColors;
+  fonts?: BrandingFonts;
   impressum: string;
   privacy: string;
   hiddenTools: string[];
@@ -121,6 +140,7 @@ function mergePlan(parsed: Partial<BrandingPlanPrice> | undefined): BrandingPlan
 function normalize(
   parsed: Partial<Branding> & {
     colors?: Partial<BrandingColors>;
+    fonts?: BrandingFonts;
     legal?: Partial<BrandingLegal>;
     pricing?: { pro?: Partial<BrandingPlanPrice>; enterprise?: Partial<BrandingPlanPrice> };
     contact?: Partial<BrandingContact>;
@@ -138,7 +158,11 @@ function normalize(
       primary: safeCssColor(parsed.colors?.primary ?? FALLBACK.colors.primary, FALLBACK.colors.primary),
       accent: safeCssColor(parsed.colors?.accent ?? FALLBACK.colors.accent, FALLBACK.colors.accent),
       ink: safeCssColor(parsed.colors?.ink ?? FALLBACK.colors.ink, FALLBACK.colors.ink),
+      ...(parsed.colors?.accentLight
+        ? { accentLight: safeCssColor(parsed.colors.accentLight, '#1f8f74') }
+        : {}),
     },
+    fonts: safeFonts(parsed.fonts),
     logo: safeAssetUrl(parsed.logo ?? FALLBACK.logo, FALLBACK.logo),
     hiddenTools: parsed.hiddenTools ?? FALLBACK.hiddenTools,
     defaultLocale: parsed.defaultLocale === 'en' ? 'en' : 'de',
@@ -225,6 +249,32 @@ export function brandingPrice(value: string | undefined, locale: 'de' | 'en'): s
 }
 
 export const branding = loadBranding();
+
+const FONT_FAMILY_RE = /^[\w .'-]{1,60}$/;
+
+/** Only locally shipped font files (no remote URLs, no data: URIs). */
+export function safeFonts(fonts: BrandingFonts | undefined): BrandingFonts | undefined {
+  if (!fonts || typeof fonts !== 'object') return undefined;
+  const out: BrandingFonts = {};
+  if (typeof fonts.ui === 'string' && FONT_FAMILY_RE.test(fonts.ui)) out.ui = fonts.ui;
+  if (typeof fonts.display === 'string' && FONT_FAMILY_RE.test(fonts.display)) out.display = fonts.display;
+  const files = (fonts.files ?? []).filter(
+    (f): f is BrandingFontFile =>
+      Boolean(f) &&
+      typeof f.family === 'string' &&
+      FONT_FAMILY_RE.test(f.family) &&
+      typeof f.src === 'string' &&
+      /^\/assets\/[\w./-]+\.(woff2?|ttf|otf)$/.test(f.src) &&
+      !f.src.includes('..'),
+  );
+  if (files.length) out.files = files.map((f) => ({
+    family: f.family,
+    src: f.src,
+    weight: typeof f.weight === 'number' && f.weight >= 100 && f.weight <= 900 ? f.weight : 400,
+    style: f.style === 'italic' ? 'italic' : 'normal',
+  }));
+  return Object.keys(out).length ? out : undefined;
+}
 
 export function safeCssColor(value: string | undefined, fallback: string): string {
   const v = (value ?? '').trim();

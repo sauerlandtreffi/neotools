@@ -24,6 +24,7 @@ import { pdfSign } from './tools/pdf-sign.js';
 import { pdfFormMailmerge } from './tools/pdf-form-mailmerge.js';
 import { pdfAttachmentStamp } from './tools/pdf-attachment-stamp.js';
 import { pdfUa } from './tools/pdf-ua.js';
+import { applyPdfWorkspaceMeta } from './workspace.js';
 
 export const pdfTools: ToolDefinition[] = [
   pdfMerge,
@@ -51,6 +52,8 @@ export const pdfTools: ToolDefinition[] = [
   pdfAttachmentStamp,
   pdfUa,
 ];
+
+applyPdfWorkspaceMeta(pdfTools);
 
 export function registerPdfTools(registry: Registry): Registry {
   for (const tool of pdfTools) registry.register(tool);
@@ -110,4 +113,6 @@ export { verifyPdfSignatures } from './sign/verify.js';
 export { makeSelfSignedP12, loadPkcs12 } from './sign/p12.js';
 export { signPdfBytes } from './sign/create.js';
 export { openPdfjsDocument, loadPdfjs } from './pdfjs.js';
+export { analyzePdf, PDF_WORKSPACE_META, applyPdfWorkspaceMeta } from './workspace.js';
+export type { AnalyzePdfOptions } from './workspace.js';
 export { resolvePdfjsWorkerSrc, configurePdfjsWorker } from './pdfjs.js';

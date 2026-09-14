@@ -33,7 +33,7 @@ export default function HistoryApp({ locale }: { locale: Locale }) {
       <p class="text-sm" style={{ color: 'var(--muted)' }}>
         {t(locale, 'storedLocal')}
       </p>
-      {error && <p style={{ color: '#c45c26' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--warn-text)' }}>{error}</p>}
 
       <section class="flex flex-wrap items-center gap-4 rounded-lg border p-4" style={{ borderColor: 'var(--line)' }}>
         <label class="flex items-center gap-2 text-sm">
@@ -72,7 +72,7 @@ export default function HistoryApp({ locale }: { locale: Locale }) {
         <button
           type="button"
           class="rounded-md border px-3 py-1 text-sm"
-          style={{ borderColor: '#c45c26', color: '#c45c26' }}
+          style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }}
           onClick={() => {
             if (!confirm(t(locale, 'deleteAllConfirm'))) return;
             void getBrowserHistoryStore()

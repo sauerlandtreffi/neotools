@@ -10,3 +10,4 @@ export { HistoryStore, createMemoryHistoryStore, createBrowserHistoryStore, getB
 export { journalCsv, journalJsonl, toJournalLine } from './journal';
 export { memoryBlobStore, memoryMetaStore } from './memory';
 export { idbMetaStore, idbBlobStore } from './idb';
+export { opfsAvailable, opfsBlobStore, opfsRemoveTree } from './opfs';

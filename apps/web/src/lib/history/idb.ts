@@ -87,11 +87,11 @@ export function idbMetaStore(): HistoryMetaStore {
   };
 }
 
-export function idbBlobStore(): import('./types').HistoryBlobStore {
+export function idbBlobStore(dbName = `${DB_NAME}-blobs`): import('./types').HistoryBlobStore {
   const storeName = 'blobs';
   const open = (): Promise<IDBDatabase> =>
     new Promise((resolve, reject) => {
-      const req = indexedDB.open(`${DB_NAME}-blobs`, 1);
+      const req = indexedDB.open(dbName, 1);
       req.onupgradeneeded = () => {
         if (!req.result.objectStoreNames.contains(storeName)) req.result.createObjectStore(storeName);
       };

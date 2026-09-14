@@ -90,6 +90,11 @@ export interface ToolContext {
   signal: AbortSignal;
   log(level: LogLevel, message: string): void;
   platform: Platform;
+  /**
+   * Workspace: the logical document this run mutates. A follow-up step may
+   * reuse `document.parsed` when `generation` matches (see document-handle.ts).
+   */
+  document?: import('./document-handle.js').DocumentHandle;
 }
 
 export interface ToolInputs {
@@ -147,6 +152,16 @@ export interface ToolDefinition<O extends z.ZodTypeAny = z.ZodTypeAny> {
   ui?: ToolUi;
   seo?: ToolSeo;
   licenses: ToolLicense[];
+  /** Workspace hints (family, ActionBar rank, required selection). Optional for backwards compatibility. */
+  workspace?: import('./workspace.js').ToolWorkspaceMeta;
+  /** Optional incremental preview without a full encode (e.g. one page at 72 dpi). */
+  preview?(
+    ctx: ToolContext,
+    files: NeoFile[],
+    req: import('./workspace.js').PreviewRequest,
+  ): Promise<import('./workspace.js').PreviewFrame[]>;
+  /** Optional fast analysis on open (findings such as IBANs, JavaScript, attachments). */
+  analyze?(ctx: ToolContext, file: NeoFile): Promise<import('./workspace.js').Finding[]>;
 }
 
 export type BatchStatus = 'ok' | 'error';
@@ -170,6 +185,8 @@ export interface PipelineStep {
   options: unknown;
   /** Light branch: only files whose MIME matches run this step; others pass through. */
   whenMime?: string[];
+  /** Workspace selection recorded with the step (pages/regions/timeRange/fileIds). Informational for replay. */
+  selection?: import('./selection.js').Selection;
 }
 
 export interface PipelineSpec {

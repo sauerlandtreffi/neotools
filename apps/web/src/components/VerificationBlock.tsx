@@ -21,8 +21,8 @@ export default function VerificationBlock({ locale, report }: Props) {
   if (!verification || !Array.isArray(verification.checks)) return null;
   const warnings = verification.warnings ?? [];
   const passed = Boolean(verification.passed) && warnings.length === 0;
-  const bg = passed ? 'color-mix(in oklab, #1b7f4e 18%, var(--card))' : 'color-mix(in oklab, #c45c26 16%, var(--card))';
-  const fg = passed ? '#1b7f4e' : '#c45c26';
+  const bg = passed ? 'color-mix(in oklab, var(--ok) 18%, var(--card))' : 'color-mix(in oklab, var(--warn) 16%, var(--card))';
+  const fg = passed ? 'var(--ok)' : 'var(--warn-text)';
 
   return (
     <section class="rounded-lg border p-4" style={{ borderColor: fg, background: bg }}>
@@ -32,7 +32,7 @@ export default function VerificationBlock({ locale, report }: Props) {
       <ul class="grid gap-1 text-sm">
         {warnings.map((w) => (
           <li key={w} class="flex gap-2" data-verify-warning>
-            <span class="mono" style={{ color: '#c45c26' }}>
+            <span class="mono" style={{ color: 'var(--warn-text)' }}>
               WARN
             </span>
             <span>{w}</span>
@@ -40,7 +40,7 @@ export default function VerificationBlock({ locale, report }: Props) {
         ))}
         {verification.checks.map((c) => (
           <li key={c.id} class="flex gap-2">
-            <span class="mono" style={{ color: c.passed ? '#1b7f4e' : '#c45c26' }}>
+            <span class="mono" style={{ color: c.passed ? 'var(--ok)' : 'var(--warn-text)' }}>
               {c.passed ? 'OK' : 'FAIL'}
             </span>
             <span>

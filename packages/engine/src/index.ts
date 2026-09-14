@@ -11,7 +11,64 @@ export {
   decodePipelineHash,
   runPipeline,
 } from './pipeline.js';
-export type { PipelineSpec, PipelineStep, PipelineTypeError } from './pipeline.js';
+export type { PipelineSpec, PipelineStep, PipelineTypeError, PipelineRunHooks } from './pipeline.js';
+export {
+  pagesSchema,
+  regionSchema,
+  regionItemSchema,
+  timeRangeSchema,
+  fileIdsSchema,
+  SELECTION_KEYS,
+  isSelectionKey,
+  emptySelection,
+  selectionIsEmpty,
+  parsePagesParam,
+  formatPages,
+  parseTimeRangeParam,
+  applySelectionToOptions,
+} from './selection.js';
+export type { Selection, SelectionRegion } from './selection.js';
+export {
+  familyForMime,
+  toolFamilies,
+  toolAcceptsMime,
+  toolPriority,
+  describeWorkspaceTool,
+  workspaceToolsFor,
+  lintToolDefinition,
+} from './workspace.js';
+export type {
+  WorkspaceFamily,
+  SelectionKind,
+  WorkspaceVerb,
+  ToolWorkspaceMeta,
+  Finding,
+  PreviewRequest,
+  PreviewFrame,
+  WorkspaceToolView,
+} from './workspace.js';
+export {
+  ParseCache,
+  handleFromBytes,
+  handleFromOpfs,
+  handleBytes,
+  handleToNeoFile,
+  advanceHandle,
+  mutateHandle,
+  pickPrimaryOutput,
+  newHandleId,
+} from './document-handle.js';
+export type { DocumentHandle, OpfsReader, MutateResult } from './document-handle.js';
+export { WorkerPool, defaultPoolSize } from './worker-pool.js';
+export type {
+  PoolSlot,
+  PoolJob,
+  PoolJobContext,
+  PoolJobHandle,
+  PoolJobInfo,
+  PoolJobStatus,
+  WorkerPoolOptions,
+} from './worker-pool.js';
 export { mapFiles, mergeBatchReports } from './batch.js';
 export type { MapFilesResult, MappedFile } from './batch.js';
 export { sha256, hex, hashFiles, createProvenance, attachProvenance } from './provenance.js';

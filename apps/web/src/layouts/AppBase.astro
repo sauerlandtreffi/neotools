@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+import '../styles/workspace.css';
+import Seo from '../components/Seo.astro';
+import UpdateBanner from '../components/UpdateBanner.tsx';
+import DesktopEvents from '../components/DesktopEvents.tsx';
+import { branding } from '../lib/branding';
+import { THEME_INIT_SCRIPT, brandCssVars, brandFontFaces } from '../lib/theme-vars';
+import type { Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  path: string;
+}
+
+const { locale, title, description, path } = Astro.props;
+const fontFaces = brandFontFaces(branding);
+---
+<!doctype html>
+<html lang={locale} style={brandCssVars(branding)}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content={branding.colors.primary} />
+    <link rel="icon" href={branding.logo} type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <Seo locale={locale} title={title} description={description} path={path} noindex />
+    <script is:inline set:html={THEME_INIT_SCRIPT} />
+    {fontFaces && <style is:inline set:html={fontFaces} />}
+  </head>
+  <body class="app-body antialiased">
+    <slot />
+    <UpdateBanner client:idle locale={locale} />
+    <DesktopEvents client:idle />
+  </body>
+</html>

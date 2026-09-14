@@ -136,7 +136,7 @@ export default function RedactEditor({
       if (cancelled) return;
       const all = [...marks, ...autoHits.filter((h) => h.selected)];
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.strokeStyle = '#c45c26';
+      ctx.strokeStyle = 'var(--warn)';
       for (const m of all.filter((x) => x.page === page)) {
         const [x1, y1] = viewport.convertToViewportPoint(m.x, m.y + m.h);
         const [x2, y2] = viewport.convertToViewportPoint(m.x + m.w, m.y);
