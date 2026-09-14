@@ -37,6 +37,10 @@ const expected = [
   'video-loop',
   'video-pip',
   'video-thumbnails',
+  'video-chroma-key',
+  'video-highlight-reel',
+  'video-smart-reframe',
+  'video-360-reframe',
   'audio-convert',
   'audio-edit',
   'audio-normalize',
@@ -64,6 +68,8 @@ const expected = [
   'audio-key-bpm',
   'audio-anonymize-voice',
   'audio-stems',
+  'audio-click-track',
+  'audio-spatial-flatten',
 ];
 
 describe('media registry', () => {

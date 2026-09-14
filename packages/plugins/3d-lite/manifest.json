@@ -1,0 +1,19 @@
+{
+  "id": "3d-lite",
+  "version": "0.1.0",
+  "title": { "de": "3D lite (Community)", "en": "3D lite (community)" },
+  "tools": ["gltf-inspect"],
+  "lazy": true,
+  "optional": true,
+  "assets": [],
+  "licenses": [
+    { "spdx": "MIT", "component": "three.js", "url": "https://github.com/mrdoob/three.js", "note": "Nicht gebündelt; Self-Host bei Aktivierung." },
+    { "spdx": "Apache-2.0", "component": "draco", "url": "https://github.com/google/draco" },
+    { "spdx": "MIT", "component": "meshoptimizer", "url": "https://github.com/zeux/meshoptimizer" },
+    { "spdx": "Apache-2.0", "component": "basis_universal", "url": "https://github.com/BinomialLLC/basis_universal" }
+  ],
+  "sandbox": {
+    "platform": ["readBytes"],
+    "network": "none"
+  }
+}

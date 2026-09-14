@@ -1,5 +1,10 @@
 import { createToolContext } from '@neotools/engine';
 import { ffmpegAvailable, SKIP_NO_FFMPEG } from '../src/ffmpeg/index.js';
+import { detectLgplVendor } from '../src/ffmpeg/core-flavor.js';
+
+export function forceWasmFromEnv(): boolean {
+  return process.env.NEOTOOLS_FFMPEG_NATIVE === '0' || process.env.NEOTOOLS_FFMPEG_NATIVE === 'false';
+}
 
 export function mediaCtx() {
   return createToolContext({
@@ -11,7 +16,7 @@ export function mediaCtx() {
         workers: true,
         qpdf: false,
         ocr: false,
-        ffmpegNative: true,
+        ffmpegNative: !forceWasmFromEnv(),
         webcodecs: false,
       },
     },
@@ -25,4 +30,12 @@ export async function skipIfNoFfmpeg(): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+export async function skipIfNoLgplCore(): Promise<boolean> {
+  if (!detectLgplVendor()) {
+    console.warn('Kein vendor/ffmpeg-lgpl — LGPL-WASM-Tests übersprungen.');
+    return true;
+  }
+  return skipIfNoFfmpeg();
 }

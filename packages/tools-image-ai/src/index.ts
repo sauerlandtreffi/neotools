@@ -7,6 +7,8 @@ import { imageScreenshotWorkshop } from './tools/image-screenshot-workshop.js';
 import { imageUpscale } from './tools/image-upscale.js';
 import { imageDenoise } from './tools/image-denoise.js';
 import { imageAltText } from './tools/image-alt-text.js';
+import { a11yEasyRead } from './tools/a11y-easy-read.js';
+import { a11ySignFriendly } from './tools/a11y-sign-friendly.js';
 
 export const imageAiTools: ToolDefinition[] = [
   imageRemoveBackground,
@@ -16,6 +18,8 @@ export const imageAiTools: ToolDefinition[] = [
   imageUpscale,
   imageDenoise,
   imageAltText,
+  a11yEasyRead,
+  a11ySignFriendly,
 ];
 
 export function registerImageAiTools(registry: Registry): Registry {
@@ -35,6 +39,8 @@ export {
   imageUpscale,
   imageDenoise,
   imageAltText,
+  a11yEasyRead,
+  a11ySignFriendly,
 };
 
 export { IMAGE_AI_LICENSES } from './licenses.js';
@@ -49,3 +55,4 @@ export { sauvola } from './cv/sauvola.js';
 export { estimateSkewDegrees, rotateRaster } from './cv/deskew.js';
 export { stitchVertical, findVerticalOverlap } from './cv/stitch.js';
 export { boxVariance, applyStyle } from './cv/filters.js';
+export { heuristicFaceBoxes, boxesFromYunet } from './cv/faces.js';

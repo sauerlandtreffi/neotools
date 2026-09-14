@@ -18,6 +18,8 @@ import { MEDIA_LICENSES } from '../licenses.js';
 import { inputAlias, outName, stem } from '../names.js';
 import { definePresetTool } from '../presets/define-preset-tool.js';
 import * as A from '../presets/args.js';
+import { audioClickTrack } from '../tools/audio-click-track.js';
+import { audioSpatialFlatten } from '../tools/audio-spatial-flatten.js';
 
 const aIn = { accept: AUDIO_ACCEPT, multiple: false, min: 1 };
 const aMany = { accept: AUDIO_ACCEPT, multiple: true, min: 2 };
@@ -663,4 +665,6 @@ export const audioTools = [
   audioKeyBpm,
   audioAnonymizeVoice,
   audioStems,
+  audioClickTrack,
+  audioSpatialFlatten,
 ];

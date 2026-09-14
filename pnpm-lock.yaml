@@ -50,6 +50,9 @@ importers:
       '@neotools/tools-archive':
         specifier: workspace:*
         version: link:../../packages/tools-archive
+      '@neotools/tools-creator':
+        specifier: workspace:*
+        version: link:../../packages/tools-creator
       '@neotools/tools-dach':
         specifier: workspace:*
         version: link:../../packages/tools-dach
@@ -120,6 +123,9 @@ importers:
       '@neotools/tools-archive':
         specifier: workspace:*
         version: link:../../packages/tools-archive
+      '@neotools/tools-creator':
+        specifier: workspace:*
+        version: link:../../packages/tools-creator
       '@neotools/tools-dach':
         specifier: workspace:*
         version: link:../../packages/tools-dach
@@ -196,6 +202,9 @@ importers:
       '@neotools/tools-archive':
         specifier: workspace:*
         version: link:../../packages/tools-archive
+      '@neotools/tools-creator':
+        specifier: workspace:*
+        version: link:../../packages/tools-creator
       '@neotools/tools-dach':
         specifier: workspace:*
         version: link:../../packages/tools-dach
@@ -366,6 +375,37 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.18.1
+        version: 22.20.2
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.1)
+
+  packages/tools-creator:
+    dependencies:
+      '@neotools/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@neotools/tools-image':
+        specifier: workspace:*
+        version: link:../tools-image
+      '@neotools/tools-media':
+        specifier: workspace:*
+        version: link:../tools-media
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       zod:
         specifier: ^3.24.2
         version: 3.25.76

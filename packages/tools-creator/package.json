@@ -1,0 +1,35 @@
+{
+  "name": "@neotools/tools-creator",
+  "version": "0.1.0",
+  "description": "Creator- & Social-Werkzeuge für NeoTools (Plattform-Packs, Audiogramme, Collagen).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@neotools/engine": "workspace:*",
+    "@neotools/tools-image": "workspace:*",
+    "@neotools/tools-media": "workspace:*",
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

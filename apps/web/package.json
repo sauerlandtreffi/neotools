@@ -29,6 +29,7 @@
     "@neotools/tools-speech": "workspace:*",
     "@neotools/tools-office": "workspace:*",
     "@neotools/tools-media": "workspace:*",
+    "@neotools/tools-creator": "workspace:*",
     "@neotools/models": "workspace:*",
     "@neotools/parsers": "workspace:*",
     "dompurify": "^3.2.6",

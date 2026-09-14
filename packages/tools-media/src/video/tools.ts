@@ -19,6 +19,10 @@ import { inputAlias, mimeForExt, outName, stem } from '../names.js';
 import { definePresetTool } from '../presets/define-preset-tool.js';
 import * as A from '../presets/args.js';
 import { applyVideoCutlist, cutlistOutputName, parseKeepJson, parseKeepOption } from './cutlist.js';
+import { videoChromaKey } from '../tools/video-chroma-key.js';
+import { videoHighlightReel } from '../tools/video-highlight-reel.js';
+import { videoSmartReframe } from '../tools/video-smart-reframe.js';
+import { video360Reframe } from '../tools/video-360-reframe.js';
 
 const vIn = { accept: VIDEO_ACCEPT, multiple: false, min: 1 };
 const vMany = { accept: VIDEO_ACCEPT, multiple: true, min: 2 };
@@ -848,4 +852,8 @@ export const videoTools = [
   videoLoop,
   videoPip,
   videoThumbnails,
+  videoChromaKey,
+  videoHighlightReel,
+  videoSmartReframe,
+  video360Reframe,
 ];

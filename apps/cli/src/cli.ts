@@ -25,6 +25,7 @@ import { registerSpeechTools } from '@neotools/tools-speech';
 import { registerOfficeTools } from '@neotools/tools-office';
 import { registerMediaTools } from '@neotools/tools-media';
 import { registerArchiveTools } from '@neotools/tools-archive';
+import { registerCreatorTools } from '@neotools/tools-creator';
 import { applyTeamPresets } from '@neotools/engine';
 import { addZodOptions, optionsFromFlags } from './flags.js';
 import { batchOf, describeTool, hasBatchErrors, jsonResult, printTable } from './format.js';
@@ -56,7 +57,17 @@ export async function runCli(
   argv: string[],
   io = { stdout: console.log.bind(console), stderr: console.error.bind(console) },
 ): Promise<number> {
-  const baseRegistry = registerArchiveTools(registerMediaTools(registerOfficeTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))))));
+  const baseRegistry = registerCreatorTools(
+    registerArchiveTools(
+      registerMediaTools(
+        registerOfficeTools(
+          registerSpeechTools(
+            registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry())))),
+          ),
+        ),
+      ),
+    ),
+  );
   const presetsFlag = argv.includes('--presets') ? argv[argv.indexOf('--presets') + 1] : undefined;
   const presetsPath = presetsFlag ?? process.env.NEOTOOLS_PRESETS;
   let registry = baseRegistry;

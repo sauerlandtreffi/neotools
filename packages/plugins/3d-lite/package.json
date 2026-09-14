@@ -1,0 +1,19 @@
+{
+  "name": "@neotools-plugin/3d-lite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Community-Plugin-Beispiel: glTF-Inspektion lokal. three/draco/meshopt/basis werden nicht aus einem CDN geladen.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "neotoolsPlugin": {
+    "id": "3d-lite",
+    "caps": ["read-bytes"],
+    "licenses": [
+      { "name": "three.js", "license": "MIT" },
+      { "name": "draco", "license": "Apache-2.0" },
+      { "name": "meshoptimizer", "license": "MIT" },
+      { "name": "basis_universal", "license": "Apache-2.0" }
+    ]
+  }
+}

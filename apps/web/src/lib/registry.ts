@@ -8,10 +8,21 @@ import { registerSpeechTools } from '@neotools/tools-speech';
 import { registerOfficeTools } from '@neotools/tools-office';
 import { registerMediaTools } from '@neotools/tools-media';
 import { registerArchiveTools } from '@neotools/tools-archive';
+import { registerCreatorTools } from '@neotools/tools-creator';
 import { branding } from './branding';
 import { applyBrandingPresets } from './team-presets';
 
-const baseRegistry = registerArchiveTools(registerMediaTools(registerOfficeTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))))));
+const baseRegistry = registerCreatorTools(
+  registerArchiveTools(
+    registerMediaTools(
+      registerOfficeTools(
+        registerSpeechTools(
+          registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry())))),
+        ),
+      ),
+    ),
+  ),
+);
 export const registry = applyBrandingPresets(baseRegistry);
 
 /** Snapshot of tools registered at import time. Prefer `registry.list()` so later pack appends are visible. */
