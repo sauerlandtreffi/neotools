@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { expect, type Download, type Page } from '@playwright/test';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 export const IBAN = 'DE89370400440532013000';
@@ -104,10 +105,81 @@ export async function uploadPdfs(page: Page, files: Array<{ name: string; buffer
   );
 }
 
+export async function openWorkspace(page: Page, path = '/') {
+  await page.goto(path);
+  await expect(page.locator('[data-workspace][data-ready="true"]')).toBeVisible({ timeout: 20_000 });
+}
+
+export async function dropWorkspaceFiles(
+  page: Page,
+  files: Array<{ name: string; mimeType: string; buffer: Buffer }>,
+) {
+  const input = page.locator('[data-empty-input], [data-tray-input]').first();
+  await input.setInputFiles(files);
+  await expect(page.locator('[data-workspace][data-has-files="true"]')).toBeVisible({ timeout: 20_000 });
+}
+
+/** Tools live in verb-grouped menus of the toolbar. */
+export async function pickWorkspaceTool(page: Page, group: string, toolId: string) {
+  await page.locator(`[data-actionbar] [data-tool-group="${group}"]`).click();
+  await page.locator(`[data-tool-menu="${group}"] [data-tool="${toolId}"]`).click();
+}
+
+export async function waitWorkspaceIdle(page: Page, timeout = 90_000) {
+  await expect(page.locator('[data-jobdock]')).toHaveCount(0, { timeout });
+}
+
+export async function applyWorkspaceTool(page: Page, toolId: string, timeout = 60_000) {
+  await expect(page.locator(`[data-options-panel][data-tool="${toolId}"]`)).toBeVisible({ timeout: 20_000 });
+  const ok = page.locator(`[data-step="${toolId}"][data-status="ok"]`);
+  const err = page.locator(`[data-step="${toolId}"][data-status="error"]`);
+  const deadline = Date.now() + timeout;
+  // Worker packs load lazily (`warmFamily` vs first `run`). A too-early apply
+  // surfaces as "Unbekanntes Tool" — retry after the import can finish.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await page.locator('[data-apply]').click();
+    const slice = Math.max(8_000, Math.min(30_000, deadline - Date.now()));
+    try {
+      await expect(ok).toBeVisible({ timeout: slice });
+      await waitWorkspaceIdle(page);
+      return;
+    } catch (e) {
+      const failed = (await err.count()) > 0 && /Unbekanntes Tool/i.test(await err.last().innerText());
+      if (!failed || Date.now() >= deadline) throw e;
+      await page.waitForTimeout(1_000);
+    }
+  }
+}
+
+export async function downloadExport(page: Page): Promise<Download> {
+  await page.locator('[data-open-export]').first().click();
+  await expect(page.locator('[data-export-drawer]')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.locator('[data-export-download]').click();
+  return download;
+}
+
+export async function readDownloadBytes(download: Download): Promise<Buffer> {
+  const path = await download.path();
+  expect(path, 'Playwright sollte die Datei speichern').toBeTruthy();
+  return readFile(path!);
+}
+
+export async function expectMoved(page: Page, from: string, to: string) {
+  const res = await page.request.get(from, { maxRedirects: 0 });
+  expect(res.status(), `${from} should 301`).toBe(301);
+  expect(res.headers()['location']).toBe(to);
+}
+
 export async function uploadFiles(
   page: Page,
   files: Array<{ name: string; mimeType: string; buffer: Buffer }>,
 ) {
+  const workspace = page.locator('[data-empty-input], [data-tray-input]');
+  if ((await workspace.count()) > 0) {
+    await dropWorkspaceFiles(page, files);
+    return;
+  }
   const island = page.locator('[data-tool-ready], [data-reader-ready]');
   if ((await island.count()) > 0) {
     await expect(page.locator('[data-tool-ready="1"], [data-reader-ready="1"]')).toBeVisible({

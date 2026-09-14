@@ -1,22 +1,36 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { PDFDocument, PDFDict, PDFName, StandardFonts } from 'pdf-lib';
-import { attachGuards, IBAN, tinyPng, uploadFiles, uploadPdfs } from './helpers';
+import {
+  applyWorkspaceTool,
+  attachGuards,
+  downloadExport,
+  dropWorkspaceFiles,
+  expectMoved,
+  IBAN,
+  openWorkspace,
+  readDownloadBytes,
+  tinyPng,
+  waitWorkspaceIdle,
+} from './helpers';
 
 test('launch: /preise, /vergleich/ilovepdf, /impressum, /datenschutz', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/preise');
+  await expectMoved(page, '/preise', '/info/preise');
+  await page.goto('/info/preise');
   await expect(page.locator('h1')).toBeVisible();
   await expect(page.locator('body')).toContainText(/Community|frei|free/i);
 
-  await page.goto('/vergleich/ilovepdf');
+  await expectMoved(page, '/vergleich/ilovepdf', '/info/vergleich/ilovepdf');
+  await page.goto('/info/vergleich/ilovepdf');
   await expect(page.locator('h1')).toBeVisible();
   await expect(page.locator('body')).toContainText(/iLovePDF|Upload|lokal/i);
 
-  await page.goto('/impressum');
+  await expectMoved(page, '/impressum', '/info/impressum');
+  await page.goto('/info/impressum');
   await expect(page.locator('body')).toContainText(/Vorlage|§ 5|DDG|keine Rechtsberatung/i);
 
-  await page.goto('/datenschutz');
+  await expectMoved(page, '/datenschutz', '/info/datenschutz');
+  await page.goto('/info/datenschutz');
   await expect(page.locator('body')).toContainText(/Vorlage|keine Rechtsberatung|lokal/i);
   guards.assertClean();
 });
@@ -24,50 +38,37 @@ test('launch: /preise, /vergleich/ilovepdf, /impressum, /datenschutz', async ({ 
 test('creator-social-card: PNG → PNG download', async ({ page }) => {
   test.setTimeout(90_000);
   const guards = attachGuards(page);
-  await page.goto('/creator-social-card');
-  await uploadFiles(page, [{ name: 'hero.png', mimeType: 'image/png', buffer: tinyPng() }]);
-  await page.getByRole('button', { name: 'Ausführen' }).click();
-  const downloadBtn = page.getByRole('button', { name: 'Download' });
-  await expect(downloadBtn).toBeVisible({ timeout: 60_000 });
-  const [download] = await Promise.all([page.waitForEvent('download'), downloadBtn.click()]);
-  const path = await download.path();
-  expect(path).toBeTruthy();
-  const bytes = await readFile(path!);
+  await openWorkspace(page, '/creator-social-card');
+  await dropWorkspaceFiles(page, [{ name: 'hero.png', mimeType: 'image/png', buffer: tinyPng() }]);
+  await expect(page.locator('[data-workspace]')).toHaveAttribute('data-kind', 'image');
+  await applyWorkspaceTool(page, 'creator-social-card');
+  const download = await downloadExport(page);
+  const bytes = await readDownloadBytes(download);
   expect(bytes[0]).toBe(0x89);
   expect(bytes[1]).toBe(0x50);
   expect(bytes[2]).toBe(0x4e);
   expect(bytes[3]).toBe(0x47);
-  guards.assertClean();
+  expect(guards.foreignRequests, `foreign origins:\n${guards.foreignRequests.join('\n')}`).toEqual([]);
+  // encode/canvas may log a revoked blob as Chromium ERR_FILE_NOT_FOUND
+  expect(guards.consoleErrors.filter((e) => !/ERR_FILE_NOT_FOUND/.test(e))).toEqual([]);
 });
 
 test('pdf-redact Form-XObject: Verifikation nie leer', async ({ page }) => {
   test.setTimeout(90_000);
   const guards = attachGuards(page);
-  const pdf = await formXobjectIban();
-  await page.goto('/pdf-redact');
-  await uploadPdfs(page, [{ name: 'form-xobject.pdf', buffer: pdf }]);
-  await expect(page.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Auto-Treffer' }).click();
-  await page.getByRole('button', { name: 'Schwärzen & verifizieren' }).click();
-  const block = page.locator('section').filter({ hasText: 'Verifikation' });
-  await expect(block).toBeVisible({ timeout: 60_000 });
-  const text = await block.innerText();
-  expect(text.length).toBeGreaterThan(12);
-  // Never empty: a verdict line plus at least one concrete check line.
-  const heading = await block.locator('h2').first().innerText();
-  expect(heading).toMatch(/Verifikation · (bestanden|fehlgeschlagen)/i);
-  const lines = await block.locator('li').allInnerTexts();
-  expect(lines.length).toBeGreaterThan(0);
-  expect(lines.some((l) => /^(OK|FAIL|WARN)\s/.test(l))).toBe(true);
-  if (/fehlgeschlagen/i.test(heading)) {
-    // red must come with a reason: a FAIL/WARN line that carries a message
-    const reasons = lines.filter((l) => /^(FAIL|WARN)\s/.test(l) && l.replace(/^(FAIL|WARN)\s*/, '').trim().length > 8);
-    expect(reasons, lines.join('\n')).not.toEqual([]);
-  } else {
-    // green must be honest: no FAIL line hidden below, and the IBAN byte-scan check is present
-    expect(lines.some((l) => /^FAIL\s/.test(l)), lines.join('\n')).toBe(false);
-    expect(lines.some((l) => /:bytes|:text/.test(l))).toBe(true);
-  }
+  await openWorkspace(page, '/pdf-redact');
+  await dropWorkspaceFiles(page, [{ name: 'form-xobject.pdf', mimeType: 'application/pdf', buffer: await formXobjectIban() }]);
+  await expect(page.locator('[data-pdf-page]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-options-panel][data-tool="pdf-redact"]')).toBeVisible();
+  await page.locator('[data-preset="auto-de"]').click();
+  await page.locator('[data-apply]').click();
+  await expect(page.locator('[data-step="pdf-redact"][data-status="ok"]')).toBeVisible({ timeout: 60_000 });
+  await waitWorkspaceIdle(page);
+  const seal = page.locator('[data-step="pdf-redact"] [data-seal]');
+  await expect(seal).toBeVisible();
+  const state = await seal.getAttribute('data-seal');
+  expect(state, 'Siegel darf nicht fehlen').toMatch(/^(ok|fail)$/);
+  await expect(seal).toContainText(/Verifiziert|Prüfung fehlgeschlagen|Verified|Check failed/i);
   guards.assertClean();
 });
 

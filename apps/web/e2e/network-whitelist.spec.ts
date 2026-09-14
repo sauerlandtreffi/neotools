@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { resolveRedirect } from '../redirects.mjs';
 import { isAllowedNetworkUrl } from './helpers';
 
 /**
@@ -11,25 +12,29 @@ import { isAllowedNetworkUrl } from './helpers';
  * request fails the test.
  *
  * Page list is derived from `apps/web/dist` (see ensure-dist.mjs):
- *   - every `dist/**\/index.html` except `formats/*` and `convert/*`
- *     (static pages, tool pages, /en mirror, /vergleich/*, /guides/*)
- *   - a deterministic 10 % sample of `formats/*` and `convert/*` (both locales)
+ *   - every real dist index.html except sampled SEO sections
+ *     (tool deep-links, /en mirror, /info legal + indexes)
+ *   - a deterministic 10 % sample of `/info/formats/*`, `/info/convert/*`
+ *     and `/info/tools/*` (both locales)
+ *   - 301 stubs from the old URL map are skipped (e2e server redirects them)
  */
 const dist = resolve(fileURLToPath(new URL('../dist', import.meta.url)));
 
-const SAMPLED_SECTIONS = new Set(['formats', 'convert']);
+/** Locale + info-hub prefixes — not a content section. */
+const PREFIX_SEGMENTS = new Set(['en', 'info']);
+const SAMPLED_SECTIONS = new Set(['formats', 'convert', 'tools']);
 
-function collectPages(): { full: string[]; formats: string[]; convert: string[] } {
+function collectPages(): { full: string[]; formats: string[]; convert: string[]; tools: string[] } {
   const full: string[] = [];
-  const sampled: Record<string, string[]> = { formats: [], convert: [] };
+  const sampled: Record<string, string[]> = { formats: [], convert: [], tools: [] };
   const walk = (dir: string, urlPath: string, section: string | null) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
       if (entry.name === '_astro' || entry.name === 'assets' || entry.name === 'tessdata') continue;
       const nextDir = join(dir, entry.name);
       const nextUrl = `${urlPath}/${entry.name}`;
-      // section = first path segment after optional locale prefix
-      const nextSection = section ?? (entry.name === 'en' ? null : entry.name);
+      if (resolveRedirect(nextUrl)) continue;
+      const nextSection = section ?? (PREFIX_SEGMENTS.has(entry.name) ? null : entry.name);
       if (existsSync(join(nextDir, 'index.html'))) {
         if (nextSection && SAMPLED_SECTIONS.has(nextSection) && nextSection !== entry.name) {
           sampled[nextSection]!.push(nextUrl);
@@ -42,7 +47,7 @@ function collectPages(): { full: string[]; formats: string[]; convert: string[] 
   };
   if (existsSync(join(dist, 'index.html'))) full.push('/');
   walk(dist, '', null);
-  return { full, formats: sampled.formats!, convert: sampled.convert! };
+  return { full, formats: sampled.formats!, convert: sampled.convert!, tools: sampled.tools! };
 }
 
 function sample(items: string[], ratio: number): string[] {
@@ -58,15 +63,23 @@ test.describe('network whitelist', () => {
   test('all static + tool pages and a 10 % sample of /formats and /convert — no foreign origins', async ({ browser }) => {
     expect(existsSync(join(dist, 'index.html')), 'apps/web/dist fehlt — `node e2e/ensure-dist.mjs`').toBe(true);
     const pages = collectPages();
-    const hrefs = [...new Set([...pages.full, ...sample(pages.formats, 0.1), ...sample(pages.convert, 0.1)])].sort();
-    // sanity: tool pages (both locales), formats and convert really exist in the build
+    const hrefs = [
+      ...new Set([
+        ...pages.full,
+        ...sample(pages.formats, 0.1),
+        ...sample(pages.convert, 0.1),
+        ...sample(pages.tools, 0.1),
+      ]),
+    ].sort();
+    // sanity: tool deep-links (both locales), info hub and sampled SEO trees
     expect(pages.full.length).toBeGreaterThan(200);
     expect(pages.full).toContain('/pdf-redact');
     expect(pages.full).toContain('/en/pdf-redact');
-    expect(pages.full).toContain('/preise');
-    expect(pages.full).toContain('/impressum');
+    expect(pages.full).toContain('/info/preise');
+    expect(pages.full).toContain('/info/impressum');
     expect(pages.formats.length).toBeGreaterThan(10);
     expect(pages.convert.length).toBeGreaterThan(10);
+    expect(pages.tools.length).toBeGreaterThan(10);
 
     const context = await browser.newContext();
     const foreign: string[] = [];

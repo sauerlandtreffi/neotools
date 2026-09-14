@@ -1,33 +1,31 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import {
-  IBAN,
   READER_NEEDLE,
+  applyWorkspaceTool,
   attachGuards,
+  downloadExport,
+  dropWorkspaceFiles,
   expectCoopCoep,
+  expectMoved,
   ibanPdf,
   mergeFixturePdfs,
+  openWorkspace,
   pdfBytes,
+  pickWorkspaceTool,
+  readDownloadBytes,
   readerPdf,
   tinyPng,
-  uploadFiles,
-  uploadPdfs,
+  waitWorkspaceIdle,
 } from './helpers';
 
-test('a) startseite: grid > 20 tools, suche filtert', async ({ page }) => {
+test('a) startseite: App-Shell, leerer Landing-Container, COOP/COEP', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/');
-  await expect(page.locator('h1')).toBeVisible();
-  const cards = page.locator('#tools a');
-  await expect(cards.first()).toBeVisible();
-  expect(await cards.count()).toBeGreaterThan(20);
-
-  await page.getByPlaceholder(/Name oder Aufgabe|Name or task/).fill('merge');
-  const hit = page.locator('ul a[href="/pdf-merge"]');
-  await expect(hit).toBeVisible();
-  await expect(hit).toContainText(/zusammenführen|Merge/i);
-
+  await openWorkspace(page);
+  await expect(page.locator('[data-workspace][data-embedded="true"][data-expanded="false"]')).toBeVisible();
+  await expect(page.locator('[data-empty-state]')).toBeVisible();
+  await expect(page.locator('h1')).toHaveCount(0);
+  await expect(page.locator('[data-landing]')).toHaveCount(1);
   await expectCoopCoep(page);
   guards.assertClean();
 });
@@ -35,90 +33,86 @@ test('a) startseite: grid > 20 tools, suche filtert', async ({ page }) => {
 test('b) /pdf-merge: zwei PDFs → Download mit 2+ Seiten', async ({ page }) => {
   const guards = attachGuards(page);
   const { a, b } = await mergeFixturePdfs();
-  await page.goto('/pdf-merge');
-  await uploadPdfs(page, [
-    { name: 'a.pdf', buffer: a },
-    { name: 'b.pdf', buffer: b },
+  await openWorkspace(page, '/pdf-merge');
+  await dropWorkspaceFiles(page, [
+    { name: 'a.pdf', mimeType: 'application/pdf', buffer: a },
+    { name: 'b.pdf', mimeType: 'application/pdf', buffer: b },
   ]);
-  await expect(page.getByText('a.pdf').first()).toBeVisible();
-  await expect(page.getByText('b.pdf').first()).toBeVisible();
+  await expect(page.locator('[data-file-id]').filter({ hasText: 'a.pdf' })).toBeVisible();
+  await expect(page.locator('[data-file-id]').filter({ hasText: 'b.pdf' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Ausführen' }).click();
-  const downloadBtn = page.getByRole('button', { name: 'Download' });
-  await expect(downloadBtn).toBeVisible({ timeout: 45_000 });
+  await pickWorkspaceTool(page, 'transform', 'pdf-merge');
+  await expect(page.locator('[data-merge-overlay]')).toBeVisible();
+  await page.locator('[data-merge-run]').click();
+  await expect(page.locator('[data-file-id]')).toHaveCount(3, { timeout: 60_000 });
+  await waitWorkspaceIdle(page);
 
-  const [download] = await Promise.all([page.waitForEvent('download'), downloadBtn.click()]);
-  const path = await download.path();
-  expect(path, 'Playwright sollte die Datei speichern').toBeTruthy();
-  const bytes = await readFile(path!);
+  const download = await downloadExport(page);
+  const bytes = await readDownloadBytes(download);
   expect(bytes.subarray(0, 5).toString('utf8')).toBe('%PDF-');
   const pdf = await PDFDocument.load(bytes);
   expect(pdf.getPageCount()).toBeGreaterThanOrEqual(2);
-
   guards.assertClean();
 });
 
 test('c) /pdf-sanitize: Verifikation grün', async ({ page }) => {
   const guards = attachGuards(page);
-  const dirty = await pdfBytes({ pages: 1, text: 'SanitizeMe' });
-  await page.goto('/pdf-sanitize');
-  await uploadPdfs(page, [{ name: 'in.pdf', buffer: dirty }]);
-  await page.getByRole('button', { name: 'Ausführen' }).click();
-  const block = page.locator('section').filter({ hasText: 'Verifikation' });
-  await expect(block).toBeVisible({ timeout: 45_000 });
-  await expect(block).toContainText('bestanden');
-  await expect(block.getByText('OK').first()).toBeVisible();
-
+  await openWorkspace(page, '/pdf-sanitize');
+  await dropWorkspaceFiles(page, [{ name: 'in.pdf', mimeType: 'application/pdf', buffer: await pdfBytes({ pages: 1, text: 'SanitizeMe' }) }]);
+  await applyWorkspaceTool(page, 'pdf-sanitize');
+  await expect(page.locator('[data-step="pdf-sanitize"] [data-seal="ok"]')).toBeVisible({ timeout: 20_000 });
   guards.assertClean();
 });
 
 test('d) /pdf-redact: Editor lädt, Seite als Canvas gerendert', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/pdf-redact');
-  await uploadPdfs(page, [{ name: 'iban.pdf', buffer: await ibanPdf() }]);
-  await expect(page.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('heading', { name: 'Markierungen' })).toBeVisible();
+  await openWorkspace(page, '/pdf-redact');
+  await dropWorkspaceFiles(page, [{ name: 'iban.pdf', mimeType: 'application/pdf', buffer: await ibanPdf() }]);
+  await expect(page.locator('[data-pdf-page]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-options-panel][data-tool="pdf-redact"]')).toBeVisible();
+  await expect(page.locator('[data-marks]')).toBeVisible();
   guards.assertClean();
 });
 
-test('d2) /pdf-redact: Auto-Treffer zeigt IBAN, Schwärzen & verifizieren ist grün', async ({
-  page,
-}) => {
+test('d2) /pdf-redact: Auto-Treffer zeigt IBAN, Schwärzen ist grün', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/pdf-redact');
-  await uploadPdfs(page, [{ name: 'iban.pdf', buffer: await ibanPdf() }]);
-  await expect(page.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
+  await openWorkspace(page, '/pdf-redact');
+  await dropWorkspaceFiles(page, [{ name: 'iban.pdf', mimeType: 'application/pdf', buffer: await ibanPdf() }]);
+  await expect(page.locator('[data-pdf-page]')).toBeVisible({ timeout: 30_000 });
 
-  await page.getByRole('button', { name: 'Auto-Treffer' }).click();
-  const marks = page.locator('h3').filter({ hasText: 'Markierungen' }).locator('..');
-  await expect(marks.getByText(/iban/i)).toBeVisible({ timeout: 45_000 });
-  await expect(marks.getByText(new RegExp(IBAN.slice(0, 8)))).toBeVisible();
+  const redactNow = page.locator('[data-finding-action="redact"]');
+  await expect(redactNow).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-finding="iban"]').first()).toBeVisible();
+  await redactNow.click();
+  await expect(page.locator('[data-marks] li').first()).toContainText(/iban/i);
 
-  await page.getByRole('button', { name: 'Schwärzen & verifizieren' }).click();
-  const block = page.locator('section').filter({ hasText: 'Verifikation' });
-  await expect(block).toBeVisible({ timeout: 60_000 });
-  await expect(block).toContainText('bestanden');
+  await page.locator('[data-apply]').click();
+  await expect(page.locator('[data-step="pdf-redact"][data-status="ok"]')).toBeVisible({ timeout: 60_000 });
+  await waitWorkspaceIdle(page);
+  await expect(page.locator('[data-step="pdf-redact"] [data-seal="ok"]')).toBeVisible({ timeout: 20_000 });
   guards.assertClean();
 });
 
-test('e) /reader: PDF öffnen, Seitenzahl, Suche', async ({ page }) => {
+test('e) /reader: 301 → Workspace, PDF öffnen, Seitenzahl, Suche', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/reader');
-  await uploadPdfs(page, [{ name: 'reader.pdf', buffer: await readerPdf() }]);
-  await expect(page.getByText(/Seite\s+1\s*\/\s*2/)).toBeVisible({ timeout: 30_000 });
+  await expectMoved(page, '/reader', '/');
+  await openWorkspace(page, '/reader');
+  expect(new URL(page.url()).pathname).toBe('/');
+  await dropWorkspaceFiles(page, [{ name: 'reader.pdf', mimeType: 'application/pdf', buffer: await readerPdf() }]);
+  await expect(page.locator('[data-pdf-page]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-thumb]')).toHaveCount(2, { timeout: 20_000 });
+  await expect(page.locator('[data-page-input]')).toHaveValue('1');
 
-  await page.locator('#reader-search').fill(READER_NEEDLE);
-  await page.locator('form.reader-search').getByRole('button', { name: 'Suchen' }).click();
-  await expect(page.locator('form.reader-search').getByText(/1\/\d+/)).toBeVisible({
-    timeout: 20_000,
-  });
-
+  await page.locator('[data-search-open]').click();
+  await page.locator('[data-search-input]').fill(READER_NEEDLE);
+  await expect(page.locator('[data-search-hits]')).toContainText(/1\/\d+/, { timeout: 20_000 });
   guards.assertClean();
 });
 
 test('f) /lizenzen listet pdf-lib, pdfjs, tesseract, qpdf', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/lizenzen');
+  await expectMoved(page, '/lizenzen', '/info/lizenzen');
+  await page.goto('/info/lizenzen');
   const body = await page.locator('body').innerText();
   expect(body).toMatch(/pdf-lib/i);
   expect(body).toMatch(/pdfjs/i);
@@ -129,10 +123,11 @@ test('f) /lizenzen listet pdf-lib, pdfjs, tesseract, qpdf', async ({ page }) => 
 
 test('g) /en/ funktioniert', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/en/');
+  await openWorkspace(page, '/en/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.locator('h1')).toBeVisible();
-  await expect(page.locator('#tools a').first()).toBeVisible();
+  await expect(page.locator('[data-workspace][data-embedded="true"]')).toBeVisible();
+  await expect(page.locator('[data-empty-state]')).toBeVisible();
+  await expect(page.locator('[data-landing][data-locale="en"]')).toHaveCount(1);
   guards.assertClean();
 });
 
@@ -158,24 +153,22 @@ test('h) Service Worker + manifest file_handlers', async ({ page }) => {
 
 test('i) /image-convert: PNG → JPG beginnt mit FFD8', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/image-convert');
-  await uploadFiles(page, [{ name: 'in.png', mimeType: 'image/png', buffer: tinyPng() }]);
-  await expect(page.getByText('in.png')).toBeVisible();
-  await page.getByRole('button', { name: 'Ausführen' }).click();
-  const downloadBtn = page.getByRole('button', { name: 'Download' });
-  await expect(downloadBtn).toBeVisible({ timeout: 60_000 });
-  const [download] = await Promise.all([page.waitForEvent('download'), downloadBtn.click()]);
-  const path = await download.path();
-  expect(path, 'Playwright sollte die Datei speichern').toBeTruthy();
-  const bytes = await readFile(path!);
+  await openWorkspace(page, '/image-convert');
+  await dropWorkspaceFiles(page, [{ name: 'in.png', mimeType: 'image/png', buffer: tinyPng() }]);
+  await expect(page.locator('[data-workspace]')).toHaveAttribute('data-kind', 'image');
+  await expect(page.locator('[data-file-id]').filter({ hasText: 'in.png' })).toBeVisible();
+  await applyWorkspaceTool(page, 'image-convert');
+  const download = await downloadExport(page);
+  const bytes = await readDownloadBytes(download);
   expect(bytes[0]).toBe(0xff);
   expect(bytes[1]).toBe(0xd8);
   guards.assertClean();
 });
 
-test('j) /formats/jpg rendert und enthält JSON-LD', async ({ page }) => {
+test('j) /formats/jpg rendert unter /info und enthält JSON-LD', async ({ page }) => {
   const guards = attachGuards(page);
-  await page.goto('/formats/jpg');
+  await expectMoved(page, '/formats/jpg', '/info/formats/jpg');
+  await page.goto('/info/formats/jpg');
   await expect(page.locator('h1')).toBeVisible();
   await expect(page.locator('h1')).toContainText(/JPEG/i);
   const jsonLd = page.locator('script[type="application/ld+json"]');
@@ -185,19 +178,22 @@ test('j) /formats/jpg rendert und enthält JSON-LD', async ({ page }) => {
   guards.assertClean();
 });
 
-test('k) /verlauf zeigt nach einem Tool-Lauf einen Eintrag', async ({ page }) => {
+test('k) /verlauf zeigt nach einem Tool-Lauf eine Session', async ({ page }) => {
   const guards = attachGuards(page);
   const { a, b } = await mergeFixturePdfs();
-  await page.goto('/pdf-merge');
-  await uploadPdfs(page, [
-    { name: 'a.pdf', buffer: a },
-    { name: 'b.pdf', buffer: b },
+  await openWorkspace(page, '/pdf-merge');
+  await dropWorkspaceFiles(page, [
+    { name: 'a.pdf', mimeType: 'application/pdf', buffer: a },
+    { name: 'b.pdf', mimeType: 'application/pdf', buffer: b },
   ]);
-  await page.getByRole('button', { name: 'Ausführen' }).click();
-  await expect(page.getByRole('button', { name: 'Download' })).toBeVisible({ timeout: 45_000 });
-  await expect(page.getByText(/Im Verlauf gespeichert|Saved in history/)).toBeVisible();
+  await pickWorkspaceTool(page, 'transform', 'pdf-merge');
+  await page.locator('[data-merge-run]').click();
+  await expect(page.locator('[data-file-id]')).toHaveCount(3, { timeout: 60_000 });
+  await waitWorkspaceIdle(page);
+
+  await expectMoved(page, '/verlauf', '/?panel=history');
   await page.goto('/verlauf');
-  await expect(page.locator('h1')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'pdf-merge' })).toBeVisible();
+  await expect(page.locator('[data-panel="history"] [data-session-row]').first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-panel="history"] [data-session-row]').first()).toContainText(/a\.pdf|merged/i);
   guards.assertClean();
 });
