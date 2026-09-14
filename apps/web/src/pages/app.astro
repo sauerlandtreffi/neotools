@@ -2,11 +2,10 @@
 import AppBase from '../layouts/AppBase.astro';
 import WorkspaceApp from '../components/workspace/WorkspaceApp.tsx';
 import { branding } from '../lib/branding';
-import { workspaceToolsMeta } from '../lib/workspace/meta';
 
+/* Deep-link route (noindex): the full-screen shell without the explanation below. */
 const locale = 'de' as const;
-const toolsJson = JSON.stringify(workspaceToolsMeta());
 ---
-<AppBase locale={locale} title="Workspace" description="Alle Werkzeuge in einem Tab – lokal im Browser." path="/app">
-  <WorkspaceApp client:load locale={locale} toolsJson={toolsJson} brandName={branding.name} logo={branding.logo} />
+<AppBase locale={locale} title="Workspace" description="Alle Werkzeuge in einem Tab – lokal im Browser." path="/app" canonical="/">
+  <WorkspaceApp client:load locale={locale} brandName={branding.name} logo={branding.logo} licensePubkey={branding.licensePubkey ?? ''} licenseEmbedded={branding.license ?? ''} />
 </AppBase>

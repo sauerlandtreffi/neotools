@@ -1,42 +1,57 @@
 import { useState } from 'preact/hooks';
 import type { Locale } from '../../lib/i18n';
 import { w } from '../../lib/workspace/i18n';
-import { activeFile, busy, canRedo, canUndo, newSession, redo, renameSession, setUi, undo, workspace } from '../../lib/workspace/store';
-import ThemeToggle from '../ThemeToggle';
-import TrustBadge from './TrustBadge';
+import { activeFile, busy, canRedo, canUndo, redo, renameSession, setLayout, setUi, undo, workspace } from '../../lib/workspace/store';
 import { I } from './Icons';
+import MenuBar from './MenuBar';
 
 interface Props {
   locale: Locale;
   brandName: string;
   logo: string;
+  /** Embedded on `/` and not expanded → show the one quiet sentence instead of the session name. */
+  showTagline: boolean;
   onToggleTray?: () => void;
 }
 
-export default function TopBar({ locale, brandName, logo, onToggleTray }: Props) {
+/**
+ * Title/menu bar of the program shell (pivot §11.1/4). Left: brand + menus,
+ * centre: session name (editable) or tagline, right: undo/redo, ⌘K, export,
+ * panel toggles.
+ */
+export default function TopBar({ locale, brandName, logo, showTagline, onToggleTray }: Props) {
   const s = workspace.value;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const session = s.session;
-  const other: Locale = locale === 'de' ? 'en' : 'de';
-  const home = locale === 'de' ? '/' : '/en/';
-  const historyHref = locale === 'de' ? '/verlauf' : '/en/history';
+  const infoBase = locale === 'de' ? '/info' : '/en/info';
+  const hasFiles = Boolean(session?.files.length);
 
   return (
     <header class="ws-topbar" data-topbar>
       {onToggleTray && (
-        <button type="button" class="btn btn-ghost btn-icon ws-only-mobile" aria-label={w(locale, 'tray')} onClick={onToggleTray}>
-          <I.menu />
+        <button type="button" class="ws-icon-btn ws-only-mobile" aria-label={w(locale, 'bin')} onClick={onToggleTray}>
+          <I.menu size={16} />
         </button>
       )}
-      <a href={home} class="ws-brand" aria-label={brandName}>
-        <img src={logo} alt="" width="28" height="28" />
+      <a href={locale === 'de' ? '/' : '/en'} class="ws-brand" aria-label={brandName} onClick={(e) => {
+        if (hasFiles && !s.overview) {
+          e.preventDefault();
+          setUi({ overview: true });
+        }
+      }}>
+        <img src={logo} alt="" width="20" height="20" />
         <span class="ws-brand-name">{brandName}</span>
-        <span class="stamp ws-brand-app">{w(locale, 'appTitle')}</span>
       </a>
-      <span class="ws-topbar-sep" aria-hidden="true" />
-      {session ? (
-        editing ? (
+      <div class="ws-hide-mobile">
+        <MenuBar locale={locale} infoBase={infoBase} />
+      </div>
+      <div class="ws-topbar-center">
+        {showTagline || !session || !hasFiles ? (
+          <span class="ws-tagline" data-tagline>
+            {w(locale, 'tagline')}
+          </span>
+        ) : editing ? (
           <form
             class="flex items-center gap-1"
             onSubmit={(e) => {
@@ -71,39 +86,48 @@ export default function TopBar({ locale, brandName, logo, onToggleTray }: Props)
           >
             {session.name}
           </button>
-        )
-      ) : (
-        <span class="text-sm" style={{ color: 'var(--muted)' }}>
-          {w(locale, 'newSession')}
-        </span>
-      )}
-      <span class="ml-auto flex items-center gap-1">
-        <TrustBadge locale={locale} />
-        <span class="ws-topbar-sep ws-hide-mobile" aria-hidden="true" />
-        <button type="button" class="btn btn-ghost btn-icon ws-hide-mobile" aria-label={w(locale, 'undo')} title="⌘Z" disabled={!canUndo.value || busy.value} data-top-undo onClick={() => void undo()}>
-          <I.undo />
+        )}
+      </div>
+      <div class="ws-topbar-right">
+        <button type="button" class="ws-icon-btn ws-hide-mobile" aria-label={w(locale, 'undo')} title={`${w(locale, 'undo')} ⌘Z`} disabled={!canUndo.value || busy.value} data-top-undo onClick={() => void undo()}>
+          <I.undo size={15} />
         </button>
-        <button type="button" class="btn btn-ghost btn-icon ws-hide-mobile" aria-label={w(locale, 'redo')} title="⇧⌘Z" disabled={!canRedo.value || busy.value} onClick={() => void redo()}>
-          <I.redo />
+        <button type="button" class="ws-icon-btn ws-hide-mobile" aria-label={w(locale, 'redo')} title={`${w(locale, 'redo')} ⇧⌘Z`} disabled={!canRedo.value || busy.value} onClick={() => void redo()}>
+          <I.redo size={15} />
         </button>
-        <button type="button" class="btn btn-ghost btn-sm ws-hide-mobile" aria-label={w(locale, 'palette')} title="⌘K" onClick={() => setUi({ paletteOpen: true })}>
-          <I.command size={14} /> <kbd>⌘K</kbd>
+        <button type="button" class="ws-icon-btn ws-hide-mobile" aria-label={w(locale, 'commandPalette')} title="⌘K" data-palette-open onClick={() => setUi({ paletteOpen: true })}>
+          <I.command size={15} />
         </button>
-        <button type="button" class="btn btn-primary btn-sm" disabled={!activeFile.value} data-open-export onClick={() => setUi({ exportOpen: true })}>
+        <button type="button" class="ws-primary-btn" disabled={!activeFile.value} data-open-export onClick={() => setUi({ exportOpen: true })}>
           <I.export size={14} /> <span class="ws-hide-mobile">{w(locale, 'export')}</span>
         </button>
         <span class="ws-topbar-sep ws-hide-mobile" aria-hidden="true" />
-        <a href={historyHref} class="btn btn-ghost btn-sm ws-hide-mobile">
-          {w(locale, 'history')}
-        </a>
-        <button type="button" class="btn btn-ghost btn-sm ws-hide-mobile" onClick={() => void newSession()}>
-          <I.plus size={14} /> {w(locale, 'newSession')}
+        <button
+          type="button"
+          class="ws-icon-btn ws-hide-mobile"
+          aria-label={w(locale, 'toggleBin')}
+          aria-pressed={s.binOpen}
+          title={`${w(locale, 'toggleBin')} ⌘B`}
+          data-toggle-bin
+          onClick={() => setLayout({ binOpen: !s.binOpen })}
+        >
+          <I.panelLeft size={15} />
         </button>
-        <a href={`${locale === 'de' ? '/en/app' : '/app'}${location?.search ?? ''}`} hreflang={other} class="btn btn-ghost btn-sm mono uppercase">
-          {other}
+        <button
+          type="button"
+          class="ws-icon-btn ws-hide-mobile"
+          aria-label={w(locale, 'toggleInspector')}
+          aria-pressed={s.inspectorOpen}
+          title={`${w(locale, 'toggleInspector')} ⌘J`}
+          data-toggle-inspector
+          onClick={() => setLayout({ inspectorOpen: !s.inspectorOpen })}
+        >
+          <I.panelRight size={15} />
+        </button>
+        <a href={`${infoBase}/`} class="ws-icon-btn ws-hide-mobile" aria-label={w(locale, 'helpInfo')} title={w(locale, 'helpInfo')} data-help-link>
+          <I.help size={15} />
         </a>
-        <ThemeToggle locale={locale} compact />
-      </span>
+      </div>
     </header>
   );
 }

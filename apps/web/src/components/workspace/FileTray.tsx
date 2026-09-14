@@ -4,6 +4,9 @@ import { fmtBytes, w } from '../../lib/workspace/i18n';
 import {
   activateFile,
   addBrowserFiles,
+  deleteSession,
+  newSession,
+  openSession,
   removeFile,
   reorderFiles,
   toggleSelectFile,
@@ -20,6 +23,7 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const files = session?.files ?? [];
+  const fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' });
 
   const moveTo = (fromId: string, toId: string) => {
     if (fromId === toId) return;
@@ -44,7 +48,7 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
   return (
     <aside class="ws-tray" aria-label={w(locale, 'files')} data-tray>
       <header class="ws-panel-head">
-        <span class="stamp">{w(locale, 'files')}</span>
+        <span class="ws-panel-title">{w(locale, 'files')}</span>
         <span class="mono text-xs" style={{ color: 'var(--faint)' }}>
           {files.length}
         </span>
@@ -180,14 +184,41 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
           {w(locale, 'dropHint')} <u>{w(locale, 'chooseFiles')}</u>
         </span>
       </button>
-      <footer class="ws-tray-foot">
-        <span class="badge-local">
-          <span class="dot" /> {w(locale, 'local')}
-        </span>
-        <span class="tnum text-xs" style={{ color: 'var(--faint)' }}>
-          {fmtBytes(session?.bytes ?? 0)}
-        </span>
-      </footer>
+      <section class="ws-sessions" aria-label={w(locale, 'sessions')} data-sessions>
+        <header class="ws-panel-head">
+          <span class="ws-panel-title">{w(locale, 'sessions')}</span>
+          <span class="mono text-xs" style={{ color: 'var(--faint)' }}>
+            {s.recent.length}
+          </span>
+          <button type="button" class="btn btn-ghost btn-icon ml-auto" aria-label={w(locale, 'newSession')} title={`${w(locale, 'newSession')} ⇧⌘N`} data-new-session onClick={() => void newSession()}>
+            <I.plus size={14} />
+          </button>
+        </header>
+        <ul class="ws-session-list">
+          {s.recent.map((r) => {
+            const current = r.id === session?.id;
+            return (
+              <li key={r.id} class="ws-session-row" data-current={current} data-recent={r.id}>
+                <button type="button" class="ws-session-main" onClick={() => !current && void openSession(r.id)} aria-current={current ? 'true' : undefined}>
+                  <span class="truncate">{r.name}</span>
+                  <span class="tnum text-xs" style={{ color: 'var(--faint)' }}>
+                    {fmt.format(r.updatedAt)}
+                    {r.steps ? ` · ${r.steps}` : ''}
+                  </span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-icon ws-tray-remove" aria-label={`${w(locale, 'remove')}: ${r.name}`} onClick={() => void deleteSession(r.id)}>
+                  <I.trash size={13} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div class="ws-tray-foot">
+          <span class="tnum text-xs" style={{ color: 'var(--faint)' }}>
+            {w(locale, 'storage')}: {fmtBytes(session?.bytes ?? 0)}
+          </span>
+        </div>
+      </section>
     </aside>
   );
 }

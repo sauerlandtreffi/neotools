@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/workspace.css';
+import '../styles/shell.css';
 import Seo from '../components/Seo.astro';
 import UpdateBanner from '../components/UpdateBanner.tsx';
 import DesktopEvents from '../components/DesktopEvents.tsx';
@@ -13,9 +14,13 @@ interface Props {
   title: string;
   description: string;
   path: string;
+  /** App deep-link routes are noindex; `/` itself (shell + explanation) is indexable. */
+  noindex?: boolean;
+  canonical?: string;
+  jsonLd?: unknown[];
 }
 
-const { locale, title, description, path } = Astro.props;
+const { locale, title, description, path, noindex = true, canonical, jsonLd = [] } = Astro.props;
 const fontFaces = brandFontFaces(branding);
 ---
 <!doctype html>
@@ -27,7 +32,8 @@ const fontFaces = brandFontFaces(branding);
     <meta name="theme-color" content={branding.colors.primary} />
     <link rel="icon" href={branding.logo} type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <Seo locale={locale} title={title} description={description} path={path} noindex />
+    <Seo locale={locale} title={title} description={description} path={path} noindex={noindex} canonical={canonical} jsonLd={jsonLd} />
+    <link rel="preload" href="/workspace-tools.json" as="fetch" crossorigin="anonymous" />
     <script is:inline set:html={THEME_INIT_SCRIPT} />
     {fontFaces && <style is:inline set:html={fontFaces} />}
   </head>
@@ -35,5 +41,12 @@ const fontFaces = brandFontFaces(branding);
     <slot />
     <UpdateBanner client:idle locale={locale} />
     <DesktopEvents client:idle />
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
   </body>
 </html>

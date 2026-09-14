@@ -177,4 +177,124 @@ export const I = {
       <path d="M4 7h16M4 12h16M4 17h16" />
     </Svg>
   ),
+  panelLeft: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </Svg>
+  ),
+  panelRight: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M15 4v16" />
+    </Svg>
+  ),
+  sun: (p: P) => (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </Svg>
+  ),
+  moon: (p: P) => (
+    <Svg {...p}>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+    </Svg>
+  ),
+  folder: (p: P) => (
+    <Svg {...p}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    </Svg>
+  ),
+  image: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="m21 16-5-5-9 9" />
+    </Svg>
+  ),
+  music: (p: P) => (
+    <Svg {...p}>
+      <path d="M9 18V6l10-2v12" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="16.5" cy="16" r="2.5" />
+    </Svg>
+  ),
+  video: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="6" width="13" height="12" rx="2" />
+      <path d="m16 10 5-3v10l-5-3" />
+    </Svg>
+  ),
+  archive: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="5" rx="1" />
+      <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
+    </Svg>
+  ),
+  table: (p: P) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18M9 4v16M15 4v16" />
+    </Svg>
+  ),
+  fileText: (p: P) => (
+    <Svg {...p}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" />
+    </Svg>
+  ),
+  help: (p: P) => (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
+    </Svg>
+  ),
+  home: (p: P) => (
+    <Svg {...p}>
+      <path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1Z" />
+    </Svg>
+  ),
+  sliders: (p: P) => (
+    <Svg {...p}>
+      <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="18" cy="18" r="2" />
+    </Svg>
+  ),
+  shield: (p: P) => (
+    <Svg {...p}>
+      <path d="M12 3 4 6v6c0 4.5 3.4 7.9 8 9 4.6-1.1 8-4.5 8-9V6Z" />
+    </Svg>
+  ),
+  wand: (p: P) => (
+    <Svg {...p}>
+      <path d="m4 20 10-10M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1ZM19 12l.7 1.3L21 14l-1.3.7L19 16l-.7-1.3L17 14l1.3-.7Z" />
+    </Svg>
+  ),
+  fingerprint: (p: P) => (
+    <Svg {...p}>
+      <path d="M6 9a6 6 0 0 1 12 0v3M9 9a3 3 0 0 1 6 0v6M12 9v10M4 13a8 8 0 0 0 1 4M20 13a8 8 0 0 1-1 4" />
+    </Svg>
+  ),
+  arrowDown: (p: P) => (
+    <Svg {...p}>
+      <path d="M12 5v14M5 12l7 7 7-7" />
+    </Svg>
+  ),
+  play: (p: P) => (
+    <Svg {...p}>
+      <path d="M7 5v14l11-7Z" />
+    </Svg>
+  ),
+  pause: (p: P) => (
+    <Svg {...p}>
+      <path d="M8 5v14M16 5v14" />
+    </Svg>
+  ),
+  check2: (p: P) => (
+    <Svg {...p}>
+      <path d="m5 12 4 4L19 6" />
+    </Svg>
+  ),
 };

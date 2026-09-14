@@ -11,11 +11,13 @@ interface Props {
   tool?: ToolDefinition;
   jsonLd?: unknown[];
   noindex?: boolean;
+  /** Override the canonical (app deep-links point at their /info page). */
+  canonical?: string;
 }
 
-const { locale, title, description, path, tool, jsonLd = [], noindex = false } = Astro.props;
+const { locale, title, description, path, tool, jsonLd = [], noindex = false, canonical: canonicalOverride } = Astro.props;
 const site = Astro.site ?? new URL('https://neotools.local');
-const canonical = new URL(localePath(locale, path), site).toString();
+const canonical = new URL(canonicalOverride ?? localePath(locale, path), site).toString();
 const pair = hreflangUrls(locale, path);
 const deUrl = new URL(pair.de, site).toString();
 const enUrl = new URL(pair.en, site).toString();

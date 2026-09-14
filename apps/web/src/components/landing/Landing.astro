@@ -1,0 +1,12 @@
+---
+/**
+ * Below-the-fold explanation of `/` (pivot §11.1/5). Filled with live mocks in
+ * block 4; this container is what the status-bar scroll hint targets.
+ */
+import type { Locale } from '../../lib/i18n';
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+---
+<div id="inside" class="landing" data-landing data-locale={locale}>
+  <slot />
+</div>

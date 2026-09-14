@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* Workspace (/app) — layout + components. Tokens live in global.css.   */
+/* Workspace components. Tokens: global.css · shell layout: shell.css.  */
 /* ------------------------------------------------------------------ */
 
 .nt-fade-in {
@@ -132,132 +132,6 @@ kbd {
 .chip:disabled {
   opacity: 0.55;
   cursor: default;
-}
-
-/* ---------- root grid ---------- */
-.ws-root {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  min-height: 100dvh;
-  color: var(--fg);
-  background: var(--bg-app);
-}
-.ws-body {
-  display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 340px;
-  flex: 1;
-  min-height: 0;
-}
-.ws-main {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-}
-.ws-main-empty {
-  flex: 1;
-  border: 0;
-  overflow: auto;
-}
-.ws-doc-row {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  flex: 1;
-  min-height: 0;
-}
-.ws-doc-row > .ws-canvas:only-child {
-  grid-column: 1 / -1;
-}
-.ws-side {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--card);
-}
-.ws-side > * {
-  min-height: 0;
-}
-.ws-side > .ws-options {
-  flex: 1 1 60%;
-}
-.ws-side > .ws-stack {
-  flex: 1 1 40%;
-  border-top: 1px solid var(--line);
-}
-.ws-side > .ws-stack:only-child {
-  flex: 1;
-  border-top: 0;
-}
-
-.ws-panel-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
-  padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-/* ---------- top bar ---------- */
-.ws-topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 52px;
-  padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in oklab, var(--card) 92%, transparent);
-  backdrop-filter: blur(8px);
-  flex-shrink: 0;
-  z-index: var(--z-sticky);
-}
-.ws-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  text-decoration: none;
-  color: inherit;
-}
-.ws-brand-name {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
-}
-.ws-brand-app {
-  color: var(--accent-text);
-  padding-left: var(--space-2);
-  border-left: 1px solid var(--line);
-}
-.ws-topbar-sep {
-  width: 1px;
-  height: 22px;
-  background: var(--line);
-}
-.ws-session-name {
-  background: transparent;
-  border: 1px dashed transparent;
-  border-radius: var(--radius-s);
-  padding: 2px 8px;
-  font: inherit;
-  font-size: 0.875rem;
-  color: var(--fg);
-  max-width: 34ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: text;
-}
-.ws-session-name:hover {
-  border-color: var(--line-strong);
-}
-.ws-session-input {
-  width: 28ch;
-  min-height: 30px;
 }
 
 /* ---------- tray ---------- */
@@ -787,22 +661,6 @@ kbd {
 }
 
 /* ---------- job dock / toasts ---------- */
-.ws-jobdock {
-  position: fixed;
-  left: 50%;
-  bottom: var(--space-4);
-  transform: translateX(-50%);
-  z-index: var(--z-drawer);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: min(520px, calc(100vw - 32px));
-  padding: var(--space-2) var(--space-3);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-2);
-}
 .ws-progress {
   margin-top: 4px;
   height: 4px;
@@ -1068,65 +926,6 @@ label[data-disabled='true'] {
 .ws-shortcuts dd {
   margin: 0;
   color: var(--muted);
-}
-
-/* ---------- empty state ---------- */
-.ws-empty {
-  width: min(720px, 100%);
-  margin: 0 auto;
-  padding: clamp(24px, 6vh, 64px) var(--space-4);
-  display: grid;
-  gap: var(--space-6);
-}
-.ws-empty-drop {
-  padding: clamp(28px, 6vw, 56px);
-  border: 1.5px dashed var(--line-strong);
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  text-align: center;
-  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
-}
-.ws-empty-drop[data-over='true'] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent);
-}
-.ws-empty-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  margin-top: var(--space-2);
-}
-.ws-empty-lead {
-  margin: var(--space-3) auto 0;
-  max-width: 44ch;
-  color: var(--muted);
-}
-.ws-empty-recent {
-  display: grid;
-  gap: var(--space-2);
-}
-.ws-recent-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-m);
-  background: var(--card);
-  padding-right: 4px;
-}
-.ws-recent-main {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-  padding: 8px 12px;
-  text-align: left;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
 }
 
 /* ---------- mobile ---------- */

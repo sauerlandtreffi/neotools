@@ -17,6 +17,8 @@ export interface WorkspaceQuery {
   desktop: boolean;
   /** `?open=1` — PWA file handler / share target parked a file in the handoff slot. */
   handoff: boolean;
+  /** `?panel=history|pipeline|watch` — open a program panel (old routes redirect here). */
+  panel?: 'history' | 'pipeline' | 'watch';
 }
 
 const MODES: WorkspaceMode[] = ['edit', 'pipeline', 'read', 'batch'];
@@ -55,6 +57,7 @@ export function parseWorkspaceQuery(search = '', hash = ''): WorkspaceQuery {
     pipeline,
     desktop: params.get('desktop') === '1',
     handoff: params.get('open') === '1',
+    panel: (['history', 'pipeline', 'watch'] as const).find((p) => p === params.get('panel')),
   };
 }
 
@@ -70,9 +73,9 @@ export function buildWorkspaceQuery(q: Partial<WorkspaceQuery> & { pages?: numbe
   return s ? `?${s}` : '';
 }
 
-/** Workspace path for a locale (`/app` or `/en/app`). */
+/** Workspace path for a locale — the app lives on `/` (pivot §11); `/app` redirects there. */
 export function workspacePath(locale: 'de' | 'en'): string {
-  return locale === 'en' ? '/en/app' : '/app';
+  return locale === 'en' ? '/en' : '/';
 }
 
 /** Replace the URL without navigation so reload/bookmark keep session + tool. */

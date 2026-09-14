@@ -38,42 +38,44 @@
 }
 
 @theme {
-  --font-sans: 'Iowan Old Style', Palatino, 'Palatino Linotype', 'Book Antiqua', ui-serif, serif;
-  --font-ui: var(--font-ui-brand, 'Source Sans 3'), 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display-brand, 'Iowan Old Style'), Palatino, 'Palatino Linotype', ui-serif, serif;
-  --font-mono: 'Source Code Pro', 'IBM Plex Mono', 'Cascadia Mono', ui-monospace, monospace;
-  --color-ink: #10221c;
-  --color-paper: #f3efe4;
+  /* App aesthetic (pivot §11.1/8): system UI stack everywhere, no serif display face. */
+  --font-sans: var(--font-ui-brand, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Inter, Roboto, 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui: var(--font-ui-brand, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Inter, Roboto, 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-display-brand, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Inter, Roboto, 'Source Sans 3', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', 'Source Code Pro', Consolas, monospace;
+  --color-ink: #111315;
+  --color-paper: #f6f7f8;
   --color-mint: #3ee0b4;
   --color-mint-dim: #1f8f74;
   --color-rust: #c45c26;
-  --color-fog: #d7d2c4;
+  --color-fog: #d9dce1;
 }
 
 /* ------------------------------------------------------------------ */
-/* Design tokens (FRONTEND-REDESIGN §4.2). Semantic first, brand second. */
+/* Design tokens (FRONTEND-REDESIGN §4.2 + §11.1/8). Neutral greys, one   */
+/* accent (mint, reduced), 4 px grid, 1 px separators instead of shadows. */
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
 
   /* surfaces */
-  --bg: #f3efe4;
-  --bg-app: #ebe6d8;
-  --card: #fffdf6;
-  --card-2: #f7f3e8;
-  --line: #cfc8b6;
-  --line-strong: #a9a08a;
+  --bg: #f6f7f8;
+  --bg-app: #eef0f2;
+  --card: #ffffff;
+  --card-2: #f3f4f6;
+  --line: #e1e4e8;
+  --line-strong: #c3c8cf;
 
   /* text */
-  --fg: #10221c;
-  --muted: #4a5a54;
-  --faint: #7a867f;
+  --fg: #16181b;
+  --muted: #5b6270;
+  --faint: #8a919c;
 
   /* brand + semantic */
   --accent: var(--brand-accent-light, #1f8f74);
-  --accent-fg: #06281f;
-  /* accent as *text* on paper needs ≥4.5:1 — darker than the fill colour */
-  --accent-text: #17705b;
+  --accent-fg: #ffffff;
+  /* accent as *text* needs ≥4.5:1 on white — darker than the fill */
+  --accent-text: #177a63;
   --ok: #1b7f4e;
   --ok-fg: #ffffff;
   --warn: #c45c26;
@@ -81,12 +83,12 @@
   --warn-fg: #ffffff;
   --info: #2f6fed;
   --info-text: #2455b8;
-  --lock: #6b5c3e;
+  --lock: #6b6250;
   --net-zero: #1b7f4e;
   --net-foreign: #c45c26;
   --selection: color-mix(in oklab, var(--info) 22%, transparent);
 
-  /* spacing / radius */
+  /* spacing (4 px grid) / radius */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -95,8 +97,8 @@
   --space-6: 32px;
   --space-7: 48px;
   --radius-s: 4px;
-  --radius-m: 8px;
-  --radius-l: 16px;
+  --radius-m: 6px;
+  --radius-l: 8px;
 
   /* motion */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -104,10 +106,10 @@
   --dur-2: 200ms;
   --dur-3: 360ms;
 
-  /* elevation */
-  --shadow-1: 0 1px 2px rgb(16 34 28 / 0.08), 0 1px 1px rgb(16 34 28 / 0.04);
-  --shadow-2: 0 6px 24px rgb(16 34 28 / 0.12), 0 2px 6px rgb(16 34 28 / 0.06);
-  --shadow-3: 0 16px 48px rgb(16 34 28 / 0.18);
+  /* elevation — menus/dialogs only, never cards */
+  --shadow-1: 0 1px 2px rgb(17 19 21 / 0.06);
+  --shadow-2: 0 8px 24px rgb(17 19 21 / 0.12), 0 1px 2px rgb(17 19 21 / 0.06);
+  --shadow-3: 0 16px 48px rgb(17 19 21 / 0.18);
 
   /* layers */
   --z-sticky: 20;
@@ -117,19 +119,24 @@
 
   --focus: 2px solid var(--accent-text);
   --touch: 44px;
+
+  /* app type scale (12–14 px UI) */
+  --fs-ui: 13px;
+  --fs-ui-sm: 12px;
+  --fs-ui-lg: 14px;
 }
 
 :root.dark {
   color-scheme: dark;
-  --bg: #0c1210;
-  --bg-app: #0a0f0d;
-  --card: #141a18;
-  --card-2: #1a2320;
-  --line: #2a3531;
-  --line-strong: #3f4d47;
-  --fg: #e8efe9;
-  --muted: #9aaea6;
-  --faint: #6f817a;
+  --bg: #0f1113;
+  --bg-app: #0b0d0f;
+  --card: #15181b;
+  --card-2: #1b1f23;
+  --line: #262b31;
+  --line-strong: #3a414a;
+  --fg: #e7e9ec;
+  --muted: #9aa3ad;
+  --faint: #6b747f;
   --accent: var(--brand-accent-dark, #3ee0b4);
   --accent-fg: #06281f;
   --accent-text: #5ee8c2;
@@ -144,7 +151,7 @@
   --net-zero: #3fbf7f;
   --net-foreign: #e0764a;
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
-  --shadow-2: 0 6px 24px rgb(0 0 0 / 0.55);
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.55), 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-3: 0 16px 48px rgb(0 0 0 / 0.7);
   --focus: 2px solid var(--accent-text);
 }
@@ -174,9 +181,6 @@ body {
 
 body {
   font-family: var(--font-sans);
-  background-image:
-    radial-gradient(1200px 500px at 10% -10%, color-mix(in oklab, var(--accent) 16%, transparent), transparent),
-    linear-gradient(180deg, transparent 0, transparent 40%, color-mix(in oklab, var(--fg) 4%, transparent));
 }
 
 /* Workspace / app chrome: UI sans, denser, no marketing gradient. */
@@ -387,7 +391,6 @@ summary:focus-visible,
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
-  box-shadow: var(--shadow-1);
 }
 
 .label {

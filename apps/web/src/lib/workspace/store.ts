@@ -14,6 +14,7 @@ import type { Locale } from '../i18n';
 import type { WorkerFileRef } from '../../worker/tool-worker';
 import { analyzeJob, runPipelineJob, runToolJob, subscribeJobs, warmFamily } from './pool';
 import { syncWorkspaceUrl } from './router';
+import { sniffMime, workspaceKind, type WorkspaceKind } from './sniff';
 import { getSessionStore, opfsPathOf, type SessionStore } from './session-store';
 import {
   canRedo as stackCanRedo,
@@ -86,7 +87,16 @@ export interface WorkspaceState {
   policyLabel: string | null;
   error: string | null;
   recent: Array<{ id: string; name: string; updatedAt: number; steps: number }>;
+  /** Program-like shell (pivot §11): panels + fullscreen/overview + embedded panels. */
+  binOpen: boolean;
+  inspectorOpen: boolean;
+  /** true ⇒ the user asked for the overview page while a session has files (shell not expanded). */
+  overview: boolean;
+  panel: Panel;
+  menu: string | null;
 }
+
+export type Panel = 'history' | 'pipeline' | 'watch' | null;
 
 export function emptyWorkspace(locale: Locale = 'de'): WorkspaceState {
   return {
@@ -113,7 +123,38 @@ export function emptyWorkspace(locale: Locale = 'de'): WorkspaceState {
     policyLabel: null,
     error: null,
     recent: [],
+    binOpen: true,
+    inspectorOpen: true,
+    overview: false,
+    panel: null,
+    menu: null,
   };
+}
+
+const LAYOUT_KEY = 'nt.ws.layout';
+function readLayout(): Partial<Pick<WorkspaceState, 'binOpen' | 'inspectorOpen'>> {
+  try {
+    const raw = localStorage.getItem(LAYOUT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Partial<Pick<WorkspaceState, 'binOpen' | 'inspectorOpen'>> = {};
+    if (typeof parsed.binOpen === 'boolean') out.binOpen = parsed.binOpen;
+    if (typeof parsed.inspectorOpen === 'boolean') out.inspectorOpen = parsed.inspectorOpen;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Toggle/set the side panels; persisted so the program remembers its layout. */
+export function setLayout(p: Partial<Pick<WorkspaceState, 'binOpen' | 'inspectorOpen'>>): void {
+  patch(p);
+  try {
+    const { binOpen, inspectorOpen } = workspace.value;
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify({ binOpen, inspectorOpen }));
+  } catch {
+    // private mode
+  }
 }
 
 export const workspace = signal<WorkspaceState>(emptyWorkspace());
@@ -237,12 +278,18 @@ export async function initWorkspace(opts: {
       selectedFileIds: [],
       selection: {},
       page: 1,
+      ...readLayout(),
     });
   });
   if (session) {
     warmFamily(session.files[0]?.family ?? null);
     syncWorkspaceUrl({ session: session.id, tool: workspace.value.pendingToolId, file: session.activeFileId });
   }
+}
+
+/** Tool metadata arrives separately (fetched JSON) so the shell HTML stays small. */
+export function setTools(list: WorkspaceToolMeta[]): void {
+  tools.value = list;
 }
 
 export async function ensureSession(): Promise<SessionMeta> {
@@ -310,8 +357,15 @@ export async function addIncoming(files: IncomingFile[], opts: { activate?: bool
   let session = await ensureSession();
   const added: SessionFileMeta[] = [];
   for (const f of files) {
-    const mime = f.mime || guessMime(f.name);
+    const claimed = f.mime || guessMime(f.name);
+    const sniffed = await sniffMime(f.bytes, f.name, claimed);
+    const mime = sniffed.mime || claimed || 'application/octet-stream';
     const res = await db().addFile(session, { name: f.name, mime, bytes: f.bytes });
+    if (sniffed.mismatch && sniffed.detected) {
+      toast('warn', workspace.value.locale === 'de'
+        ? `${f.name}: Inhalt ist ${sniffed.detected}, nicht ${claimed || 'unbekannt'} – Workspace folgt dem Inhalt.`
+        : `${f.name}: content is ${sniffed.detected}, not ${claimed || 'unknown'} – workspace follows the content.`);
+    }
     session = res.meta;
     cachePut(res.file.srcRef, f.bytes);
     added.push(res.file);
@@ -485,12 +539,19 @@ export function setMarks(marks: RedactMark[] | ((prev: RedactMark[]) => RedactMa
   patch({ marks: typeof marks === 'function' ? marks(workspace.value.marks) : marks });
 }
 
-export function setUi(p: Partial<Pick<WorkspaceState, 'exportOpen' | 'mergeOpen' | 'batchOpen' | 'paletteOpen' | 'shortcutsOpen' | 'diffStepId' | 'sheet' | 'error'>>): void {
+export function setUi(
+  p: Partial<Pick<WorkspaceState, 'exportOpen' | 'mergeOpen' | 'batchOpen' | 'paletteOpen' | 'shortcutsOpen' | 'diffStepId' | 'sheet' | 'error' | 'overview' | 'panel' | 'menu'>>,
+): void {
   patch(p);
 }
 
 export function closeOverlays(): void {
-  patch({ exportOpen: false, mergeOpen: false, batchOpen: false, paletteOpen: false, shortcutsOpen: false, sheet: null, diffStepId: null });
+  patch({ exportOpen: false, mergeOpen: false, batchOpen: false, paletteOpen: false, shortcutsOpen: false, sheet: null, diffStepId: null, panel: null, menu: null });
+}
+
+/** Anything modal/transient open? (Esc closes these first.) */
+export function hasOverlay(s: WorkspaceState = workspace.value): boolean {
+  return Boolean(s.paletteOpen || s.exportOpen || s.mergeOpen || s.batchOpen || s.shortcutsOpen || s.diffStepId || s.sheet || s.panel || s.menu);
 }
 
 /* ------------------------------------------------------------------ */
@@ -948,4 +1009,9 @@ export function guessMime(name: string): string {
 
 export function familyOf(file: SessionFileMeta | null): ReturnType<typeof familyForMime> {
   return file ? file.family ?? familyForMime(file.mime) : null;
+}
+
+/** Workspace kind shown in the shell (splits media into audio/video, null → 'unknown'). */
+export function kindOf(file: SessionFileMeta | null): WorkspaceKind {
+  return file ? workspaceKind(file.mime, familyOf(file)) : 'unknown';
 }
