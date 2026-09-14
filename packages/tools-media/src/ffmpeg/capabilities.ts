@@ -24,9 +24,10 @@ export async function hasNativeFfmpeg(): Promise<boolean> {
 }
 
 export function canUseMultiThreadCore(): boolean {
-  const isolated = typeof globalThis.crossOriginIsolated === 'boolean' && globalThis.crossOriginIsolated;
-  const sab = typeof SharedArrayBuffer !== 'undefined';
-  return isolated && sab;
+  // COEP is credentialless in Web/nginx; Chrome may still report
+  // crossOriginIsolated, but the MT pthread worker then fails to fetch.
+  // Single-thread core is the supported browser path.
+  return false;
 }
 
 export function webcodecsH264Supported(): boolean {

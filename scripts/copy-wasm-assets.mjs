@@ -93,7 +93,6 @@ try {
   console.warn(`skip onnx assets: ${err instanceof Error ? err.message : err}`);
 }
 
-
 try {
   const { readFile, writeFile, mkdir } = await import('node:fs/promises');
   const dest = join(root, 'apps/web/public/assets/models');
@@ -131,4 +130,53 @@ try {
   await copy(fontSrc, join(root, 'apps/web/public/assets/fonts/SourceSans3-Regular.otf'));
 } catch {
   console.warn('skip font: packages/tools-image/assets/fonts/SourceSans3-Regular.otf missing');
+}
+
+try {
+  await import(new URL('../packages/tools-office/scripts/copy-fonts.mjs', import.meta.url).href);
+} catch (err) {
+  console.warn(`skip office fonts: ${err instanceof Error ? err.message : err}`);
+}
+
+// --- tools-media: self-hosted ffmpeg.wasm (no CDN). Prefer LGPL vendor if present. ---
+try {
+  const requireMedia = createRequire(join(root, 'packages/tools-media/package.json'));
+  const destFfmpeg = join(root, 'apps/web/public/assets/ffmpeg');
+  await mkdir(destFfmpeg, { recursive: true });
+  const lgplJs = join(root, 'packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js');
+  const lgplWasm = join(root, 'packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm');
+  const { access } = await import('node:fs/promises');
+  let usedLgpl = false;
+  try {
+    await access(lgplJs);
+    await access(lgplWasm);
+    await copy(lgplJs, join(destFfmpeg, 'ffmpeg-core.js'));
+    await copy(lgplWasm, join(destFfmpeg, 'ffmpeg-core.wasm'));
+    usedLgpl = true;
+    console.log('ffmpeg assets: LGPL vendor core');
+  } catch {
+    const stEsm = join(dirname(requireMedia.resolve('@ffmpeg/core')), '..', 'esm');
+    await copy(join(stEsm, 'ffmpeg-core.js'), join(destFfmpeg, 'ffmpeg-core.js'));
+    await copy(join(stEsm, 'ffmpeg-core.wasm'), join(destFfmpeg, 'ffmpeg-core.wasm'));
+    console.log('ffmpeg assets: official @ffmpeg/core ESM (GPL temporary)');
+  }
+  try {
+    const ffmpegEsm = dirname(requireMedia.resolve('@ffmpeg/ffmpeg'));
+    const wrap = join(destFfmpeg, 'wrapper');
+    await copy(join(ffmpegEsm, 'worker.js'), join(wrap, 'worker.js'));
+    await copy(join(ffmpegEsm, 'const.js'), join(wrap, 'const.js'));
+    await copy(join(ffmpegEsm, 'errors.js'), join(wrap, 'errors.js'));
+  } catch (err) {
+    console.warn(`skip ffmpeg wrapper worker: ${err instanceof Error ? err.message : err}`);
+  }
+  try {
+    const mtEsm = join(dirname(requireMedia.resolve('@ffmpeg/core-mt')), '..', 'esm');
+    await copy(join(mtEsm, 'ffmpeg-core.js'), join(destFfmpeg, 'ffmpeg-core-mt.js'));
+    await copy(join(mtEsm, 'ffmpeg-core.wasm'), join(destFfmpeg, 'ffmpeg-core-mt.wasm'));
+    await copy(join(mtEsm, 'ffmpeg-core.worker.js'), join(destFfmpeg, 'ffmpeg-core.worker.js'));
+  } catch (err) {
+    if (!usedLgpl) console.warn(`skip ffmpeg-mt: ${err instanceof Error ? err.message : err}`);
+  }
+} catch (err) {
+  console.warn(`skip ffmpeg assets: ${err instanceof Error ? err.message : err}`);
 }

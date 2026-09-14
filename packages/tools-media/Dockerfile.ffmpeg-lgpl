@@ -1,9 +1,110 @@
-# LGPL FFmpeg WASM core. No --enable-gpl, no x264/x265.
-# docker build -f Dockerfile.ffmpeg-lgpl -t neotools-ffmpeg-lgpl .
-# docker run --rm -v "$PWD/dist-ffmpeg-lgpl:/out" neotools-ffmpeg-lgpl
-FROM emscripten/emsdk:3.1.61
+# LGPL FFmpeg WASM core for @ffmpeg/ffmpeg 0.12 (createFFmpegCore).
+# No --enable-gpl, no x264/x265. ST core only.
+# docker build -f packages/tools-media/Dockerfile.ffmpeg-lgpl -t neotools-ffmpeg-lgpl packages/tools-media
+# docker run --rm -v "$PWD/packages/tools-media/vendor/ffmpeg-lgpl:/out" neotools-ffmpeg-lgpl
+FROM emscripten/emsdk:3.1.40 AS emsdk-base
+ARG EXTRA_CFLAGS
+ARG EXTRA_LDFLAGS
+ENV INSTALL_DIR=/opt
+ENV FFMPEG_VERSION=n5.1.4
+ENV FFMPEG_ST=1
+ENV EM_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+ENV CFLAGS="-I$INSTALL_DIR/include $CFLAGS $EXTRA_CFLAGS"
+ENV CXXFLAGS="$CFLAGS"
+ENV LDFLAGS="-L$INSTALL_DIR/lib $LDFLAGS $CFLAGS $EXTRA_LDFLAGS"
+ENV EM_PKG_CONFIG_PATH=$INSTALL_DIR/lib/pkgconfig
+ENV PKG_CONFIG_PATH=$EM_PKG_CONFIG_PATH
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 https://github.com/ffmpegwasm/ffmpeg.wasm.git /opt/ffmpeg.wasm
+RUN embuilder build sdl2
+
+FROM emsdk-base AS libvpx-builder
 WORKDIR /src
-COPY scripts/build-ffmpeg-lgpl.sh /src/build-ffmpeg-lgpl.sh
-RUN chmod +x /src/build-ffmpeg-lgpl.sh
-ENV FFMPEG_LGPL_OUT=/out
-CMD ["/src/build-ffmpeg-lgpl.sh"]
+RUN git clone --depth 1 -b v1.13.1 https://github.com/ffmpegwasm/libvpx.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/libvpx.sh
+
+FROM emsdk-base AS lame-builder
+WORKDIR /src
+RUN git clone --depth 1 https://github.com/ffmpegwasm/lame.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/lame.sh
+
+FROM emsdk-base AS ogg-builder
+WORKDIR /src
+RUN git clone --depth 1 -b v1.3.4 https://github.com/ffmpegwasm/Ogg.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/ogg.sh
+
+FROM emsdk-base AS opus-builder
+WORKDIR /src
+RUN git clone --depth 1 -b v1.3.1 https://github.com/ffmpegwasm/opus.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/opus.sh
+
+FROM emsdk-base AS vorbis-builder
+COPY --from=ogg-builder $INSTALL_DIR $INSTALL_DIR
+WORKDIR /src
+RUN git clone --depth 1 -b v1.3.3 https://github.com/ffmpegwasm/vorbis.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/vorbis.sh
+
+FROM emsdk-base AS zlib-builder
+WORKDIR /src
+RUN git clone --depth 1 -b v1.2.11 https://github.com/ffmpegwasm/zlib.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/zlib.sh
+
+FROM emsdk-base AS freetype2-builder
+WORKDIR /src
+RUN git clone --depth 1 -b VER-2-10-4 https://github.com/ffmpegwasm/freetype2.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/freetype2.sh
+
+FROM emsdk-base AS fribidi-builder
+WORKDIR /src
+RUN git clone --depth 1 -b v1.0.9 https://github.com/fribidi/fribidi.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/fribidi.sh
+
+FROM emsdk-base AS harfbuzz-builder
+WORKDIR /src
+RUN git clone --depth 1 -b 5.2.0 https://github.com/harfbuzz/harfbuzz.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/harfbuzz.sh
+
+FROM emsdk-base AS libass-builder
+COPY --from=freetype2-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=fribidi-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=harfbuzz-builder $INSTALL_DIR $INSTALL_DIR
+WORKDIR /src
+RUN git clone --depth 1 -b 0.15.0 https://github.com/libass/libass.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/libass.sh
+
+FROM emsdk-base AS ffmpeg-builder
+COPY --from=libvpx-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=lame-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=opus-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=vorbis-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=zlib-builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=libass-builder $INSTALL_DIR $INSTALL_DIR
+WORKDIR /src
+RUN git clone --depth 1 -b n5.1.4 https://github.com/FFmpeg/FFmpeg.git /src && \
+    bash -x /opt/ffmpeg.wasm/build/ffmpeg.sh \
+      --disable-gpl \
+      --disable-nonfree \
+      --disable-postproc \
+      --enable-libvpx \
+      --enable-libmp3lame \
+      --enable-libvorbis \
+      --enable-libopus \
+      --enable-zlib \
+      --enable-libfreetype \
+      --enable-libfribidi \
+      --enable-libass
+
+FROM ffmpeg-builder AS ffmpeg-wasm-builder
+RUN mkdir -p /src/src && \
+    cp -a /opt/ffmpeg.wasm/src/bind /src/src/bind && \
+    cp -a /opt/ffmpeg.wasm/src/fftools /src/src/fftools
+WORKDIR /src
+ENV FFMPEG_LIBS="-lvpx -lmp3lame -logg -lvorbis -lvorbisenc -lvorbisfile -lopus -lz -lfreetype -lfribidi -lharfbuzz -lass"
+RUN mkdir -p /src/dist/umd && \
+    bash -x /opt/ffmpeg.wasm/build/ffmpeg-wasm.sh $FFMPEG_LIBS -o dist/umd/ffmpeg-core.js
+
+FROM debian:bookworm-slim
+COPY --from=ffmpeg-wasm-builder /src/dist/umd /core
+CMD ["sh", "-c", "mkdir -p /out && cp /core/ffmpeg-core.js /core/ffmpeg-core.wasm /out/ && ls -l /out"]

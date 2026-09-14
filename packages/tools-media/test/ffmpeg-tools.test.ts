@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { runTool } from '@neotools/engine';
+import { neoFileFromBytes, runTool } from '@neotools/engine';
 import { createMediaRegistry, extractAudio, lavfiAudio, lavfiVideo, probe } from '../src/index.js';
+import { parseBleepSpans } from '../src/audio/tools.js';
+import { parseKeepJson } from '../src/video/cutlist.js';
 import { mediaCtx, skipIfNoFfmpeg } from './helpers.js';
 
 describe('ffmpeg integration', () => {
@@ -68,5 +70,33 @@ describe('ffmpeg integration', () => {
     const speech = await extractAudio(clip, { sampleRate: 16000, mono: true, format: 'wav' }, ctx);
     expect(speech.mime).toBe('audio/wav');
     expect(speech.size).toBeGreaterThan(1000);
+
+    const cutJson = neoFileFromBytes(
+      'keep.json',
+      new TextEncoder().encode(JSON.stringify({ keep: [[0, 0.55], [1.15, 1.85]] })),
+      'application/json',
+    );
+    const cut = await runTool(registry.require('video-cutlist'), ctx, [clip, cutJson], { copy: false });
+    const cutProbe = await probe(cut.outputs[0]!, ctx);
+    expect(cutProbe.duration).toBeGreaterThan(0.7);
+    expect(cutProbe.duration).toBeLessThan(1.8);
+
+    const bleepJson = neoFileFromBytes(
+      'hits.json',
+      new TextEncoder().encode(JSON.stringify({ hits: [{ start: 0.2, end: 0.55, word: 'x' }] })),
+      'application/json',
+    );
+    const bleeped = await runTool(registry.require('audio-bleep'), ctx, [wav, bleepJson], {});
+    expect((await bleeped.outputs[0]!.bytes()).byteLength).toBeGreaterThan(1000);
   }, 180000);
+
+  it('parses transcript-edits keep and bleep-list hits without ffmpeg', () => {
+    expect(parseKeepJson(JSON.stringify({ keep: [[0, 1], [2, 3]] }))).toEqual([
+      [0, 1],
+      [2, 3],
+    ]);
+    expect(parseBleepSpans(JSON.stringify({ hits: [{ start: 1.2, end: 1.4, word: 'x' }] }), 'x-bleep.json')).toEqual([
+      { start: 1.2, end: 1.4 },
+    ]);
+  });
 });

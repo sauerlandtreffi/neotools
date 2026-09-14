@@ -6,7 +6,7 @@ import type { FfmpegRunRequest, FfmpegRunResult } from './types.js';
 
 type FfmpegInstance = {
   loaded: boolean;
-  load: (opts: { coreURL: string; wasmURL: string; workerURL?: string }) => Promise<void>;
+  load: (opts: { coreURL: string; wasmURL: string; workerURL?: string; classWorkerURL?: string }) => Promise<void>;
   writeFile: (name: string, data: Uint8Array) => Promise<void>;
   readFile: (name: string) => Promise<Uint8Array | string>;
   exec: (args: string[]) => Promise<number>;
@@ -14,9 +14,37 @@ type FfmpegInstance = {
   on: (ev: 'log' | 'progress', fn: (data: { message?: string; progress?: number; time?: number }) => void) => void;
 };
 
+type FfmpegCore = {
+  FS: {
+    writeFile: (name: string, data: Uint8Array) => void;
+    readFile: (name: string, opts?: { encoding?: string }) => Uint8Array | string;
+  };
+  exec: (...args: string[]) => void;
+  ret: number;
+  reset: () => void;
+  setLogger: (fn: (data: { message?: string }) => void) => void;
+  setProgress: (fn: (data: { progress?: number; time?: number }) => void) => void;
+  setTimeout: (ms: number) => void;
+};
+
+type CreateFfmpegCore = (opts: {
+  wasmBinary?: ArrayBuffer | Uint8Array;
+  mainScriptUrlOrBlob?: string;
+  locateFile?: (path: string, prefix: string) => string;
+}) => Promise<FfmpegCore>;
+
 const CACHE = 'neotools-ffmpeg-v1';
 let instance: FfmpegInstance | null = null;
 let loading: Promise<FfmpegInstance> | null = null;
+let coreBlobUrl: string | null = null;
+
+function isNodeRuntime(): boolean {
+  return (
+    typeof process !== 'undefined' &&
+    Boolean(process.versions?.node) &&
+    typeof (globalThis as { WorkerGlobalScope?: unknown }).WorkerGlobalScope === 'undefined'
+  );
+}
 
 function ffmpegBase(platform?: Platform): string {
   const raw = platform?.assets?.ffmpegBase ?? '/assets/ffmpeg';
@@ -24,7 +52,10 @@ function ffmpegBase(platform?: Platform): string {
 }
 
 async function fetchWithProgress(url: string, ctx?: ToolContext, label = 'FFmpeg-Core'): Promise<Uint8Array> {
-  if (typeof caches !== 'undefined') {
+  // Skip Cache API for FFmpeg cores: cloning a 30 MB body under memory pressure
+  // surfaces as TypeError: Failed to fetch in dedicated workers.
+  const useCache = typeof caches !== 'undefined' && !url.includes('/ffmpeg');
+  if (useCache) {
     try {
       const cache = await caches.open(CACHE);
       const hit = await cache.match(url);
@@ -36,7 +67,7 @@ async function fetchWithProgress(url: string, ctx?: ToolContext, label = 'FFmpeg
       // fall through
     }
   }
-  if (typeof process !== 'undefined' && process.versions?.node && url.startsWith('file:')) {
+  if (isNodeRuntime() && url.startsWith('file:')) {
     const { readFile } = await import('node:fs/promises');
     const { fileURLToPath } = await import('node:url');
     return new Uint8Array(await readFile(fileURLToPath(url)));
@@ -70,18 +101,27 @@ async function download(url: string, ctx?: ToolContext, label = 'FFmpeg-Core'): 
   return out;
 }
 
-async function toBlobUrl(bytes: Uint8Array, mime: string): Promise<string> {
-  if (typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
-    return URL.createObjectURL(new Blob([bytes.slice().buffer], { type: mime }));
+async function resolveLgplVendor(): Promise<{ coreURL: string; wasmURL: string } | null> {
+  if (!isNodeRuntime()) return null;
+  try {
+    const { access } = await import('node:fs/promises');
+    const { fileURLToPath, pathToFileURL } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const here = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+    const js = join(here, 'vendor/ffmpeg-lgpl/ffmpeg-core.js');
+    const wasm = join(here, 'vendor/ffmpeg-lgpl/ffmpeg-core.wasm');
+    await access(js);
+    await access(wasm);
+    return { coreURL: pathToFileURL(js).href, wasmURL: pathToFileURL(wasm).href };
+  } catch {
+    return null;
   }
-  const { toBlobURL } = await import('@ffmpeg/util');
-  const b64 = Buffer.from(bytes).toString('base64');
-  const dataUrl = `data:${mime};base64,${b64}`;
-  return toBlobURL(dataUrl, mime);
 }
 
 async function resolveNodeCore(mt: boolean): Promise<{ coreURL: string; wasmURL: string; workerURL?: string } | null> {
-  if (typeof process === 'undefined' || !process.versions?.node) return null;
+  if (!isNodeRuntime()) return null;
+  const lgpl = await resolveLgplVendor();
+  if (lgpl) return lgpl;
   try {
     const { createRequire } = await import('node:module');
     const { pathToFileURL } = await import('node:url');
@@ -102,32 +142,87 @@ async function resolveNodeCore(mt: boolean): Promise<{ coreURL: string; wasmURL:
   }
 }
 
+function wrapInProcessCore(core: FfmpegCore): FfmpegInstance {
+  const logCbs: Array<(data: { message?: string; progress?: number; time?: number }) => void> = [];
+  const progCbs: Array<(data: { message?: string; progress?: number; time?: number }) => void> = [];
+  core.setLogger((data) => {
+    for (const fn of logCbs) fn(data);
+  });
+  core.setProgress((data) => {
+    for (const fn of progCbs) fn(data);
+  });
+  return {
+    loaded: true,
+    load: async () => undefined,
+    writeFile: async (name, data) => {
+      core.FS.writeFile(name, data);
+    },
+    readFile: async (name) => core.FS.readFile(name),
+    exec: async (args) => {
+      core.setTimeout(-1);
+      core.exec(...args);
+      const code = core.ret;
+      core.reset();
+      return code;
+    },
+    terminate: () => {
+      if (coreBlobUrl) {
+        URL.revokeObjectURL(coreBlobUrl);
+        coreBlobUrl = null;
+      }
+    },
+    on: (ev, fn) => {
+      if (ev === 'log') logCbs.push(fn);
+      else progCbs.push(fn);
+    },
+  };
+}
+
+async function loadBrowserCore(ctx?: ToolContext, platform?: Platform): Promise<FfmpegInstance> {
+  const origin = typeof location !== 'undefined' ? location.origin : '';
+  const base = ffmpegBase(platform);
+  const coreAbs = `${origin}${base}/ffmpeg-core.js`;
+  const wasmAbs = `${origin}${base}/ffmpeg-core.wasm`;
+  ctx?.progress(0.04, 'FFmpeg-Core laden');
+  const [jsBytes, wasmBytes] = await Promise.all([
+    fetchWithProgress(coreAbs, ctx, 'ffmpeg-core.js'),
+    fetchWithProgress(wasmAbs, ctx, 'ffmpeg-core.wasm'),
+  ]);
+  const jsCopy = Uint8Array.from(jsBytes);
+  const wasmCopy = Uint8Array.from(wasmBytes);
+  const blob = new Blob([jsCopy], { type: 'text/javascript' });
+  const blobUrl = URL.createObjectURL(blob);
+  coreBlobUrl = blobUrl;
+  const spec = `${blobUrl}#${btoa(JSON.stringify({ wasmURL: wasmAbs, workerURL: '' }))}`;
+  const imported = (await import(/* @vite-ignore */ blobUrl)) as { default: CreateFfmpegCore };
+  const create = imported.default;
+  if (typeof create !== 'function') {
+    throw new Error('ffmpeg-core.js: default export fehlt (ESM-Core erwartet).');
+  }
+  const wasmBinary = wasmCopy.buffer.slice(wasmCopy.byteOffset, wasmCopy.byteOffset + wasmCopy.byteLength);
+  const core = await create({
+    wasmBinary,
+    mainScriptUrlOrBlob: spec,
+    locateFile: (path) => (path.endsWith('.wasm') ? wasmAbs : `${origin}${base}/${path}`),
+  });
+  return wrapInProcessCore(core);
+}
+
 export async function loadWasmFfmpeg(ctx?: ToolContext, platform?: Platform): Promise<FfmpegInstance> {
   if (instance?.loaded) return instance;
   if (loading) return loading;
   loading = (async () => {
+    if (!isNodeRuntime()) {
+      const ffmpeg = await loadBrowserCore(ctx, platform);
+      instance = ffmpeg;
+      return ffmpeg;
+    }
     const { FFmpeg } = await import('@ffmpeg/ffmpeg');
     const ffmpeg = new FFmpeg() as unknown as FfmpegInstance;
     const mt = canUseMultiThreadCore();
-    const base = ffmpegBase(platform);
-    let urls = await resolveNodeCore(mt);
+    const urls = await resolveNodeCore(mt);
     if (!urls) {
-      const coreName = mt ? 'ffmpeg-core-mt.js' : 'ffmpeg-core.js';
-      const wasmName = mt ? 'ffmpeg-core-mt.wasm' : 'ffmpeg-core.wasm';
-      const coreBytes = await fetchWithProgress(`${base}/${coreName}`, ctx, 'ffmpeg-core.js');
-      const wasmBytes = await fetchWithProgress(`${base}/${wasmName}`, ctx, 'ffmpeg-core.wasm');
-      urls = {
-        coreURL: await toBlobUrl(coreBytes, 'text/javascript'),
-        wasmURL: await toBlobUrl(wasmBytes, 'application/wasm'),
-      };
-      if (mt) {
-        try {
-          const workerBytes = await fetchWithProgress(`${base}/ffmpeg-core.worker.js`, ctx, 'ffmpeg-core.worker.js');
-          urls.workerURL = await toBlobUrl(workerBytes, 'text/javascript');
-        } catch {
-          // ST fallback already chosen if worker missing
-        }
-      }
+      throw new Error('Kein FFmpeg-WASM-Core (Node): @ffmpeg/core oder vendor/ffmpeg-lgpl.');
     }
     await ffmpeg.load(urls);
     instance = ffmpeg;

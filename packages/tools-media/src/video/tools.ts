@@ -18,6 +18,7 @@ import { MEDIA_LICENSES } from '../licenses.js';
 import { inputAlias, mimeForExt, outName, stem } from '../names.js';
 import { definePresetTool } from '../presets/define-preset-tool.js';
 import * as A from '../presets/args.js';
+import { applyVideoCutlist, cutlistOutputName, parseKeepJson, parseKeepOption } from './cutlist.js';
 
 const vIn = { accept: VIDEO_ACCEPT, multiple: false, min: 1 };
 const vMany = { accept: VIDEO_ACCEPT, multiple: true, min: 2 };
@@ -741,6 +742,44 @@ export const videoThumbnails = definePresetTool({
   outputName: (_o, files) => `${stem(files[0]!.name)}-thumb.png`,
 });
 
+const cutlistOpts = z.object({
+  keepJson: z.string().default(''),
+  copy: z.boolean().default(true),
+});
+
+export const videoCutlist = defineTool({
+  id: 'video-cutlist',
+  pack: 'media',
+  category: 'video',
+  title: { de: 'Cutlist anwenden', en: 'Apply cutlist' },
+  description: {
+    de: 'Video + {keep:[[start,end],…]} aus transcript-edits → geschnittenes Video. Stream-Copy wenn Keyframes es erlauben, sonst Re-Encode.',
+    en: 'Video + {keep:[[start,end],…]} from transcript-edits → cut video. Stream-copy when keyframes allow, otherwise re-encode.',
+  },
+  inputs: { accept: [...VIDEO_ACCEPT, 'application/json', '.json'], multiple: true, min: 1 },
+  outputs: { mime: ['video/mp4'] },
+  options: cutlistOpts,
+  licenses: MEDIA_LICENSES,
+  seo: { keywords: ['cutlist', 'jump cut', 'edl', 'transcript-edits'] },
+  async run(ctx, files, options) {
+    const opts = cutlistOpts.parse(options);
+    const video = files.find((f) => !/\.json$/i.test(f.name) && f.mime !== 'application/json') ?? files[0];
+    if (!video) throw new Error('Kein Video.');
+    const jsonFile = files.find((f) => /\.json$/i.test(f.name) || f.mime === 'application/json');
+    let keep = opts.keepJson ? parseKeepOption(opts.keepJson) : [];
+    if (!keep.length && jsonFile) keep = parseKeepJson(new TextDecoder().decode(await jsonFile.bytes()));
+    const result = await applyVideoCutlist(ctx, video, keep, opts.copy);
+    return wrapResult(
+      'video-cutlist',
+      files,
+      [neoFileFromBytes(cutlistOutputName(video.name), result.bytes, 'video/mp4')],
+      [...largeFileWarnings([video]), ...result.warnings],
+      { keep, mode: result.mode, windows: keep.length },
+      opts,
+    );
+  },
+});
+
 export const videoEdit = definePresetTool({
   id: 'video-edit',
   category: 'video',
@@ -775,6 +814,7 @@ export const videoEdit = definePresetTool({
 
 export const videoTools = [
   videoConvert,
+  videoCutlist,
   videoEdit,
   videoCompress,
   videoTrim,

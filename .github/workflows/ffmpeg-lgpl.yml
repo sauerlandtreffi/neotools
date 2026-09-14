@@ -1,0 +1,44 @@
+name: ffmpeg-lgpl
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 1 * *'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build LGPL ffmpeg.wasm core
+        run: bash packages/tools-media/scripts/build-ffmpeg-lgpl.sh
+        env:
+          FFMPEG_LGPL_OUT: ${{ github.workspace }}/packages/tools-media/vendor/ffmpeg-lgpl
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-lgpl-core
+          path: |
+            packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js
+            packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm
+
+      - name: Publish release assets
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ffmpeg-lgpl
+          name: FFmpeg WASM LGPL core
+          body: |
+            Self-hosted `@ffmpeg/ffmpeg` 0.12-compatible core built **without** `--enable-gpl` / x264 / x265.
+            Reproduce: `packages/tools-media/scripts/build-ffmpeg-lgpl.sh`
+            Fetch: `node scripts/fetch-ffmpeg-lgpl.mjs`
+          files: |
+            packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.js
+            packages/tools-media/vendor/ffmpeg-lgpl/ffmpeg-core.wasm
+          make_latest: false

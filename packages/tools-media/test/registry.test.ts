@@ -3,6 +3,7 @@ import { createMediaRegistry, mediaTools } from '../src/index.js';
 
 const expected = [
   'video-convert',
+  'video-cutlist',
   'video-edit',
   'video-compress',
   'video-trim',

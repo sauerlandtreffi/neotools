@@ -41,6 +41,54 @@ function wrap(id: string, files: NeoFile[], outputs: NeoFile[], warnings: string
   }));
 }
 
+/** Accepts audio-profanity-bleep-list JSON `{hits:[{start,end}]}`, keep-windows, SRT, or CSV. */
+export function parseBleepSpans(text: string, name = ''): Array<{ start: number; end: number }> {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  if (/\.srt$/i.test(name) || /^\d+\s*\n?\d{2}:/.test(trimmed)) {
+    const fromSrt = parseSrtWindows(trimmed);
+    if (fromSrt.length) return fromSrt;
+  }
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      const rows = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === 'object'
+          ? ((parsed as { hits?: unknown; windows?: unknown; keep?: unknown }).hits ??
+            (parsed as { windows?: unknown }).windows ??
+            (parsed as { keep?: unknown }).keep ??
+            [])
+          : [];
+      if (Array.isArray(rows)) {
+        return rows.flatMap((item) => {
+          if (Array.isArray(item) && item.length >= 2) {
+            const start = Number(item[0]);
+            const end = Number(item[1]);
+            return Number.isFinite(start) && Number.isFinite(end) && end > start ? [{ start, end }] : [];
+          }
+          if (item && typeof item === 'object' && 'start' in item && 'end' in item) {
+            const start = Number((item as { start: unknown }).start);
+            const end = Number((item as { end: unknown }).end);
+            return Number.isFinite(start) && Number.isFinite(end) && end > start ? [{ start, end }] : [];
+          }
+          return [];
+        });
+      }
+    } catch {
+      // fall through to CSV / SRT
+    }
+  }
+  const lines = trimmed.split(/\r?\n/).filter((l) => l.trim() && !/^start\s*,/i.test(l));
+  const csv: Array<{ start: number; end: number }> = [];
+  for (const line of lines) {
+    const [a, b] = line.split(/[,;\t]/).map((s) => Number(s.trim()));
+    if (Number.isFinite(a) && Number.isFinite(b) && (b as number) > (a as number)) csv.push({ start: a as number, end: b as number });
+  }
+  if (csv.length) return csv;
+  return parseSrtWindows(trimmed);
+}
+
 const convertOpts = z.object({
   container: z.enum(['mp3', 'wav', 'ogg', 'opus', 'flac', 'm4a', 'aac']).default('mp3'),
   bitrateKbps: z.coerce.number().min(32).max(512).default(192),
@@ -281,16 +329,22 @@ export const audioBleep = defineTool({
   category: 'audio',
   title: { de: 'Piepen / Bleep', en: 'Bleep' },
   description: { de: 'Zeitstempel-Liste oder SRT → volume=enable + Sinus.', en: 'Timestamp list or SRT → volume=enable + sine.' },
-  inputs: { accept: [...AUDIO_ACCEPT, '.srt', 'application/x-subrip'], multiple: true, min: 1 },
+  inputs: {
+    accept: [...AUDIO_ACCEPT, '.srt', 'application/x-subrip', 'application/json', '.json', 'text/csv', '.csv'],
+    multiple: true,
+    min: 1,
+  },
   options: bleepOpts,
   licenses: MEDIA_LICENSES,
   async run(ctx, files, options) {
     const opts = bleepOpts.parse(options);
-    const audio = files.find((f) => !/\.srt$/i.test(f.name)) ?? files[0]!;
-    const srt = files.find((f) => /\.srt$/i.test(f.name));
+    const audio =
+      files.find((f) => !/\.(srt|json|csv)$/i.test(f.name) && f.mime !== 'application/json' && f.mime !== 'text/csv') ??
+      files[0]!;
+    const cue = files.find((f) => /\.(srt|json|csv)$/i.test(f.name) || f.mime === 'application/json' || f.mime === 'text/csv');
     let spans: Array<{ start: number; end: number }> = [];
-    if (srt) spans = parseSrtWindows(new TextDecoder().decode(await srt.bytes()));
-    else {
+    if (cue) spans = parseBleepSpans(new TextDecoder().decode(await cue.bytes()), cue.name);
+    if (!spans.length) {
       spans = opts.windows.split(/[,;\s]+/).flatMap((part) => {
         const [a, b] = part.split('-').map(Number);
         return Number.isFinite(a) && Number.isFinite(b) ? [{ start: a!, end: b! }] : [];
