@@ -1,39 +1,41 @@
-# Community-Plugins
+🇬🇧 English · [🇩🇪 Deutsch](./PLUGINS.de.md)
 
-Stand: Welle 5. Dieses Dokument beschreibt das Plugin-Konzept anhand des Beispiel-Packs
-`packages/plugins/3d-lite/` und den **ehrlichen Umsetzungsstand**: Das Manifest-Format und die
-Sandbox-Regeln sind definiert, ein Manifest-Loader in `packages/engine` existiert **noch nicht**
-(Phase 5, `docs/ROADMAP.md` → „Community-Manifest-Loader, Sandbox“). Das Beispiel wird daher weder in Web,
-CLI noch API registriert.
+# Community plugins
 
-Verwandt: [ARCHITECTURE.md §5](./ARCHITECTURE.md) · [ROADMAP.md](./ROADMAP.md) ·
+State: wave 5. This document describes the plugin concept using the example pack
+`packages/plugins/3d-lite/` and the **honest implementation status**: the manifest format and the
+sandbox rules are defined, but a manifest loader in `packages/engine` does **not exist yet**
+(phase 5, `docs/ROADMAP.md` → "Community manifest loader, sandbox"). The example is therefore not registered in
+web, CLI or API.
+
+Related: [ARCHITECTURE.md §5](./ARCHITECTURE.md) · [ROADMAP.md](./ROADMAP.md) ·
 [CONTRIBUTING.md](../CONTRIBUTING.md)
 
-## Kern-Pack vs. Community-Plugin
+## Core pack vs. community plugin
 
-| Eigenschaft            | Kern-Pack (`packages/tools-*`)                    | Community-Plugin (`packages/plugins/*`, `@neotools-plugin/*`)                    |
-| ---------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Registrierung          | statisch in `apps/*` (`registerXxxTools`)         | über Manifest-Loader (offen), nie automatisch                                    |
-| Plattformzugriff       | voller `ToolContext.platform`                     | nur deklarierte Caps (`sandbox.platform`)                                        |
-| Netzwerk               | same-origin `/assets`, Nutzer-URLs                | `sandbox.network: "none"` — kein `fetch` auf Dritt-Hosts                         |
-| Assets                 | `apps/web/public/assets/<pack>/`                  | `/plugins/<id>/` (Self-Host) oder `node_modules/@neotools-plugin/<id>/`          |
-| Lizenzen               | `src/licenses.ts` → `/lizenzen`                   | `manifest.json.licenses` + `package.json.neotoolsPlugin.licenses` → `/lizenzen`  |
-| Workspace              | in `pnpm-workspace.yaml` (`packages/*`)           | **nicht** im Workspace (`packages/plugins/*` ist verschachtelt), eigenes Install |
-| Sichtbarkeit           | Tool-Grid, SEO-Seiten                             | erst nach Aktivierung durch den Self-Host                                        |
+| Property          | Core pack (`packages/tools-*`)                     | Community plugin (`packages/plugins/*`, `@neotools-plugin/*`)                        |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Registration      | static in `apps/*` (`registerXxxTools`)            | via manifest loader (open), never automatic                                          |
+| Platform access   | full `ToolContext.platform`                        | only declared caps (`sandbox.platform`)                                              |
+| Network           | same-origin `/assets`, user URLs                   | `sandbox.network: "none"` — no `fetch` to third-party hosts                          |
+| Assets            | `apps/web/public/assets/<pack>/`                   | `/plugins/<id>/` (self-host) or `node_modules/@neotools-plugin/<id>/`                |
+| Licenses          | `src/licenses.ts` → `/lizenzen`                    | `manifest.json.licenses` + `package.json.neotoolsPlugin.licenses` → `/lizenzen`      |
+| Workspace         | in `pnpm-workspace.yaml` (`packages/*`)            | **not** in the workspace (`packages/plugins/*` is nested), separate install          |
+| Visibility        | tool grid, SEO pages                               | only after activation by the self-host                                               |
 
-## Aufbau des Beispiels `3d-lite`
+## Layout of the `3d-lite` example
 
 ```
 packages/plugins/3d-lite/
-├── manifest.json      Plugin-Manifest (Format aus ARCHITECTURE.md §5.1, erweitert um sandbox)
-├── package.json       npm-Metadaten + neotoolsPlugin-Block
-├── README.md          Lizenztabelle, Verbotsliste (CDNs), Stub-Beschreibung
-└── src/index.ts       inspectGltfMagic() — liest Magic-Bytes, kein Renderer, kein Netzwerk
+├── manifest.json      plugin manifest (format from ARCHITECTURE.md §5.1, extended with sandbox)
+├── package.json       npm metadata + neotoolsPlugin block
+├── README.md          license table, forbidden list (CDNs), stub description
+└── src/index.ts       inspectGltfMagic() — reads magic bytes, no renderer, no network
 ```
 
-Das Plugin ist bewusst ein Stub: `gltf-inspect` erkennt `glTF`-Binary (`glb`) bzw. JSON-glTF am Header
-und liefert einen JSON-Report. three.js, Draco, meshoptimizer und basis_universal werden **nicht**
-gebündelt; ein Self-Host müsste sie unter `/assets/3d/` ablegen.
+The plugin is deliberately a stub: `gltf-inspect` detects `glTF` binary (`glb`) or JSON glTF from the header
+and returns a JSON report. three.js, Draco, meshoptimizer and basis_universal are **not**
+bundled; a self-host would have to place them under `/assets/3d/`.
 
 ## `manifest.json`
 
@@ -53,18 +55,18 @@ gebündelt; ein Self-Host müsste sie unter `/assets/3d/` ablegen.
 }
 ```
 
-| Feld                | Typ                     | Bedeutung                                                                                                                   |
-| ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `id`                | `string`                | Eindeutige Plugin-ID (kebab-case). Wird zum Namespace der Assets (`/plugins/<id>/`) und muss zu `neotoolsPlugin.id` passen. |
-| `version`           | semver                  | Plugin-Version; unabhängig von der NeoTools-Version.                                                                        |
-| `title`             | `{ de, en }`            | Anzeigename, **beide Sprachen Pflicht** (i18n-Regel).                                                                       |
-| `tools`             | `string[]`              | Tool-IDs, die das Plugin per `defineTool` bereitstellt. IDs dürfen keine Kern-IDs überschreiben.                            |
-| `lazy`              | `boolean`               | `true`: Code erst beim Öffnen der Tool-Seite laden (Pflicht für Plugins mit WASM).                                          |
-| `optional`          | `boolean`               | `true`: Docker-Build darf das Plugin weglassen (`NEOTOOLS_PACKS`).                                                          |
-| `assets`            | `string[]`              | Relative Pfade zu WASM/Modellen unter `/plugins/<id>/`. Absolute URLs oder Dritt-Hosts sind ungültig.                       |
-| `licenses[]`        | `PackLicense[]`         | `spdx`, `component`, `url`, optional `note`. Jede gebündelte **oder** dynamisch geladene Lib. Pflichtfeld.                  |
-| `sandbox.platform`  | `string[]`              | Erlaubte Plattform-Fähigkeiten (Caps). Alles außerhalb dieser Liste ist zur Laufzeit `undefined`.                           |
-| `sandbox.network`   | `"none"`                | Aktuell einziger zulässiger Wert. Plugins erhalten kein `fetch` auf fremde Hosts.                                            |
+| Field               | Type                    | Meaning                                                                                                                    |
+| ------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `string`                | Unique plugin ID (kebab-case). Becomes the asset namespace (`/plugins/<id>/`) and must match `neotoolsPlugin.id`.          |
+| `version`           | semver                  | Plugin version; independent of the NeoTools version.                                                                       |
+| `title`             | `{ de, en }`            | Display name, **both languages required** (i18n rule).                                                                     |
+| `tools`             | `string[]`              | Tool IDs the plugin provides via `defineTool`. IDs must not override core IDs.                                             |
+| `lazy`              | `boolean`               | `true`: load code only when the tool page is opened (mandatory for plugins with WASM).                                     |
+| `optional`          | `boolean`               | `true`: the Docker build may omit the plugin (`NEOTOOLS_PACKS`).                                                           |
+| `assets`            | `string[]`              | Relative paths to WASM/models under `/plugins/<id>/`. Absolute URLs or third-party hosts are invalid.                      |
+| `licenses[]`        | `PackLicense[]`         | `spdx`, `component`, `url`, optional `note`. Every bundled **or** dynamically loaded library. Required.                    |
+| `sandbox.platform`  | `string[]`              | Allowed platform capabilities (caps). Everything outside this list is `undefined` at runtime.                              |
+| `sandbox.network`   | `"none"`                | Currently the only permitted value. Plugins get no `fetch` to foreign hosts.                                               |
 
 ## `package.json` → `neotoolsPlugin`
 
@@ -82,63 +84,63 @@ gebündelt; ein Self-Host müsste sie unter `/assets/3d/` ablegen.
 }
 ```
 
-- `name` muss mit `@neotools-plugin/` beginnen — nur dieser Scope wird vom (künftigen) Loader aus
-  `node_modules` gelesen.
+- `name` must start with `@neotools-plugin/` — only this scope is read from `node_modules` by the (future)
+  loader.
 - `neotoolsPlugin.id` = `manifest.json.id`.
-- `neotoolsPlugin.caps` ist die npm-seitige Kurzform von `sandbox.platform` (`read-bytes` ↔ `readBytes`),
-  damit Registry-Skripte ohne das Manifest arbeiten können.
-- `neotoolsPlugin.licenses` (`name`, `license`) spiegelt `manifest.json.licenses` für `npm ls`-basierte
-  Prüfungen. Bei Abweichungen gewinnt das Manifest.
+- `neotoolsPlugin.caps` is the npm-side short form of `sandbox.platform` (`read-bytes` ↔ `readBytes`),
+  so that registry scripts can work without the manifest.
+- `neotoolsPlugin.licenses` (`name`, `license`) mirrors `manifest.json.licenses` for `npm ls`-based
+  checks. In case of discrepancies the manifest wins.
 
-## Caps-Sandbox
+## Caps sandbox
 
-Kern-Tools bekommen den vollständigen `ToolContext` (`progress`, `signal`, `log`, `platform` mit
-`capabilities`, `encodeRaster`, `assets`). Plugins sollen nur erhalten, was sie deklarieren:
+Core tools get the full `ToolContext` (`progress`, `signal`, `log`, `platform` with
+`capabilities`, `encodeRaster`, `assets`). Plugins should only receive what they declare:
 
-| Cap (`sandbox.platform`) | Zugriff                                                             |
+| Cap (`sandbox.platform`) | Access                                                              |
 | ------------------------ | ------------------------------------------------------------------- |
-| `readBytes`              | `NeoFile.bytes()` der übergebenen Eingaben                          |
+| `readBytes`              | `NeoFile.bytes()` of the provided inputs                            |
 | `canvas`                 | `platform.encodeRaster()` / OffscreenCanvas                         |
-| `opfs`                   | OPFS-Streaming für große Dateien                                    |
-| `assets`                 | `platform.assets.*` (nur same-origin `/plugins/<id>/`)              |
-| `workers`                | eigene Sub-Worker                                                   |
+| `opfs`                   | OPFS streaming for large files                                      |
+| `assets`                 | `platform.assets.*` (same-origin `/plugins/<id>/` only)             |
+| `workers`                | own sub-workers                                                     |
 
-Nicht deklarierte Caps werden im Loader ausgeblendet (Proxy auf `platform`), `network` ist immer `none`.
-Ein Plugin darf `privacySensitive` nicht setzen — Privacy-Operationen bleiben im Kern (Verify-Hook).
+Undeclared caps are hidden by the loader (proxy on `platform`); `network` is always `none`.
+A plugin must not set `privacySensitive` — privacy operations stay in the core (verify hook).
 
-## Lizenzpflicht
+## License obligations
 
-- Jede Bibliothek, jedes Modell und jede Schrift im Plugin steht in `manifest.json.licenses` mit
-  SPDX-Kennung und URL.
-- Zulässig: MIT, Apache-2.0, BSD, ISC, MPL-2.0, OFL, Zlib; LGPL nur dynamisch geladen (nicht gebündelt) und
-  mit `note`. **Verboten:** AGPL, proprietäre Lizenzen ohne Redistribution, CDN-Laufzeitabhängigkeiten
-  (`unpkg`, `jsdelivr`, `cdnjs`, Hugging-Face-Hub-Default).
-- Für das Beispiel sind die Einträge zusätzlich in `packages/engine/src/licenses.ts` (`PLATFORM_LICENSES`)
-  als „Community-Plugin 3d-lite, nicht gebündelt“ aufgeführt, damit `/lizenzen`,
-  `/licenses.json` und `/THIRD_PARTY_NOTICES.txt` sie heute schon nennen. Mit einem Loader würden sie aus
-  dem Manifest kommen.
+- Every library, model and font in the plugin is listed in `manifest.json.licenses` with an
+  SPDX identifier and URL.
+- Permitted: MIT, Apache-2.0, BSD, ISC, MPL-2.0, OFL, Zlib; LGPL only dynamically loaded (not bundled) and
+  with a `note`. **Forbidden:** AGPL, proprietary licenses without redistribution rights, CDN runtime dependencies
+  (`unpkg`, `jsdelivr`, `cdnjs`, Hugging Face Hub default).
+- For the example, the entries are additionally listed in `packages/engine/src/licenses.ts` (`PLATFORM_LICENSES`)
+  as "community plugin 3d-lite, not bundled", so that `/lizenzen`,
+  `/licenses.json` and `/THIRD_PARTY_NOTICES.txt` already mention them today. With a loader they would come from
+  the manifest.
 
-## Registrierung — Stand heute
+## Registration — current state
 
-Es gibt **keinen** Manifest-Loader. `packages/engine/src/` kennt nur `Registry.register(tool)` und
-`registerPack`-Muster der Kern-Packs; `apps/web/src/lib/registry.ts` verkettet die zehn Kern-Packs
-statisch. Wer das Beispiel dennoch lokal ausprobieren will:
+There is **no** manifest loader. `packages/engine/src/` only knows `Registry.register(tool)` and the
+`registerPack` patterns of the core packs; `apps/web/src/lib/registry.ts` chains the ten core packs
+statically. If you still want to try the example locally:
 
-1. `packages/plugins/3d-lite` in `pnpm-workspace.yaml` aufnehmen (oder als lokales Paket verlinken).
-2. Ein `defineTool`-Objekt `gltf-inspect` um `inspectGltfMagic` bauen (Titel de/en, Zod-Optionen,
-   `licenses` aus dem Manifest).
-3. In `apps/web/src/lib/registry.ts`, `apps/cli/src/cli.ts` und `apps/api/src/optional-packs.ts` wie ein
-   Kern-Pack registrieren.
-4. Assets unter `apps/web/public/plugins/3d-lite/` ablegen — ohne CDN.
+1. Add `packages/plugins/3d-lite` to `pnpm-workspace.yaml` (or link it as a local package).
+2. Build a `defineTool` object `gltf-inspect` around `inspectGltfMagic` (title de/en, Zod options,
+   `licenses` from the manifest).
+3. Register it like a core pack in `apps/web/src/lib/registry.ts`, `apps/cli/src/cli.ts` and
+   `apps/api/src/optional-packs.ts`.
+4. Place assets under `apps/web/public/plugins/3d-lite/` — no CDN.
 
-Das ist ein manueller Kern-Pack-Pfad, keine Plugin-Aktivierung.
+This is a manual core-pack path, not a plugin activation.
 
-## Geplant (Phase 5, offen)
+## Planned (phase 5, open)
 
-- `loadPluginManifest(source)`: liest `/plugins/<id>/manifest.json` (Self-Host) oder
-  `node_modules/@neotools-plugin/*/manifest.json`, validiert per Zod, lehnt Kern-ID-Kollisionen,
-  `assets` mit Host-Anteil und `network !== "none"` ab.
-- Sandbox-Proxy auf `ToolContext.platform` gemäß `sandbox.platform`.
-- Automatische Aufnahme der Manifest-Lizenzen in `collectLicenses()`.
-- Feature-Flag `community-exotic` (Default aus) und Banner „Community-Plugin“ auf der Tool-Seite.
-- Docker: `NEOTOOLS_PACKS` erweitern, damit Plugins wie optionale Packs weggelassen werden können.
+- `loadPluginManifest(source)`: reads `/plugins/<id>/manifest.json` (self-host) or
+  `node_modules/@neotools-plugin/*/manifest.json`, validates via Zod, rejects core ID collisions,
+  `assets` with a host part and `network !== "none"`.
+- Sandbox proxy on `ToolContext.platform` according to `sandbox.platform`.
+- Automatic inclusion of manifest licenses in `collectLicenses()`.
+- Feature flag `community-exotic` (default off) and a "Community plugin" banner on the tool page.
+- Docker: extend `NEOTOOLS_PACKS` so plugins can be omitted like optional packs.

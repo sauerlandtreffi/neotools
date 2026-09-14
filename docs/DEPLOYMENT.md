@@ -1,48 +1,50 @@
-# NeoTools Self-Hosting
+🇬🇧 English · [🇩🇪 Deutsch](./DEPLOYMENT.de.md)
 
-Schritt-für-Schritt für Docker Compose. Die Web-App bleibt zustandslos (kein Server-Speicher für Dateien). Die optionale API hält Jobs nur im RAM.
+# NeoTools self-hosting
 
-## 1. Voraussetzungen
+Step by step for Docker Compose. The web app stays stateless (no server-side storage for files). The optional API keeps jobs in RAM only.
+
+## 1. Prerequisites
 
 - Docker + Compose
-- Node 22 / pnpm 10 nur für lokalen Build ohne Docker
-- Optional: eigenes `branding.json`, Team-`presets.json`, Ed25519-Lizenz
+- Node 22 / pnpm 10 only for a local build without Docker
+- Optional: your own `branding.json`, team `presets.json`, Ed25519 license
 
 ## 2. Start
 
 ```bash
 cd /path/to/Neotools
 cp deploy/docker/.env.example deploy/docker/.env
-# Keys in .env anpassen — keine echten Secrets committen
+# adjust keys in .env — never commit real secrets
 docker compose -f deploy/docker/docker-compose.yml up --build
 ```
 
 - Web: `http://localhost:8080`
-- API (nur intern, über nginx): `http://localhost:8080/api/v1/health`
+- API (internal only, via nginx): `http://localhost:8080/api/v1/health`
 - Docs: `http://localhost:8080/api/v1/docs`
 - OpenAPI 3.1: `http://localhost:8080/api/v1/openapi.json`
 
 ## 3. Branding
 
-`NEOTOOLS_BRANDING` zeigt auf eine JSON-Datei (siehe `deploy/docker/README.md`). `hiddenTools` gilt zur Build-Zeit. `license` / `licensePubkey` werden eingebettet; leer = Community.
+`NEOTOOLS_BRANDING` points to a JSON file (see `deploy/docker/README.md` and [BRANDING.md](./BRANDING.md)). `hiddenTools` applies at build time. `license` / `licensePubkey` are embedded; empty = Community.
 
-## 4. Team-Presets
+## 4. Team presets
 
-`presets.json` im Schema von `@neotools/engine` `teamPresetsSchema` (`organization`, `defaults`, `locked`, `hiddenTools`, `requiredPipelines`). Optional Ed25519-Signatur (`signature`). CLI: `--presets` oder `NEOTOOLS_PRESETS`. API wendet dieselben Presets serverseitig an. Enforcement (gesperrte Optionen) ist Feature `presets` (Pro/Enterprise); Community-Tools bleiben nutzbar.
+`presets.json` in the schema of `@neotools/engine` `teamPresetsSchema` (`organization`, `defaults`, `locked`, `hiddenTools`, `requiredPipelines`). Optional Ed25519 signature (`signature`). CLI: `--presets` or `NEOTOOLS_PRESETS`. The API applies the same presets server-side. Enforcement (locked options) is the `presets` feature (Pro/Enterprise); Community tools remain usable.
 
-## 5. Lizenz
+## 5. License
 
 ```bash
 node apps/cli/dist/cli.js license keygen --out /tmp/neotools-ed25519.json
-node apps/cli/dist/cli.js license issue --org "Kanzlei" --plan pro --days 365 \
+node apps/cli/dist/cli.js license issue --org "Law firm" --plan pro --days 365 \
   --features api,watch,presets,whitelabel --key /tmp/neotools-ed25519.json
 ```
 
-Public Key nach `branding.json` → `licensePubkey` oder `license-pubkey.json`. Token nach `NEOTOOLS_LICENSE` oder Seite `/lizenz` (IndexedDB, lokale Prüfung).
+Public key goes into `branding.json` → `licensePubkey` or `license-pubkey.json`. Token via `NEOTOOLS_LICENSE` or the `/lizenz` page (IndexedDB, local verification).
 
-**Gratis-Versprechen:** Community bleibt für **alle Werkzeuge** voll funktionsfähig (Browser, CLI `run`/`pipeline`). Gates nur: REST-API, Watch-Automatik, Team-Presets-Erzwingung, White-Label ohne „Powered by NeoTools“, signierter Audit-Export. Kein Phone-Home.
+**Free promise:** Community remains fully functional for **all tools** (browser, CLI `run`/`pipeline`). Gates only: REST API, watch automation, team preset enforcement, white-label without "Powered by NeoTools", signed audit export. No phone-home.
 
-## 6. API mit curl
+## 6. API with curl
 
 ```bash
 export KEY=dev-key-change-me
@@ -55,59 +57,59 @@ curl -sS -H "Authorization: Bearer $KEY" \
   -F "files=@in.pdf" \
   -F 'spec={"steps":[{"toolId":"pdf-sanitize","options":{}}]}' \
   http://127.0.0.1:8080/api/v1/pipeline -o out.pdf
-# asynchron
+# asynchronous
 curl -sS -H "Authorization: Bearer $KEY" \
   -F "files=@in.pdf" \
   "http://127.0.0.1:8080/api/v1/run/pdf-sanitize?async=1"
 curl -sS -H "Authorization: Bearer $KEY" http://127.0.0.1:8080/api/v1/jobs/<id>
 ```
 
-Antwort: einzelne Datei oder ZIP. Report ohne Dateiinhalte in `X-NeoTools-Report` (Base64URL-JSON). Ungültiger Key → 401, zu groß → 413.
+Response: single file or ZIP. Report without file contents in `X-NeoTools-Report` (Base64URL JSON). Invalid key → 401, too large → 413.
 
-## 7. Watch-Ordner
+## 7. Watch folders
 
-CLI (Feature `watch`):
+CLI (feature `watch`):
 
 ```bash
 neotools watch ./in --pipeline pipeline.json --out ./out --pattern "*.pdf" --poll 2s
-# oder --fs-events
+# or --fs-events
 ```
 
-Idempotenz über Hash-Journal in `out/.neotools-watch.jsonl`, Fehler nach `out/errors/`. Docker: `--profile watch`.
+Idempotency via a hash journal in `out/.neotools-watch.jsonl`, errors go to `out/errors/`. Docker: `--profile watch`.
 
-Web (Chromium): `/watch` — `showDirectoryPicker`, persistente Permission, Polling, Ausgabe `neotools-out/`, Journal im Verlauf. Firefox/Safari: nicht unterstützt.
+Web (Chromium): `/watch` — `showDirectoryPicker`, persistent permission, polling, output `neotools-out/`, journal in the history. Firefox/Safari: not supported.
 
-## 8. Reverse-Proxy / TLS
+## 8. Reverse proxy / TLS
 
-Vor nginx (Caddy, Traefik, NPM) TLS beenden. Wichtige Header **durchreichen oder selbst setzen**:
+Terminate TLS in front of nginx (Caddy, Traefik, NPM). Important headers to **pass through or set yourself**:
 
 - `Cross-Origin-Opener-Policy: same-origin`
 - `Cross-Origin-Embedder-Policy: credentialless`
 - `Cross-Origin-Resource-Policy: same-origin`
-- CSP ohne Dritt-Hosts (siehe `deploy/docker/nginx.conf`)
+- CSP without third-party hosts (see `deploy/docker/nginx.conf`)
 
-Ohne COOP/COEP können SharedArrayBuffer/WASM-Threads fehlen.
+Without COOP/COEP, SharedArrayBuffer/WASM threads may be unavailable.
 
 ## 9. Backups
 
-Nicht nötig für den Server: **zustandslos**. Keine Nutzerdateien, keine Sessions. Optional sichern: `branding.json`, `presets.json`, Lizenz-Public-Key, API-Key-Datei, Audit-JSONL (`NEOTOOLS_AUDIT_LOG`, nur Hashes/Metadaten).
+Not needed for the server: **stateless**. No user files, no sessions. Optionally back up: `branding.json`, `presets.json`, license public key, API key file, audit JSONL (`NEOTOOLS_AUDIT_LOG`, hashes/metadata only).
 
-## 10. Datenschutz (Kanzlei/Behörde)
+## 10. Data protection (law firms / public authorities)
 
-- Verarbeitung im Browser der Nutzer oder in eurem Netz (API-Sidecar).
-- Kein Upload zu NeoTools, kein Tracking, keine CDN-Laufzeit.
-- API speichert Dateien nicht; nach der Antwort werden Buffer verworfen (tmpfs).
-- Audit-JSONL enthält Hash, Tool, Optionsschlüssel, Dauer, Status — keine Inhalte.
-- Community-Tools sind ohne Telemetrie voll nutzbar.
+- Processing in the users' browser or in your own network (API sidecar).
+- No upload to NeoTools, no tracking, no CDN runtime.
+- The API does not store files; buffers are discarded after the response (tmpfs).
+- Audit JSONL contains hash, tool, option keys, duration, status — no contents.
+- Community tools are fully usable without telemetry.
 
-## Preis-/Plan-Matrix (Vorschlag)
+## Pricing/plan matrix (proposal)
 
-**Vorschlag, kein verbindliches Angebot.**
+**Proposal, not a binding offer.**
 
-| Plan | Preis-Idee | Inhalt |
-| --- | --- | --- |
-| Community | frei | Alle Werkzeuge lokal (Web/CLI). Kein Wasserzeichen. |
-| Pro | pro Installation / Jahr | + REST-API, Watch-Automatik, Team-Presets-Erzwingung |
-| Enterprise | nach Aufwand | + White-Label ohne Footer, signierter Audit-Export, Support |
+| Plan       | Price idea                  | Contents                                                   |
+| ---------- | --------------------------- | ---------------------------------------------------------- |
+| Community  | free                        | All tools locally (web/CLI). No watermark.                 |
+| Pro        | per installation / year     | + REST API, watch automation, team preset enforcement      |
+| Enterprise | by effort                   | + white-label without footer, signed audit export, support |
 
-Private Keys und echte Lizenzen gehören nicht ins Git.
+Private keys and real licenses do not belong in Git.
