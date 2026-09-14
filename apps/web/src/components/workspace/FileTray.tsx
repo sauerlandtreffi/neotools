@@ -5,6 +5,7 @@ import {
   activateFile,
   addBrowserFiles,
   removeFile,
+  reorderFiles,
   toggleSelectFile,
   workspace,
 } from '../../lib/workspace/store';
@@ -16,7 +17,29 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
   const session = s.session;
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
   const files = session?.files ?? [];
+
+  const moveTo = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const ids = files.map((f) => f.id);
+    const from = ids.indexOf(fromId);
+    const to = ids.indexOf(toId);
+    if (from < 0 || to < 0) return;
+    ids.splice(from, 1);
+    ids.splice(to, 0, fromId);
+    void reorderFiles(ids);
+  };
+  const moveBy = (id: string, delta: number) => {
+    const ids = files.map((f) => f.id);
+    const from = ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    ids.splice(from, 1);
+    ids.splice(to, 0, id);
+    void reorderFiles(ids);
+  };
 
   return (
     <aside class="ws-tray" aria-label={w(locale, 'files')} data-tray>
@@ -47,7 +70,7 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
         }}
       />
       <ul class="ws-tray-list" role="listbox" aria-multiselectable="true">
-        {files.map((f) => {
+        {files.map((f, index) => {
           const active = f.id === session?.activeFileId;
           const selected = s.selectedFileIds.includes(f.id);
           const steps = f.revisions.filter((r) => r.status === 'ok').length;
@@ -60,7 +83,48 @@ export default function FileTray({ locale, onClose }: { locale: Locale; onClose?
               aria-selected={active}
               data-active={active}
               data-file-id={f.id}
+              data-dragging={dragId === f.id}
+              data-drop-target={dropId === f.id}
+              draggable
+              onDragStart={(e) => {
+                setDragId(f.id);
+                e.dataTransfer?.setData('text/plain', f.id);
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (dropId !== f.id) setDropId(f.id);
+              }}
+              onDragLeave={() => dropId === f.id && setDropId(null)}
+              onDrop={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                moveTo(dragId, f.id);
+                setDragId(null);
+                setDropId(null);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setDropId(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.altKey && e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  moveBy(f.id, -1);
+                } else if (e.altKey && e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  moveBy(f.id, 1);
+                }
+              }}
             >
+              {index < 9 && (
+                <kbd class="ws-tray-kbd ws-hide-mobile" aria-hidden="true">
+                  ⌘{index + 1}
+                </kbd>
+              )}
               <input
                 type="checkbox"
                 class="ws-tray-check"

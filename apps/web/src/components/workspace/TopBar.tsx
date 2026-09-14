@@ -3,6 +3,7 @@ import type { Locale } from '../../lib/i18n';
 import { w } from '../../lib/workspace/i18n';
 import { activeFile, busy, canRedo, canUndo, newSession, redo, renameSession, setUi, undo, workspace } from '../../lib/workspace/store';
 import ThemeToggle from '../ThemeToggle';
+import TrustBadge from './TrustBadge';
 import { I } from './Icons';
 
 interface Props {
@@ -77,6 +78,8 @@ export default function TopBar({ locale, brandName, logo, onToggleTray }: Props)
         </span>
       )}
       <span class="ml-auto flex items-center gap-1">
+        <TrustBadge locale={locale} />
+        <span class="ws-topbar-sep ws-hide-mobile" aria-hidden="true" />
         <button type="button" class="btn btn-ghost btn-icon ws-hide-mobile" aria-label={w(locale, 'undo')} title="⌘Z" disabled={!canUndo.value || busy.value} data-top-undo onClick={() => void undo()}>
           <I.undo />
         </button>

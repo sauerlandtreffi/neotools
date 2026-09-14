@@ -183,6 +183,14 @@ export default function WorkspaceApp({ locale, toolsJson, brandName, logo, polic
         if (activeFile.value) setUi({ exportOpen: true });
         return;
       }
+      if (mod && !e.shiftKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+        const target = st.session?.files[Number(e.key) - 1];
+        if (target) {
+          e.preventDefault();
+          void activateFile(target.id);
+        }
+        return;
+      }
       if (mod && e.key.toLowerCase() === 'o') {
         e.preventDefault();
         (document.querySelector('[data-tray-input],[data-empty-input]') as HTMLInputElement | null)?.click();

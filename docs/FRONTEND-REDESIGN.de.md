@@ -1,3 +1,5 @@
+🇩🇪 Deutsch · [🇬🇧 English](./FRONTEND-REDESIGN.md)
+
 # NeoTools Frontend-Redesign — Workspace-Konzept
 
 **Status:** Konzept, verbindlich für UI-Arbeit ab Welle W0  

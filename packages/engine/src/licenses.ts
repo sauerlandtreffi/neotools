@@ -5,6 +5,7 @@ export const PLATFORM_LICENSES: ToolLicense[] = [
   { name: 'NeoTools (eigener Code)', license: 'MIT', url: 'https://opensource.org/licenses/MIT' },
   { name: 'Astro', license: 'MIT', url: 'https://github.com/withastro/astro' },
   { name: 'Preact', license: 'MIT', url: 'https://github.com/preactjs/preact' },
+  { name: '@preact/signals', license: 'MIT', url: 'https://github.com/preactjs/signals' },
   { name: 'Tailwind CSS', license: 'MIT', url: 'https://github.com/tailwindlabs/tailwindcss' },
   { name: 'Zod', license: 'MIT', url: 'https://github.com/colinhacks/zod' },
   { name: 'Comlink', license: 'Apache-2.0', url: 'https://github.com/GoogleChromeLabs/comlink' },

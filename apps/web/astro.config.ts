@@ -119,7 +119,8 @@ export default defineConfig({
       },
       filter(page) {
         // Hidden tools are not generated; planned convert pages stay in the sitemap but send noindex.
-        return !page.includes('/offline');
+        // The workspace (`/app`, alias `/workspace`) is noindex and not a landing page.
+        return !page.includes('/offline') && !/\/(app|workspace)\/?$/.test(page);
       },
     }),
   ],
