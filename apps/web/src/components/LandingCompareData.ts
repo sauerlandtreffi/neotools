@@ -2,7 +2,7 @@ import type { Locale } from '../lib/i18n';
 
 export const COMPARE_AS_OF = '2026-09-14';
 
-export type CompareId = 'ilovepdf' | 'smallpdf' | 'adobe-acrobat' | 'ihatepdf';
+export type CompareId = 'ilovepdf' | 'smallpdf' | 'adobe-acrobat';
 
 export interface CompareRow {
   criterion: { de: string; en: string };
@@ -273,69 +273,6 @@ export const COMPARE_PAGES: Record<CompareId, ComparePage> = {
     {
       de: 'Adobe-Produktnamen und Plan-Zuschnitte ändern sich. Quelle: öffentliche Acrobat-Produktseiten.',
       en: 'Adobe product names and plan cuts change. Source: public Acrobat product pages.',
-    },
-  ),
-  ihatepdf: page(
-    'ihatepdf',
-    'iHatePDF',
-    'https://ihatepdf.cv/',
-    {
-      de: 'Öffentliche Positionierung: PDF-Werkzeuge im Browser ohne Upload (Vorbild für lokale Tools). Funktionsumfang und Lizenz je nach aktuellem Auftritt prüfen.',
-      en: 'Public positioning: PDF tools in the browser without upload (a reference for local tools). Check the live site for scope and license.',
-    },
-    {
-      upload: {
-        de: 'Öffentlich: kein Upload (clientseitig). Eigenständig im Network-Tab prüfen.',
-        en: 'Public claim: no upload (client-side). Verify yourself in the Network tab.',
-      },
-      watermark: { de: 'Öffentlich: kein Wasserzeichen', en: 'Public claim: no watermark' },
-      limits: {
-        de: 'Keine bekannte kostenpflichtige Tagesgrenze; begrenzt durch den Browser',
-        en: 'No known paid daily cap; limited by the browser',
-      },
-      price: { de: 'Kostenlos nach öffentlicher Darstellung', en: 'Free according to the public site' },
-      offline: {
-        de: 'Nach dem Laden der Seite, soweit Assets im Cache liegen',
-        en: 'After the page loads, to the extent assets are cached',
-      },
-      redact: {
-        de: 'Nicht als verifizierte Content-Entfernung (Muster + OCR-Stichprobe) dokumentiert',
-        en: 'Not documented as verified content removal (patterns + OCR sample)',
-      },
-      selfhost: {
-        de: 'Kein NeoTools-kompatibles White-Label-Docker; eigenes Projekt',
-        en: 'No NeoTools-compatible white-label Docker; separate project',
-      },
-      oss: {
-        de: 'Je nach Auftritt; nicht die NeoTools-Engine (MIT-Kern hier im Repo)',
-        en: 'Depends on the live project; not the NeoTools engine (MIT core in this repo)',
-      },
-    },
-    [
-      {
-        q: {
-          de: 'Ist iHatePDF dasselbe Projekt wie NeoTools?',
-          en: 'Is iHatePDF the same project as NeoTools?',
-        },
-        a: {
-          de: 'Nein. NeoTools übernimmt die Idee „lokal, kein Upload“, nicht den Code. Engine, Packs, DACH- und Forensik-Tools sind eigenständig (MIT-Kern).',
-          en: 'No. NeoTools shares the “local, no upload” idea, not the code. Engine, packs, DACH and forensics tools are independent (MIT core).',
-        },
-      },
-      {
-        q: {
-          de: 'Warum steht iHatePDF in der Tabelle?',
-          en: 'Why is iHatePDF in the table?',
-        },
-        a: {
-          de: 'Weil die öffentliche Positionierung nah an „kein Upload“ liegt. Unterschiede liegen im Umfang (E-Rechnung, beA, Verifikation, Self-Hosting, Desktop).',
-          en: 'Because the public positioning is close to “no upload”. Differences are scope (e-invoices, beA, verification, self-hosting, desktop).',
-        },
-      },
-    ],
-    {
-      de: 'Domain und Funktionsliste können wechseln. Angaben folgen der öffentlichen Positionierung, nicht einem Audit.',
-      en: 'Domain and feature list can change. Figures follow public positioning, not an audit.',
     },
   ),
 };
