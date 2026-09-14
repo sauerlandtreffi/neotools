@@ -1,0 +1,61 @@
+export const VIDEO_ACCEPT = [
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-matroska',
+  'video/x-msvideo',
+  'video/ogg',
+  'video/mpeg',
+  'video/3gpp',
+  'image/gif',
+  '.mp4',
+  '.webm',
+  '.mkv',
+  '.mov',
+  '.avi',
+  '.gif',
+  '.ogv',
+  '.m4v',
+  '.ts',
+  '.mts',
+  '.m2ts',
+  '.3gp',
+  '.flv',
+  '.mpg',
+  '.mpeg',
+  '.wmv',
+];
+
+export const AUDIO_ACCEPT = [
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/wave',
+  'audio/ogg',
+  'audio/opus',
+  'audio/flac',
+  'audio/mp4',
+  'audio/aac',
+  'audio/aiff',
+  'audio/x-aiff',
+  'audio/webm',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.oga',
+  '.opus',
+  '.flac',
+  '.m4a',
+  '.aac',
+  '.aiff',
+  '.aif',
+  '.caf',
+  '.wma',
+  '.mka',
+];
+
+export const SUBTITLE_ACCEPT = ['.srt', '.vtt', '.ass', '.ssa', 'application/x-subrip', 'text/vtt', 'text/x-ssa'];
+
+export const IMAGE_OVERLAY_ACCEPT = ['image/png', 'image/jpeg', 'image/webp', '.png', '.jpg', '.jpeg', '.webp'];
+
+export const MEDIA_ACCEPT = [...VIDEO_ACCEPT, ...AUDIO_ACCEPT];

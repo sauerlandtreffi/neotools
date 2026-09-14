@@ -1,0 +1,9 @@
+# LGPL FFmpeg WASM core. No --enable-gpl, no x264/x265.
+# docker build -f Dockerfile.ffmpeg-lgpl -t neotools-ffmpeg-lgpl .
+# docker run --rm -v "$PWD/dist-ffmpeg-lgpl:/out" neotools-ffmpeg-lgpl
+FROM emscripten/emsdk:3.1.61
+WORKDIR /src
+COPY scripts/build-ffmpeg-lgpl.sh /src/build-ffmpeg-lgpl.sh
+RUN chmod +x /src/build-ffmpeg-lgpl.sh
+ENV FFMPEG_LGPL_OUT=/out
+CMD ["/src/build-ffmpeg-lgpl.sh"]
