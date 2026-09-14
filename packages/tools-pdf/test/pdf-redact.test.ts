@@ -127,4 +127,16 @@ describe('pdf-redact', () => {
     expect(report.passed).toBe(false);
     expect(report.checks.some((c) => !c.passed && c.id.endsWith(':text'))).toBe(true);
   });
+
+  it('ignores pdf-lib CreationDate when scanning metadata for phone numbers', async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage([200, 200]);
+    const file = neoFileFromBytes('dates.pdf', await doc.save(), MIME.pdf);
+    const report = await verifyRedactedPdf(createToolContext(), [file], {
+      mode: 'auto',
+      patterns: ['telefon'],
+    });
+    expect(report.checks.find((c) => c.id.endsWith(':meta'))?.passed).toBe(true);
+    expect(report.passed).toBe(true);
+  });
 });

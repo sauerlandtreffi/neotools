@@ -332,7 +332,7 @@ export function rewriteTokens(
   boxes: Array<{ x: number; y: number; w: number; h: number }>,
 ): RewriteResult {
   let ctm: Matrix = IDENTITY;
-  let stack: Matrix[] = [];
+  const stack: Matrix[] = [];
   let inText = false;
   let tm: Matrix = IDENTITY;
   let fontSize = 12;

@@ -9,11 +9,6 @@ import {
 import { normalizeWs } from './patterns.js';
 import type { RedactHit } from './types.js';
 
-function decode(obj: unknown): string {
-  if (obj instanceof PDFString || obj instanceof PDFHexString) return obj.decodeText();
-  return '';
-}
-
 function matchesNeedles(text: string, needles: string[]): boolean {
   if (!text) return false;
   const n = normalizeWs(text);

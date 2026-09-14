@@ -16,6 +16,15 @@ export interface VerifyRedactOptions {
   fillColor?: string;
 }
 
+/** pdf-lib Info dates / producer look like phone numbers or Steuer-IDs if scanned raw. */
+function isTechnicalPdfMeta(value: string): boolean {
+  const s = value.trim();
+  if (/^D:\d{8,}/.test(s)) return true;
+  if (/^pdf-lib/i.test(s)) return true;
+  if (/^Adobe/i.test(s) && /PDF/.test(s)) return true;
+  return false;
+}
+
 function leftoverInText(text: string, needles: string[], patterns: RedactPatternId[], custom: string[]): PatternMatch[] {
   const compact = normalizeWs(text);
   const extras: PatternMatch[] = [];
@@ -84,7 +93,7 @@ export async function verifyRedactedPdf(
     });
 
     const doc = await PDFDocument.load(data, { ignoreEncryption: true, updateMetadata: false });
-    const meta = collectMetaStrings(doc);
+    const meta = collectMetaStrings(doc).filter((s) => !isTechnicalPdfMeta(s));
     const metaHit = leftoverInText(meta.join('\n'), needles, scanPatterns, options.customRegex ?? []);
     checks.push({
       id: `${file.name}:meta`,
