@@ -1,0 +1,4 @@
+sRGB.icc — Debian icc-profiles-free (sRGB.icc), zlib/libpng license.
+Copyright: Kai-Uwe Behrmann, Marti Maria (littlecms) et al.
+Permission to use, copy, and redistribute (see zlib). Bundled unmodified for PDF/A OutputIntent.
+Source: https://sources.debian.org/src/icc-profiles-free/

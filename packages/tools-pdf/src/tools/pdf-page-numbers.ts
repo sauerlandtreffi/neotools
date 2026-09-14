@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { StandardFonts, rgb } from 'pdf-lib';
+import { StandardFonts } from 'pdf-lib';
 import {
   MIME,
   attachProvenance,
@@ -9,6 +9,10 @@ import {
 } from '@neotools/engine';
 import { PDF_LICENSES } from '../licenses.js';
 import { loadPdf, savePdf, stem } from '../pdf-io.js';
+import { drawPageStamp, formatPageLabel } from '../page-stamps.js';
+
+export { drawPageStamp, formatPageLabel, padBates, stampCoordinates } from '../page-stamps.js';
+export type { StampPosition, StampStyle } from '../page-stamps.js';
 
 const options = z.object({
   position: z
@@ -54,22 +58,8 @@ export const pdfPageNumbers = defineTool({
       const total = doc.getPageCount();
       doc.getPages().forEach((page, idx) => {
         const n = parsed.start + idx;
-        const label = parsed.format.replaceAll('{n}', String(n)).replaceAll('{total}', String(total));
-        const { width, height } = page.getSize();
-        const textW = font.widthOfTextAtSize(label, parsed.fontSize);
-        const pad = 28;
-        let x = (width - textW) / 2;
-        let y = pad;
-        if (parsed.position === 'footer-left') x = pad;
-        if (parsed.position === 'footer-right') x = width - pad - textW;
-        if (parsed.position === 'header-center') y = height - pad - parsed.fontSize;
-        page.drawText(label, {
-          x,
-          y,
-          size: parsed.fontSize,
-          font,
-          color: rgb(0.2, 0.2, 0.2),
-        });
+        const label = formatPageLabel(parsed.format, n, total);
+        drawPageStamp(page, font, label, { position: parsed.position, fontSize: parsed.fontSize });
       });
       return savePdf(doc, `${stem(file.name)}-numbered.pdf`);
     });

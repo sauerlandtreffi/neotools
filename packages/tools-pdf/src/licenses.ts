@@ -51,4 +51,39 @@ export const PDF_LICENSES: ToolLicense[] = [
     license: 'MIT',
     url: 'https://github.com/shssoichiro/oxipng',
   },
+  {
+    name: 'diff (jsdiff)',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/kpdecker/jsdiff',
+  },
+  {
+    name: 'pkijs',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/PeculiarVentures/PKI.js',
+  },
+  {
+    name: 'asn1js',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/PeculiarVentures/ASN1.js',
+  },
+  {
+    name: 'node-forge',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/digitalbazaar/forge',
+  },
+  {
+    name: 'sRGB.icc (icc-profiles-free)',
+    license: 'Zlib',
+    url: 'https://sources.debian.org/src/icc-profiles-free/',
+  },
+  {
+    name: 'Open Sans (test fixture)',
+    license: 'OFL-1.1',
+    url: 'https://github.com/googlefonts/opensans',
+  },
+  {
+    name: '@pdf-lib/fontkit',
+    license: 'MIT',
+    url: 'https://github.com/Hopding/fontkit',
+  },
 ];

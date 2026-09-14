@@ -17,6 +17,10 @@ import { pdfRepair } from './tools/pdf-repair.js';
 import { pdfCompress } from './tools/pdf-compress.js';
 import { pdfOcr } from './tools/pdf-ocr.js';
 import { pdfForms } from './tools/pdf-forms.js';
+import { pdfCompare } from './tools/pdf-compare.js';
+import { pdfA } from './tools/pdf-a.js';
+import { pdfAktenbundler } from './tools/pdf-aktenbundler.js';
+import { pdfSign } from './tools/pdf-sign.js';
 
 export const pdfTools: ToolDefinition[] = [
   pdfMerge,
@@ -36,6 +40,10 @@ export const pdfTools: ToolDefinition[] = [
   pdfCompress,
   pdfOcr,
   pdfForms,
+  pdfCompare,
+  pdfA,
+  pdfAktenbundler,
+  pdfSign,
 ];
 
 export function registerPdfTools(registry: Registry): Registry {
@@ -65,6 +73,10 @@ export {
   pdfCompress,
   pdfOcr,
   pdfForms,
+  pdfCompare,
+  pdfA,
+  pdfAktenbundler,
+  pdfSign,
 };
 
 export { inspectPdf } from './inspect.js';
@@ -76,4 +88,12 @@ export { verifyRedactedPdf } from './redact/verify.js';
 export { setNerOverride } from './redact/ner.js';
 export { recognizePage, pageHasTextLayer, writeInvisibleWords, wordsToPdfPositions } from './ocr.js';
 export type { OcrWord, RecognizePageResult, InvisibleWord } from './ocr.js';
-export { qpdfAvailable, encryptPdf, decryptPdf } from './qpdf/index.js';
+export { qpdfAvailable, encryptPdf, decryptPdf, qpdfCheck } from './qpdf/index.js';
+export { validatePdfa } from './pdfa/validate.js';
+export { convertToPdfa } from './pdfa/convert.js';
+export { comparePdfText } from './compare/text.js';
+export { verifyPdfSignatures } from './sign/verify.js';
+export { makeSelfSignedP12, loadPkcs12 } from './sign/p12.js';
+export { signPdfBytes } from './sign/create.js';
+export { openPdfjsDocument, loadPdfjs } from './pdfjs.js';
+export { resolvePdfjsWorkerSrc, configurePdfjsWorker } from './pdfjs.js';

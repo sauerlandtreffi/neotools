@@ -243,3 +243,22 @@ export async function decryptPdf(
     throw new Error(QPDF_WRONG_PASSWORD);
   }
 }
+
+/** qpdf --check (no output file). Exit 0 = structurally intact. */
+export async function qpdfCheck(input: Uint8Array): Promise<{ ok: boolean; stderr: string; code: number }> {
+  const { qpdf, stderr } = await createInstance();
+  qpdf.FS.writeFile('/in.pdf', input);
+  let code = 0;
+  try {
+    const raw = qpdf.callMain(['--check', '/in.pdf']);
+    if (typeof raw === 'number') code = raw;
+  } catch (err) {
+    const status = (err as { status?: number }).status;
+    if (typeof status === 'number') code = status;
+    else {
+      stderr.push(err instanceof Error ? err.message : String(err));
+      code = 1;
+    }
+  }
+  return { ok: code === 0, stderr: stderr.join('\n'), code };
+}

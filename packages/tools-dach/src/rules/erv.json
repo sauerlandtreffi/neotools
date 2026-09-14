@@ -1,0 +1,108 @@
+{
+  "id": "erv",
+  "version": "2026-01",
+  "sources": [
+    {
+      "id": "ERVV-§2",
+      "title": "Elektronischer-Rechtsverkehr-Verordnung § 2",
+      "note": "Form und Übermittlung elektronischer Dokumente; Dateiformat PDF."
+    },
+    {
+      "id": "ERVV-§5",
+      "title": "Elektronischer-Rechtsverkehr-Verordnung § 5",
+      "note": "Container, Struktur und technische Rahmenbedingungen."
+    },
+    {
+      "id": "ERVB",
+      "title": "Elektronischer-Rechtsverkehr-Bekanntmachung (aktuell gehalten)",
+      "note": "Dateigrößen, Dateinamen, Höchstzahl. Werte als Konfiguration, nicht fest verdrahtet im Code."
+    }
+  ],
+  "limits": {
+    "maxFilenameChars": 90,
+    "filenamePattern": "^[A-Za-z0-9_.-]+$",
+    "maxFileBytes": 209715200,
+    "maxMessageBytes": 1048576000,
+    "maxFiles": 1000
+  },
+  "rules": [
+    {
+      "id": "filename",
+      "source": "ERVB",
+      "severity": "error",
+      "title": { "de": "Dateiname", "en": "File name" }
+    },
+    {
+      "id": "filesize",
+      "source": "ERVB",
+      "severity": "error",
+      "title": { "de": "Dateigröße ≤ 200 MB", "en": "File size ≤ 200 MB" }
+    },
+    {
+      "id": "message-size",
+      "source": "ERVB",
+      "severity": "warning",
+      "title": { "de": "Nachricht ≤ 1000 MB", "en": "Message ≤ 1000 MB" }
+    },
+    {
+      "id": "file-count",
+      "source": "ERVB",
+      "severity": "error",
+      "title": { "de": "Max. 1000 Dateien", "en": "Max 1000 files" }
+    },
+    {
+      "id": "no-encrypt",
+      "source": "ERVV-§2",
+      "severity": "error",
+      "title": { "de": "Keine Verschlüsselung", "en": "No encryption" }
+    },
+    {
+      "id": "no-js",
+      "source": "ERVV-§2",
+      "severity": "error",
+      "title": { "de": "Kein JavaScript", "en": "No JavaScript" }
+    },
+    {
+      "id": "no-forms",
+      "source": "ERVV-§5",
+      "severity": "error",
+      "title": { "de": "Keine Formularfelder", "en": "No form fields" }
+    },
+    {
+      "id": "pdfa-recommended",
+      "source": "ERVV-§2",
+      "severity": "warning",
+      "title": { "de": "PDF/A empfohlen", "en": "PDF/A recommended" }
+    },
+    {
+      "id": "printable",
+      "source": "ERVV-§2",
+      "severity": "warning",
+      "title": { "de": "Druckbar", "en": "Printable" }
+    },
+    {
+      "id": "text-layer",
+      "source": "ERVV-§5",
+      "severity": "warning",
+      "title": { "de": "Durchsuchbarer Text", "en": "Searchable text" }
+    },
+    {
+      "id": "no-embedded",
+      "source": "ERVV-§5",
+      "severity": "error",
+      "title": { "de": "Keine eingebetteten Dateien", "en": "No embedded files" }
+    },
+    {
+      "id": "fonts-embedded",
+      "source": "ERVV-§5",
+      "severity": "warning",
+      "title": { "de": "Schriften eingebettet", "en": "Fonts embedded" }
+    },
+    {
+      "id": "page-a4",
+      "source": "ERVB",
+      "severity": "hint",
+      "title": { "de": "Seitenformat A4 empfohlen", "en": "A4 page size recommended" }
+    }
+  ]
+}

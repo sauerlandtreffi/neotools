@@ -14,6 +14,7 @@ const options = z.object({
   mode: z.enum(['each-page', 'ranges', 'every-n']).default('each-page'),
   ranges: z.string().default(''),
   everyN: z.coerce.number().int().min(1).default(2),
+  maxSizeMb: z.coerce.number().min(0).default(0),
 });
 
 export const pdfSplit = defineTool({
@@ -49,6 +50,24 @@ export const pdfSplit = defineTool({
       } else {
         groups = parseRanges(parsed.ranges, count);
         if (!groups.length) throw new Error('Keine gültigen Seitenbereiche.');
+      }
+      if (parsed.maxSizeMb > 0) {
+        const limit = parsed.maxSizeMb * 1024 * 1024;
+        const packed: number[][] = [];
+        let cur: number[] = [];
+        for (const group of groups.length ? groups : [src.getPageIndices()]) {
+          for (const idx of group) {
+            const trial = [...cur, idx];
+            const probe = await copyPagesToNew(src, trial);
+            const bytes = await probe.save({ updateFieldAppearances: false });
+            if (cur.length && bytes.byteLength > limit) {
+              packed.push(cur);
+              cur = [idx];
+            } else cur = trial;
+          }
+        }
+        if (cur.length) packed.push(cur);
+        groups = packed;
       }
       const made = [];
       for (let g = 0; g < groups.length; g++) {
