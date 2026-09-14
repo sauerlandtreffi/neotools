@@ -3,7 +3,7 @@ import Base from '../../../layouts/Base.astro';
 import { infoPath, t } from '../../../lib/i18n';
 import { listPublicTools } from '../../../lib/visible-tools';
 const locale = 'en' as const;
-const de = locale === 'de';
+const de = (locale as string) === 'de';
 const count = listPublicTools().length;
 const links = [
   { href: infoPath(locale, '/tools'), label: `${t(locale, 'tools')} (${count})` },
