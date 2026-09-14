@@ -6,44 +6,18 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@neotools/engine": [
-        "../../packages/engine/src/index.ts"
-      ],
-      "@neotools/engine/platform/browser": [
-        "../../packages/engine/src/platform/browser.ts"
-      ],
-      "@neotools/tools-pdf": [
-        "../../packages/tools-pdf/src/index.ts"
-      ],
-      "@neotools/tools-forensics": [
-        "../../packages/tools-forensics/src/index.ts"
-      ],
-      "@neotools/tools-image": [
-        "../../packages/tools-image/src/index.ts"
-      ],
-      "@neotools/tools-image-ai": [
-        "../../packages/tools-image-ai/src/index.ts"
-      ],
-      "@neotools/tools-dach": [
-        "../../packages/tools-dach/src/index.ts"
-      ],
-      "@neotools/parsers": [
-        "../../packages/parsers/src/index.ts"
-      ],
-      "@neotools/tools-speech": [
-        "../../packages/tools-speech/src/index.ts"
-      ],
-      "@neotools/models": [
-        "../../packages/models/src/index.ts"
-      ]
+      "@/*": ["src/*"],
+      "@neotools/engine": ["../../packages/engine/src/index.ts"],
+      "@neotools/engine/platform/browser": ["../../packages/engine/src/platform/browser.ts"],
+      "@neotools/tools-pdf": ["../../packages/tools-pdf/src/index.ts"],
+      "@neotools/tools-forensics": ["../../packages/tools-forensics/src/index.ts"],
+      "@neotools/tools-image": ["../../packages/tools-image/src/index.ts"],
+      "@neotools/tools-image-ai": ["../../packages/tools-image-ai/src/index.ts"],
+      "@neotools/tools-dach": ["../../packages/tools-dach/src/index.ts"],
+      "@neotools/tools-speech": ["../../packages/tools-speech/src/index.ts"],
+      "@neotools/models": ["../../packages/models/src/index.ts"],
+      "@neotools/parsers": ["../../packages/parsers/src/index.ts"]
     }
   },
-  "include": [
-    ".astro/types.d.ts",
-    "src/**/*",
-    "test/**/*"
-  ]
+  "include": [".astro/types.d.ts", "src/**/*", "test/**/*"]
 }

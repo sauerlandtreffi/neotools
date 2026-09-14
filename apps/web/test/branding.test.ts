@@ -13,6 +13,11 @@ describe('branding hiddenTools', () => {
     expect(listPublicTools([]).some((tool) => tool.id === sample!.id)).toBe(true);
   });
 
+  it('keeps audio-stems out of the workshop grid', () => {
+    expect(registry.get('audio-stems')).toBeTruthy();
+    expect(listPublicTools([]).some((tool) => tool.id === 'audio-stems')).toBe(false);
+  });
+
   it('reads optional branding fields with defaults', () => {
     const branding = loadBranding();
     expect(Array.isArray(branding.hiddenTools)).toBe(true);

@@ -35,6 +35,22 @@ describe('Pipeline type check', () => {
       ],
     });
     expect(errors.some((e) => e.message.includes('MIME-Mismatch'))).toBe(true);
+    expect(errors.some((e) => e.message.includes('Schritt 2 akzeptiert kein image/png'))).toBe(true);
+  });
+
+  it('allows MIME-filter branches (pdf vs image)', () => {
+    const registry = new Registry()
+      .register(passthroughTool('split', [MIME.pdf, MIME.png], [MIME.pdf, MIME.png]))
+      .register(passthroughTool('only-pdf', [MIME.pdf], [MIME.pdf]))
+      .register(passthroughTool('only-png', [MIME.png], [MIME.png]));
+    const errors = validatePipeline(registry, {
+      steps: [
+        { toolId: 'split', options: {} },
+        { toolId: 'only-pdf', options: {}, whenMime: [MIME.pdf] },
+        { toolId: 'only-png', options: {}, whenMime: [MIME.png] },
+      ],
+    });
+    expect(errors).toEqual([]);
   });
 
   it('flags unknown tools', () => {
@@ -47,6 +63,19 @@ describe('Pipeline type check', () => {
   it('mimeAccepted understands wildcards', () => {
     expect(mimeAccepted('image/png', ['image/*'])).toBe(true);
     expect(mimeAccepted('application/pdf', ['image/*'])).toBe(false);
+  });
+
+  it('ignores JSON report sidecars between PDF steps', () => {
+    const registry = new Registry()
+      .register(passthroughTool('sanitize', [MIME.pdf], [MIME.pdf, MIME.json]))
+      .register(passthroughTool('compress', [MIME.pdf], [MIME.pdf, MIME.json]));
+    const errors = validatePipeline(registry, {
+      steps: [
+        { toolId: 'sanitize', options: {} },
+        { toolId: 'compress', options: {} },
+      ],
+    });
+    expect(errors).toEqual([]);
   });
 });
 
@@ -82,5 +111,16 @@ describe('runPipeline', () => {
     );
     expect(result.outputs).toHaveLength(2);
     expect(result.report && 'steps' in result.report).toBe(true);
+  });
+
+  it('filters files by whenMime', async () => {
+    const registry = new Registry()
+      .register(passthroughTool('only-pdf', [MIME.pdf], [MIME.pdf]));
+    const result = await runPipeline(
+      registry,
+      { steps: [{ toolId: 'only-pdf', options: {}, whenMime: [MIME.pdf] }] },
+      [dummyPdf('a.pdf'), dummyPng('skip.png')],
+    );
+    expect(result.outputs.map((f) => f.name).sort()).toEqual(['a.pdf', 'skip.png']);
   });
 });

@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import { zodObjectFields } from '@neotools/engine';
+import { getAppliedPresets, zodObjectFields } from '@neotools/engine';
 import Base from '../../layouts/Base.astro';
 import ToolApp from '../../components/ToolApp.tsx';
 import { registry, toolPaths } from '../../lib/registry';
@@ -20,6 +20,7 @@ const meta = {
   inputs: tool.inputs,
   presets: tool.presets,
   ui: tool.ui ?? null,
+  lockedKeys: getAppliedPresets(registry)?.locked?.[tool.id] ?? [],
 };
 const related = formatsForTool(tool);
 let guides: Array<{ slug: string; title: string }> = [];

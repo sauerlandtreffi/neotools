@@ -22,6 +22,11 @@ export interface Branding {
   hiddenTools: string[];
   defaultLocale: 'de' | 'en';
   footerLinks: BrandingFooterLink[];
+  /** Embedded license token (Docker: NEOTOOLS_LICENSE). */
+  license?: string;
+  licensePubkey?: string;
+  presetsPath?: string;
+  showPoweredBy?: boolean;
 }
 
 const FALLBACK: Branding = {
@@ -38,6 +43,10 @@ const FALLBACK: Branding = {
   hiddenTools: [],
   defaultLocale: 'de',
   footerLinks: [],
+  license: '',
+  licensePubkey: '',
+  presetsPath: '',
+  showPoweredBy: true,
 };
 
 function normalize(parsed: Partial<Branding> & { colors?: Partial<BrandingColors> }): Branding {
@@ -48,7 +57,28 @@ function normalize(parsed: Partial<Branding> & { colors?: Partial<BrandingColors
     hiddenTools: parsed.hiddenTools ?? FALLBACK.hiddenTools,
     defaultLocale: parsed.defaultLocale === 'en' ? 'en' : 'de',
     footerLinks: parsed.footerLinks ?? FALLBACK.footerLinks,
+    license: process.env.NEOTOOLS_LICENSE || parsed.license || FALLBACK.license,
+    licensePubkey: process.env.NEOTOOLS_LICENSE_PUBKEY || parsed.licensePubkey || loadPubkeyFile() || FALLBACK.licensePubkey,
+    presetsPath: process.env.NEOTOOLS_PRESETS || parsed.presetsPath || FALLBACK.presetsPath,
+    showPoweredBy: parsed.showPoweredBy ?? FALLBACK.showPoweredBy,
   };
+}
+
+function loadPubkeyFile(): string {
+  const candidates = [
+    resolve(process.cwd(), '../../license-pubkey.json'),
+    resolve(process.cwd(), 'license-pubkey.json'),
+    resolve(process.cwd(), 'public/license-pubkey.json'),
+  ];
+  for (const file of candidates) {
+    try {
+      const parsed = JSON.parse(readFileSync(file, 'utf8')) as { publicKeyHex?: string; publicKey?: string };
+      return parsed.publicKeyHex || parsed.publicKey || '';
+    } catch {
+      // next
+    }
+  }
+  return '';
 }
 
 export function loadBranding(filePath?: string): Branding {

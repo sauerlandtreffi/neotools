@@ -54,6 +54,12 @@ self.addEventListener('fetch', (event) => {
   }
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // FFmpeg cores / WASM: never clone into Cache Storage. A failed clone() on
+  // the 30 MB ffmpeg-core.wasm body surfaces as TypeError: Failed to fetch
+  // inside the tool worker.
+  if (url.pathname.includes('/assets/ffmpeg') || url.pathname.endsWith('.wasm')) {
+    return;
+  }
   const runtime =
     /\.(wasm|woff2|ttf)$/.test(url.pathname) ||
     url.pathname.includes('/assets/') ||

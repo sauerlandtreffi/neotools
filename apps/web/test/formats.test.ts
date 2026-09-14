@@ -55,6 +55,18 @@ describe('conversion matrix', () => {
     expect(seo.length).toBeLessThanOrEqual(edges.length);
     expect(seo.length).toBeLessThan(400);
     expect(seo.some((e) => e.from === 'png' && e.to === 'jpg')).toBe(true);
+    if (registry.get('video-convert')) {
+      expect(seo.some((e) => e.from === 'mp4' && e.to === 'webm' && e.toolId === 'video-convert')).toBe(true);
+    }
+    if (registry.get('audio-convert')) {
+      expect(seo.some((e) => e.from === 'wav' && e.to === 'mp3' && e.toolId === 'audio-convert')).toBe(true);
+    }
+    if (registry.get('markdown-to-pdf')) {
+      expect(edges.some((e) => e.from === 'md' && e.to === 'pdf' && e.toolId === 'markdown-to-pdf')).toBe(true);
+    }
+    if (registry.get('docx-to-pdf')) {
+      expect(edges.some((e) => e.from === 'docx' && e.to === 'pdf' && e.toolId === 'docx-to-pdf')).toBe(true);
+    }
   });
 
   it('maps pdf-to-images onto pdf→jpg when the tool is registered', () => {

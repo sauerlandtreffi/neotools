@@ -90,9 +90,10 @@ export const documentFormats: FormatRecord[] = [
     metadataSupport: { exif: false, xmp: false, icc: false },
     browserSupport: { decode: BROWSER.allNo, encode: BROWSER.allNo },
     typicalUse: {
-      de: 'Textdokumente mit Office; Konverter folgen in Phase 4.',
-      en: 'Text documents with Office; converters follow in phase 4.',
+      de: 'Textdokumente; lokal nach PDF/Markdown/HTML/TXT.',
+      en: 'Text documents; locally to PDF/Markdown/HTML/TXT.',
     },
+    relatedToolsExtra: ['docx-to-pdf', 'docx-to-markdown', 'docx-to-html'],
     pros: {
       de: ['Offenes XML-Paket', 'Weit verbreitet'],
       en: ['Open XML package', 'Widely used'],
@@ -120,9 +121,10 @@ export const documentFormats: FormatRecord[] = [
     metadataSupport: noneMeta,
     browserSupport: { decode: BROWSER.allNo, encode: BROWSER.allNo },
     typicalUse: {
-      de: 'Tabellen; Export nach CSV/JSON ist geplant (SheetJS Community).',
-      en: 'Spreadsheets; export to CSV/JSON is planned (SheetJS Community).',
+      de: 'Tabellen; Export nach CSV/JSON/PDF (SheetJS Community).',
+      en: 'Spreadsheets; export to CSV/JSON/PDF (SheetJS Community).',
     },
+    relatedToolsExtra: ['xlsx-to-csv', 'xlsx-to-json', 'xlsx-to-pdf'],
     pros: {
       de: ['Strukturierte Zellen', 'Offenes Paket'],
       en: ['Structured cells', 'Open package'],
@@ -209,9 +211,10 @@ export const documentFormats: FormatRecord[] = [
     metadataSupport: noneMeta,
     browserSupport: { decode: BROWSER.allYes, encode: BROWSER.allYes },
     typicalUse: {
-      de: 'Notizen, Docs, README; Export nach PDF/HTML geplant.',
-      en: 'Notes, docs, READMEs; export to PDF/HTML is planned.',
+      de: 'Notizen, Docs, README; lokal nach PDF/HTML/DOCX/EPUB.',
+      en: 'Notes, docs, READMEs; locally to PDF/HTML/DOCX/EPUB.',
     },
+    relatedToolsExtra: ['markdown-to-pdf', 'markdown-to-html', 'markdown-to-docx'],
     pros: {
       de: ['Lesbar als Text', 'Diff-freundlich'],
       en: ['Readable as text', 'Diff-friendly'],

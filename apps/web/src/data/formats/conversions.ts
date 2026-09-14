@@ -36,16 +36,17 @@ export const PLANNED_CONVERSIONS: ConversionEdge[] = [
   { from: 'pdf', to: 'png', status: 'planned', toolId: 'pdf-to-images', options: { format: 'png' } },
   { from: 'jpg', to: 'pdf', status: 'planned', toolId: 'images-to-pdf' },
   { from: 'png', to: 'pdf', status: 'planned', toolId: 'images-to-pdf' },
-  { from: 'docx', to: 'pdf', status: 'planned', toolId: 'office-docx' },
-  { from: 'md', to: 'pdf', status: 'planned', toolId: 'office-markdown' },
-  { from: 'mp4', to: 'webm', status: 'planned', toolId: 'video-convert', options: { format: 'webm' } },
-  { from: 'mkv', to: 'mp4', status: 'planned', toolId: 'video-convert', options: { format: 'mp4' } },
-  { from: 'mov', to: 'mp4', status: 'planned', toolId: 'video-convert', options: { format: 'mp4' } },
+  { from: 'docx', to: 'pdf', status: 'planned', toolId: 'docx-to-pdf' },
+  { from: 'md', to: 'pdf', status: 'planned', toolId: 'markdown-to-pdf' },
+  { from: 'xlsx', to: 'csv', status: 'planned', toolId: 'xlsx-to-csv' },
+  { from: 'mp4', to: 'webm', status: 'planned', toolId: 'video-convert', options: { container: 'webm' } },
+  { from: 'mkv', to: 'mp4', status: 'planned', toolId: 'video-convert', options: { container: 'mp4' } },
+  { from: 'mov', to: 'mp4', status: 'planned', toolId: 'video-convert', options: { container: 'mp4' } },
   { from: 'gif-video', to: 'mp4', status: 'planned', toolId: 'gif-to-video' },
   { from: 'mp4', to: 'gif-video', status: 'planned', toolId: 'video-to-gif' },
-  { from: 'wav', to: 'mp3', status: 'planned', toolId: 'audio-convert', options: { format: 'mp3' } },
-  { from: 'flac', to: 'mp3', status: 'planned', toolId: 'audio-convert', options: { format: 'mp3' } },
-  { from: 'mp3', to: 'wav', status: 'planned', toolId: 'audio-convert', options: { format: 'wav' } },
+  { from: 'wav', to: 'mp3', status: 'planned', toolId: 'audio-convert', options: { container: 'mp3' } },
+  { from: 'flac', to: 'mp3', status: 'planned', toolId: 'audio-convert', options: { container: 'mp3' } },
+  { from: 'mp3', to: 'wav', status: 'planned', toolId: 'audio-convert', options: { container: 'wav' } },
   { from: 'zip', to: '7z', status: 'planned', toolId: 'archive-convert', options: { format: '7z' } },
 ];
 
@@ -54,19 +55,24 @@ function isConverter(tool: ToolDefinition): boolean {
   return CONVERTER_ID.test(tool.id);
 }
 
-function formatEnumValues(tool: ToolDefinition): string[] {
+function formatEnumValues(tool: ToolDefinition): { field: 'format' | 'container'; values: string[] } | undefined {
   const fields = zodObjectFields(tool.options);
-  const field = fields.find((item) => item.name === 'format' && item.enumValues?.length);
-  if (field?.enumValues?.length) return field.enumValues;
+  const field = fields.find((item) => (item.name === 'format' || item.name === 'container') && item.enumValues?.length);
+  if (field?.enumValues?.length) {
+    return { field: field.name === 'container' ? 'container' : 'format', values: field.enumValues };
+  }
   const fromPresets = new Set<string>();
   for (const preset of tool.presets ?? []) {
-    const value = (preset.options as { format?: unknown }).format;
+    const value = (preset.options as { format?: unknown; container?: unknown }).format
+      ?? (preset.options as { container?: unknown }).container;
     if (typeof value === 'string') fromPresets.add(value);
   }
-  return [...fromPresets];
+  if (!fromPresets.size) return undefined;
+  return { field: 'format', values: [...fromPresets] };
 }
 
 function mapOptionToFormatId(value: string): string | undefined {
+  if (value === 'gif') return getFormat('gif-video')?.id ?? getFormat('gif')?.id;
   const id = canonicalFormatId(value);
   return getFormat(id) ? id : undefined;
 }
@@ -93,23 +99,26 @@ function edgesFromTool(tool: ToolDefinition): ConversionEdge[] {
   if (!isConverter(tool)) return [];
   const inputs = formatsAccepting(tool.inputs.accept);
   const formatValues = formatEnumValues(tool);
-  const mappedOutputs = formatValues
+  const mappedOutputs = (formatValues?.values ?? [])
     .map((value) => ({ value, id: mapOptionToFormatId(value) }))
     .filter((row): row is { value: string; id: string } => Boolean(row.id));
 
-  if (mappedOutputs.length) {
+  if (mappedOutputs.length && formatValues) {
     const edges: ConversionEdge[] = [];
     for (const from of inputs) {
       for (const out of mappedOutputs) {
         if (from.id === out.id) continue;
-        const preset = tool.presets?.find((p) => (p.options as { format?: string }).format === out.value);
+        const preset = tool.presets?.find((p) => {
+          const opts = p.options as { format?: string; container?: string };
+          return opts.format === out.value || opts.container === out.value;
+        });
         edges.push({
           from: from.id,
           to: out.id,
           status: 'available',
           toolId: tool.id,
           presetId: preset?.id,
-          options: { format: out.value },
+          options: { [formatValues.field]: out.value },
         });
       }
     }
@@ -200,9 +209,29 @@ const SEO_IMAGE_CONVERT = new Set([
   'jxl',
 ]);
 
+const SEO_MEDIA_PAIRS = new Set([
+  'mp4->webm',
+  'webm->mp4',
+  'mkv->mp4',
+  'mov->mp4',
+  'avi->mp4',
+  'mp4->gif-video',
+  'gif-video->mp4',
+  'wav->mp3',
+  'flac->mp3',
+  'mp3->wav',
+  'ogg->mp3',
+  'm4a->mp3',
+  'wav->ogg',
+  'opus->mp3',
+]);
+
 export function seoConversionEdges(edges: readonly ConversionEdge[]): ConversionEdge[] {
   return edges.filter((edge) => {
     if (edge.status === 'planned') return true;
+    if (edge.toolId === 'video-convert' || edge.toolId === 'audio-convert') {
+      return SEO_MEDIA_PAIRS.has(`${edge.from}->${edge.to}`);
+    }
     if (edge.toolId !== 'image-convert') return true;
     return SEO_IMAGE_CONVERT.has(edge.from) && SEO_IMAGE_CONVERT.has(edge.to);
   });

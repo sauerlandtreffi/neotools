@@ -2,6 +2,8 @@ export { defineTool } from './define-tool.js';
 export { Registry } from './registry.js';
 export {
   mimeAccepted,
+  pipelinePayloadMimes,
+  PIPELINE_SIDECAR_MIMES,
   validatePipeline,
   serializePipeline,
   deserializePipeline,

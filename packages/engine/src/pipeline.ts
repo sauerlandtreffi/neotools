@@ -19,6 +19,13 @@ export function mimeAccepted(mime: string, accept: string[]): boolean {
   return false;
 }
 
+/** Report/sidecar outputs (JSON reports) must not block the next convert/edit step. */
+export const PIPELINE_SIDECAR_MIMES = new Set(['application/json']);
+
+export function pipelinePayloadMimes(mimes: readonly string[]): string[] {
+  return mimes.filter((mime) => !PIPELINE_SIDECAR_MIMES.has(mime));
+}
+
 export function validatePipeline(registry: Registry, spec: PipelineSpec): PipelineTypeError[] {
   const errors: PipelineTypeError[] = [];
   if (!spec.steps.length) {
@@ -50,17 +57,26 @@ export function validatePipeline(registry: Registry, spec: PipelineSpec): Pipeli
     }
 
     if (previousMimes) {
-      const ok = previousMimes.some((m) => mimeAccepted(m, tool.inputs.accept));
-      if (!ok) {
+      const incoming = pipelinePayloadMimes(previousMimes).filter(
+        (m) => !step.whenMime?.length || mimeAccepted(m, step.whenMime),
+      );
+      const rejected = incoming.filter((m) => !mimeAccepted(m, tool.inputs.accept));
+      for (const mime of rejected) {
         errors.push({
           stepIndex: index,
           toolId: step.toolId,
-          message: `MIME-Mismatch: vorher [${previousMimes.join(', ')}], Tool akzeptiert [${tool.inputs.accept.join(', ')}]`,
+          message: `Schritt ${index + 1} akzeptiert kein ${mime} (MIME-Mismatch: vorher [${previousMimes.join(', ')}], Tool akzeptiert [${tool.inputs.accept.join(', ')}])`,
         });
       }
     }
 
-    previousMimes = tool.outputs?.mime ?? previousMimes;
+    const emitted = pipelinePayloadMimes(tool.outputs?.mime ?? previousMimes ?? []);
+    if (step.whenMime?.length && previousMimes) {
+      const passthrough = previousMimes.filter((m) => !mimeAccepted(m, step.whenMime!));
+      previousMimes = [...new Set([...(emitted ?? []), ...passthrough])];
+    } else {
+      previousMimes = emitted;
+    }
   });
 
   return errors;
@@ -130,18 +146,28 @@ export async function runPipeline(
     const step = spec.steps[i]!;
     const tool = registry.require(step.toolId);
     const options = tool.options.parse(step.options ?? {});
+    const selected = current.filter(
+      (file) => !step.whenMime?.length || mimeAccepted(file.mime, step.whenMime),
+    );
+    const passthrough = current.filter(
+      (file) => step.whenMime?.length && !mimeAccepted(file.mime, step.whenMime),
+    );
     ctx.progress(i / spec.steps.length, tool.title.de);
-    last = await runTool(tool, ctx, current, options);
-    const provenance = await createProvenance(tool.id, options, current);
+    if (!selected.length) {
+      current = passthrough;
+      continue;
+    }
+    last = await runTool(tool, ctx, selected, options);
+    const provenance = await createProvenance(tool.id, options, selected);
     last.report = attachProvenance(last.report, provenance);
     warnings.push(...last.warnings);
     if (last.report) reports.push({ toolId: tool.id, report: last.report });
-    current = last.outputs;
+    current = [...last.outputs, ...passthrough];
   }
 
   ctx.progress(1, 'Fertig');
   return {
-    outputs: last.outputs,
+    outputs: current,
     warnings,
     report: { steps: reports, batch: last.report?.['batch'] },
   };

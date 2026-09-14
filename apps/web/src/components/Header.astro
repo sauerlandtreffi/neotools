@@ -23,6 +23,8 @@ const switchPath = switchLocalePath(path, locale);
       <a href={localePath(locale, locale === 'de' ? '/verlauf' : '/history')}>{t(locale, 'history')}</a>
       <a href={localePath(locale, '/reader')}>{t(locale, 'reader')}</a>
       <a href={localePath(locale, '/pipeline')}>{t(locale, 'pipeline')}</a>
+      <a href={localePath(locale, '/watch')}>{t(locale, 'watchFolder')}</a>
+      <a href={localePath(locale, locale === 'de' ? '/lizenz' : '/license')}>{t(locale, 'license')}</a>
       <a href={localePath(locale, locale === 'de' ? '/lizenzen' : '/licenses')}>{t(locale, 'licenses')}</a>
       <a href={switchPath} hreflang={other} class="mono text-xs uppercase">{other}</a>
       <ThemeToggle client:load locale={locale} />

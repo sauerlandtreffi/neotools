@@ -8,6 +8,7 @@ import CommandPalette from '../components/CommandPalette.tsx';
 import ReaderBoot from '../components/ReaderBoot.tsx';
 import ShortcutHelp from '../components/ShortcutHelp.tsx';
 import UpdateBanner from '../components/UpdateBanner.tsx';
+import DesktopEvents from '../components/DesktopEvents.tsx';
 import { branding } from '../lib/branding';
 import { listPublicTools } from '../lib/visible-tools';
 import { listFormats } from '../data/formats';
@@ -72,6 +73,7 @@ const itemsJson = JSON.stringify(
     <CommandPalette client:idle locale={locale} itemsJson={itemsJson} />
     <ShortcutHelp client:idle locale={locale} />
     <UpdateBanner client:idle locale={locale} />
+    <DesktopEvents client:idle />
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {

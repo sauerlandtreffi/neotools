@@ -1,15 +1,141 @@
 import { expose } from 'comlink';
-import { createToolContext, neoFileFromBytes, runTool } from '@neotools/engine';
+import { applyTeamPresets, createToolContext, neoFileFromBytes, runTool, type Registry } from '@neotools/engine';
 import { browserPlatform } from '@neotools/engine/platform/browser';
 import { createPdfRegistry, previewRedactHits, loadPdfjs } from '@neotools/tools-pdf';
 import { registerForensicsTools } from '@neotools/tools-forensics';
-import { modelStatus, registerImageAiTools } from '@neotools/tools-image-ai';
-import { registerImageTools } from '@neotools/tools-image';
-import { registerDachTools } from '@neotools/tools-dach';
-import { registerSpeechTools } from '@neotools/tools-speech';
-import { registerArchiveTools } from '@neotools/tools-archive';
 
-const registry = registerArchiveTools(registerSpeechTools(registerDachTools(registerImageTools(registerImageAiTools(registerForensicsTools(createPdfRegistry()))))));
+let registry: Registry = registerForensicsTools(createPdfRegistry());
+const loadedPacks = new Set<string>(['pdf', 'forensics']);
+let presetsDoc: unknown;
+
+function applyPresets(): void {
+  if (!presetsDoc || typeof presetsDoc !== 'object') return;
+  try {
+    registry = applyTeamPresets(registry, presetsDoc);
+  } catch {
+    // invalid team presets
+  }
+}
+
+function packForTool(toolId: string): string {
+  if (toolId.startsWith('forensics-')) return 'forensics';
+  if (toolId.startsWith('dach-')) return 'dach';
+  if (
+    toolId.startsWith('speech-') ||
+    toolId.startsWith('subtitles-') ||
+    toolId.startsWith('transcript-') ||
+    toolId === 'audio-profanity-bleep-list' ||
+    toolId === 'a11y-audio-description-draft'
+  ) {
+    return 'speech';
+  }
+  if (toolId.startsWith('video-') || toolId.startsWith('audio-') || toolId === 'gif-to-video') return 'media';
+  if (toolId.startsWith('archive-') || toolId.startsWith('files-')) return 'archive';
+  if (
+    toolId.startsWith('docx-') ||
+    toolId.startsWith('xlsx-') ||
+    toolId.startsWith('csv-') ||
+    toolId.startsWith('pptx-') ||
+    toolId.startsWith('epub-') ||
+    toolId.startsWith('markdown-') ||
+    toolId.startsWith('html-') ||
+    toolId.startsWith('text-') ||
+    toolId.startsWith('json-') ||
+    toolId === 'data-clean' ||
+    toolId === 'vcard-tools' ||
+    toolId === 'ics-merge' ||
+    toolId === 'font-subset' ||
+    toolId === 'qr-batch' ||
+    toolId === 'anki-from-images' ||
+    toolId === 'pdf-to-epub'
+  ) {
+    return 'office';
+  }
+  if (
+    toolId === 'image-remove-background' ||
+    toolId === 'image-auto-blur' ||
+    toolId === 'image-doc-repair' ||
+    toolId === 'image-screenshot-workshop' ||
+    toolId === 'image-upscale' ||
+    toolId === 'image-denoise' ||
+    toolId === 'image-alt-text'
+  ) {
+    return 'image-ai';
+  }
+  if (toolId.startsWith('image-') || toolId === 'creator-export-pack') return 'image';
+  return 'pdf';
+}
+
+async function ensurePack(pack: string): Promise<void> {
+  if (loadedPacks.has(pack)) return;
+  loadedPacks.add(pack);
+  switch (pack) {
+    case 'image': {
+      const { registerImageTools } = await import('@neotools/tools-image');
+      registry = registerImageTools(registry);
+      break;
+    }
+    case 'image-ai': {
+      const { registerImageAiTools } = await import('@neotools/tools-image-ai');
+      registry = registerImageAiTools(registry);
+      break;
+    }
+    case 'dach': {
+      const { registerDachTools } = await import('@neotools/tools-dach');
+      registry = registerDachTools(registry);
+      break;
+    }
+    case 'speech': {
+      const { registerSpeechTools } = await import('@neotools/tools-speech');
+      registry = registerSpeechTools(registry);
+      break;
+    }
+    case 'office': {
+      const { registerOfficeTools } = await import('@neotools/tools-office');
+      registry = registerOfficeTools(registry);
+      break;
+    }
+    case 'media': {
+      const { registerMediaTools } = await import('@neotools/tools-media');
+      registry = registerMediaTools(registry);
+      break;
+    }
+    case 'archive': {
+      const { registerArchiveTools } = await import('@neotools/tools-archive');
+      registry = registerArchiveTools(registry);
+      break;
+    }
+    default:
+      break;
+  }
+  applyPresets();
+}
+
+async function ensureTool(toolId: string): Promise<void> {
+  await ensurePack(packForTool(toolId));
+}
+
+const presetsReady = (async () => {
+  try {
+    const { loadTeamPresetsJson } = await import('../lib/presets-store');
+    const local = await loadTeamPresetsJson();
+    if (local) {
+      presetsDoc = JSON.parse(local) as unknown;
+      applyPresets();
+      return;
+    }
+  } catch {
+    // IndexedDB unavailable or invalid desktop presets
+  }
+  try {
+    const res = await fetch('/presets.json');
+    if (!res.ok) return;
+    presetsDoc = await res.json();
+    applyPresets();
+  } catch {
+    // invalid bundled team presets
+  }
+})();
 void loadPdfjs();
 
 export interface WorkerFile {
@@ -56,6 +182,8 @@ export interface WorkerApi {
 
 const api: WorkerApi = {
   async run(toolId, files, options, onProgress) {
+    await presetsReady;
+    await ensureTool(toolId);
     const tool = registry.require(toolId);
     const ctx = createToolContext({
       platform: browserPlatform(),
@@ -74,6 +202,8 @@ const api: WorkerApi = {
     return { outputs, warnings: result.warnings, report: result.report };
   },
   async runPipeline(spec, files, onProgress) {
+    await presetsReady;
+    for (const step of spec.steps) await ensureTool(step.toolId);
     const { runPipeline } = await import('@neotools/engine');
     const ctx = createToolContext({
       platform: browserPlatform(),
@@ -119,6 +249,8 @@ const api: WorkerApi = {
     });
   },
   async modelStatus(toolId) {
+    await ensureTool(toolId);
+    const { modelStatus } = await import('@neotools/tools-image-ai');
     return modelStatus(toolId, browserPlatform());
   },
 };

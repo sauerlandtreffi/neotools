@@ -42,6 +42,7 @@ apps/web/public/assets/models/*
 apps/web/public/assets/fonts/*
 !apps/web/public/assets/fonts/.gitkeep
 !apps/web/public/assets/fonts/SourceSans3-Regular.otf
+# Office OFL latin subsets are < 2 MiB and may be committed; copy-fonts.mjs refreshes them.
 packages/tools-image-ai/.models/
 packages/tools-speech/.models/
 packages/models/.models/
@@ -75,6 +76,14 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# Copied ffmpeg.wasm cores (≫ 2 MB, scripts/copy-wasm-assets.mjs)
+apps/web/public/assets/ffmpeg/*
+!apps/web/public/assets/ffmpeg/.gitkeep
+# Custom LGPL WASM core (scripts/build-ffmpeg-lgpl.sh, ≫ 2 MB)
+packages/tools-media/vendor/ffmpeg-lgpl/
+packages/tools-media/dist-ffmpeg-lgpl/
+
 
 # E-invoice official XSD / Schematron (fetch-schemas.mjs, too large)
 packages/tools-dach/assets/schemas/**

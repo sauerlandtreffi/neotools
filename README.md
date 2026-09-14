@@ -74,20 +74,27 @@ docker compose -f deploy/docker/docker-compose.yml up --build
 ## Architektur
 
 ```
-packages/engine         @neotools/engine          defineTool, Registry, Pipeline, Batch, Provenance
+packages/engine         @neotools/engine          defineTool, Registry, Pipeline, Batch, Provenance, Team-Presets
+packages/license        @neotools/license         Offline-Ed25519, Gates nur für Plattform-Extras
 packages/parsers        @neotools/parsers         JPEG/PNG/TIFF-Parser (geteilt)
-packages/tools-pdf      @neotools/tools-pdf       21 PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, PAdES, PDF/A)
+packages/models         @neotools/models          ONNX/Whisper-Katalog (kein CDN)
+packages/tools-pdf      @neotools/tools-pdf       24 PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, PAdES, PDF/A, UA)
 packages/tools-forensics @neotools/tools-forensics 10 Forensik-Tools
 packages/tools-image    @neotools/tools-image     17 Bild-Tools (jSquash, eigene Codecs)
 packages/tools-image-ai @neotools/tools-image-ai  7 KI/CV-Bild-Tools (ONNX, Transformers.js)
-packages/tools-dach     @neotools/tools-dach      3 DACH-Tools (beA/ERV, Hash+TSA, GiroCode)
+packages/tools-dach     @neotools/tools-dach      12 DACH-Tools (beA/ERV, E-Rechnung, GoBD, GiroCode)
+packages/tools-office   @neotools/tools-office    32 Office/E-Book/Daten-Tools
+packages/tools-media    @neotools/tools-media     62 Video/Audio-Tools (FFmpeg, WebCodecs)
+packages/tools-speech   @neotools/tools-speech    12 Sprache/Untertitel-Tools (Whisper)
+packages/tools-archive  @neotools/tools-archive   11 Archiv/Ordner-Tools
 apps/web                Astro 5 + Preact + Tailwind 4, Worker via Comlink
-apps/cli                dieselben Tool-Definitionen, Zod → Flags
-apps/desktop            Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Single-Instance)
-deploy/docker           nginx-static, branding.json zur Build-Zeit
+apps/cli                dieselben Tool-Definitionen, Zod → Flags, watch, license
+apps/api                Fastify REST-Sidecar (gleiche Engine)
+apps/desktop            Tauri 2 Desktop (PDF-Reader, Dateizuordnung, Deep-Link)
+deploy/docker           nginx-static + optional API, branding.json zur Build-Zeit
 ```
 
-**58 Tools** in fünf Packs (`pdf`, `forensics`, `image`, `image-ai`/`a11y`, `dach`). White-Label: `branding.json` (`hiddenTools`, Name, Farben).
+**187 Tools** in neun Packs (`pdf` 24, `forensics` 10, `image` 17, `image-ai`/`a11y` 7, `dach` 12, `office` 32, `media` 62, `speech` 12, `archive` 11). `audio-stems` bleibt registriert, aber nicht im Web-Grid (kein lizenzsauberes kleines Modell). White-Label: `branding.json` (`hiddenTools`, Name, Farben, Lizenz).
 
 Die Engine kennt kein DOM. Platform-Adapter:
 
@@ -101,7 +108,7 @@ Batch: eine kaputte Datei bricht den Rest nicht ab (`ok|error` + Grund).
 ## Lizenzen
 
 Eigener Code: **MIT** (`LICENSE`).  
-Laufzeit: pdf-lib (MIT), PDF.js (Apache-2.0), qpdf-wasm (Apache-2.0), @cantoo/pdf-lib (MIT), jSquash/mozjpeg/oxipng (Apache-2.0/BSD/MIT), Tesseract.js (Apache-2.0), Zod, Comlink, fflate, Astro, Preact, Tailwind.  
+Laufzeit: pdf-lib (MIT), PDF.js (Apache-2.0), qpdf-wasm (Apache-2.0), @cantoo/pdf-lib (MIT), jSquash/mozjpeg/oxipng (Apache-2.0/BSD/MIT), Tesseract.js (Apache-2.0), Zod, Comlink, fflate, Astro, Preact, Tailwind, @noble/ed25519 (MIT), SheetJS Community (Apache-2.0), OFL-Fonts (Source Sans/Serif/Code). FFmpeg-WASM-Core derzeit **GPL-2.0-or-later (temporär, x264)** — LGPL-Skript und GH-Workflow im Repo. libheif/7z-wasm nur dynamisch (LGPL).  
 **Nicht verwendet:** Ghostscript, MuPDF, iText (AGPL).
 
 Die Seite `/lizenzen` sammelt `licenses` aller Tools plus Plattform-Libs. Zusätzlich `/licenses.json` und `/THIRD_PARTY_NOTICES.txt`.

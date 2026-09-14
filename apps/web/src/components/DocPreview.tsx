@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
 import { marked } from 'marked';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '../lib/sanitize-html';
 import type { Locale } from '../lib/i18n';
 
 interface Props {
@@ -16,7 +16,7 @@ export default function DocPreview({ locale, toolId, values, onChangeValues, onG
   const htmlMode = toolId === 'html-to-pdf';
   const preview = useMemo(() => {
     const raw = htmlMode ? source : String(marked.parse(source || '', { async: false }));
-    return DOMPurify.sanitize(raw);
+    return sanitizeHtml(raw);
   }, [htmlMode, source]);
 
   return (

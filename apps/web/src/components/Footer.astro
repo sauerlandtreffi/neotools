@@ -1,4 +1,5 @@
 ---
+import LicenseFooter from './LicenseFooter.tsx';
 import { branding } from '../lib/branding';
 import { localePath, localizeHref, t, type Locale } from '../lib/i18n';
 interface Props { locale: Locale }
@@ -7,6 +8,13 @@ const { locale } = Astro.props;
 <footer class="border-t py-8 text-sm" style="border-color: var(--line); color: var(--muted)">
   <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4">
     <p>{branding.name} · MIT für eigenen Code · keine AGPL-Laufzeit</p>
+    <LicenseFooter
+      client:idle
+      locale={locale}
+      pubkey={branding.licensePubkey ?? ''}
+      embedded={branding.license ?? ''}
+      showPoweredBy={branding.showPoweredBy !== false}
+    />
     <nav class="flex flex-wrap gap-4">
       <a href={localePath(locale, locale === 'de' ? '/impressum' : '/imprint')}>{t(locale, 'imprint')}</a>
       <a href={localePath(locale, locale === 'de' ? '/datenschutz' : '/privacy')}>{t(locale, 'privacy')}</a>

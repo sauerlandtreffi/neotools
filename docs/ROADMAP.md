@@ -265,91 +265,34 @@ Jedes WP: eigener Branch, DoD am Ende des Blocks, kein „halb in einem anderen 
 38. WP-38 Desktop-Reader Anzeige/Suche/Speichern  
 39. WP-39 Journal-UI + Verlauf-Stub  
 
-## Status WP-22 / WP-23 / WP-35 erledigt
+Wellen 1–3 (WP-16–38, Packs pdf/forensics/image/image-ai, Format-KB, Desktop-Reader, QA) sind in den Commits bis `f99d54f`/`97c3ffa`/`2f43d07`/`626240d` enthalten.
 
-- **WP-22 erledigt:** `pdf-redact` (Klick-Regionen, Textsuche, DACH-Muster inkl. IBAN-mod97 / Steuer-ID-Prüfziffer / Kennzeichen-Kreis, echte Content-Stream-Entfernung von `Tj`/`TJ`/`'`/`"`, Form-XObjects, Bild-XObjects, Raster-Fallback, CLI `--regions` JSON, Vitest + Golden-Report).
-- **WP-23 erledigt:** NER-Hook über Transformers.js (lokal, Ladepfad via `Platform.assets.nerModel`, im Test gemockt; fehlt das Modell → Warnung). Web-UI `RedactEditor` + Verifikationsblock (grün/rot).
-- **WP-35 erledigt:** Engine-`verify?(ctx, outputs, options)` läuft im Runner/`runPipeline` nach `run` auf **neu geladenen Output-Bytes**. Ergebnis liegt in `ToolResult.report.verification`. `pdf-sanitize` prüft JS/OpenAction/Metadaten/FileAttachments/PieceInfo/Thumbnails/OCG; `pdf-redact` prüft Re-Extract, Metadaten und Pixel-Stichprobe.
+## Stand nach Welle 4
 
-## Status WP-16 / WP-38 erledigt
+Welle-4-Packs und Plattform sind verdrahtet. **187 Tools** (Web-Grid 186 — `audio-stems` registriert, aber ausgeblendet). Vorherige WP-Statusblöcke sind hier zusammengeführt.
 
-- **WP-16 erledigt:** Tauri-2-Desktop mit Dateizuordnung `.pdf`, `--open`, macOS-`Opened`, Single-Instance, Commands `read_opened_file` / `save_file` / `pick_save_path`, Icon-Set, CI-Matrix Windows/macOS/Linux. Updater nur als Platzhalter konfiguriert.
-- **WP-38 erledigt:** PDF-Reader `/reader` (+ `/en/reader`): pdfjs-Anzeige, virtuelles Scrollen, Suche, Formulare, Annotationen, Speichern (Web/Tauri), Tool-Handoff (`pdf-reorder` und andere PDF-Tools).
+| Pack | Tools | Hinweis |
+|---|---|---|
+| pdf | 24 | inkl. Mailmerge, UA, Attachment-Stamp |
+| forensics | 10 | Phase 1 vollständig |
+| image | 17 | jSquash, HEIC dynamisch LGPL |
+| image-ai | 7 | ONNX/Transformers, Showcases ohne Qualitätsversprechen |
+| dach | 12 | E-Rechnung TS-Regeln, GoBD, Team-Presets-Tool |
+| office | 32 | kein LibreOffice-WASM; OFL-Fonts |
+| media | 62 | `video-cutlist` neu; Browser lädt FFmpeg-Core in-process (kein Nested-Worker). WASM-Core **GPL temporär** — Docker-LGPL-Build scheiterte (`EM_TOOLCHAIN_FILE`); GH-Workflow `ffmpeg-lgpl.yml` + `scripts/fetch-ffmpeg-lgpl.mjs` |
+| speech | 12 | Whisper lokal; `transcript-edits` → `video-cutlist`, Bleep-Liste → `audio-bleep` |
+| archive | 11 | ZIP/TAR nativ; 7z-wasm LGPL dynamisch |
 
-## Status WP-32 / WP-33 / WP-34 erledigt
+**Plattform:** REST-API (`apps/api`), Offline-Lizenz (`@neotools/license`, Gates nur api/watch/presets/whitelabel/audit), Team-Presets in Web/CLI/API, Watch CLI+`/watch`, Pipeline-Builder mit fünf Bibliotheks-Presets, Desktop Updater/Deep-Link/Menü, `docs/DEPLOYMENT.md`.
 
-- **WP-32/33/34 erledigt:** Pack `forensics` (`@neotools/tools-forensics`) Phase 1: `forensics-identify`, `forensics-autopsy`, `forensics-bytes-compare`, `forensics-hash`, `forensics-hidden-data`, `forensics-fake-ext`, `forensics-share-safe`, `forensics-fingerprint`, `forensics-watermark-find`, `forensics-provenance`.
+Pack-Commits: `bd5d049` office, `21d6a16` speech, `4d3b6b1` media, `53761f3` dach/pdf/archive.
 
-## Status
+**Offen für Welle 5**
 
-WP-19/20/25 + Rename erledigt
-
-## Status QA / Integration (WP-37)
-
-- Git-Repo auf `main` initialisiert (erster Commit: wave 1+2). Kein Remote.
-- ESLint (flat) + Prettier root-weit; Root-Scripts `dev`/`build`/`test`/`typecheck`/`lint`/`e2e`/`cli`.
-- Playwright-Smokes in `apps/web/e2e/` gegen Static-Server mit Produktions-Headern; CI `.github/workflows/ci.yml` (build, test, typecheck, lint, chromium-smoke, Report-Artefakt bei Fehler). `desktop.yml` unverändert.
-- `packages/tools-pdf/src/pdfjs.ts` setzt `GlobalWorkerOptions.workerSrc` (self-hosted Worker). Smoke `d2` (Redact Auto-Treffer + Verify) ist aktiv.
-
-## Status Pack `image` KI/CV (`@neotools/tools-image-ai`)
-
-- Paket `packages/tools-image-ai` mit Tools `image-remove-background`, `image-auto-blur`, `image-doc-repair`, `image-screenshot-workshop`, `image-upscale`, `image-denoise`, `image-alt-text` (pack `a11y`).
-- ONNX Runtime (WebGPU→WASM / Node), Modell-Registry `src/models/models.json`, `scripts/fetch-models.mjs`, Cache Storage / `~/.cache/neotools/models`.
-- Keine AGPL-Gewichte (kein Ultralytics-YOLOv8, kein RMBG-1.4). Raster-Codec PNG/JPEG lokal; Umstellung auf `@neotools/tools-image` geplant (gleiche Signatur).
-- CLI: `neotools models fetch <tool>|--all`. Kategorie „KI & Erkennung“ / „AI & Detection“.
-- Bericht: `docs/reports/tools-image-ai.md`.
-
-## Status Pack `image` Kern (Phase 2)
-
-- Paket `packages/tools-image` (`@neotools/tools-image`) mit Codec-Schicht (jSquash lazy/WASM, eigene BMP/TGA/PNM/ICO, UTIF, gifuct/gifenc, upng-js, HEIC dynamisch LGPL, SVG Browser/`@resvg` optional).
-- Parser JPEG/PNG/TIFF nach `packages/parsers` (`@neotools/parsers`) extrahiert; Forensik re-exportiert unverändert.
-- Tools: convert, compress, resize, crop (+Kreis), rotate-flip, adjust, watermark, metadata+verify, redact+verify, compare, creator-export-pack, image-to-animation (kein Video), palette, colorblind, exif-batch, duplicates, ascii.
-- Nicht gebaut (Agent AI): Hintergrund, Auto-Blur, Doc-Repair, Screenshot-Werkstatt. `images-to-pdf` bleibt im PDF-Pack.
-- Tests: Vitest Roundtrips, Resize/Crop, EXIF, Verify, Compress, Compare, Export-Pack, Palette, Duplikate. HEIC/SVG-Node als Skip/Fehlerhinweis.
-
-## Status Pack `pdf` Phase-1-Rest + Pack `dach` (WP-26–31)
-
-- **pdf-compare:** Text-Diff (pdfjs-Absätze, Wort-Diff `diff`, Seiten-Alignment über Absatz-Hashes), Pixel-Heatmap+SSIM (Canvas / sonst Hinweis), Diff-PDF + JSON + Markdown. Presets `text` / `pixel` / `vertrag`.
-- **pdf-a:** Eigene Regelmaschine PDF/A-2b/3b (Teilmenge, kein veraPDF). XMP/pdfaid, Info↔XMP, Encrypt, JS/Launch, Fonts inkl. Standard-14, LZW, OutputIntent+sRGB-ICC (Debian icc-profiles-free, zlib), Anhänge 2b/3b+AFRelationship, Header 1.4–1.7, %%EOF, qpdf `--check`. Convert best-effort + `verify`-Hook.
-- **pdf-aktenbundler:** Deckblatt, TOC mit Link-Annotationen, verschachtelte Outlines (`outlines.ts`), Bates über `page-stamps.ts` (pdf-page-numbers re-exportiert), Kopfzeile, optional Trennblätter/Anlagen-Stempel, JSON-Index.
-- **pdf-sign:** Prüfen (ByteRange/CMS via pkijs, PAdES B-B/B-T/B-LT grob, inkrementelle Änderung). Erstellen PKCS#12 (node-forge) + PAdES-B-B (`ESS signing-certificate-v2`), `verify`-Hook. TSA nur bei gesetzter URL.
-- **Pack `dach`:** `dach-bea-erv` (Regelwerk `rules/erv.json` v2026-01, ERVV §2/§5 + ERVB, Auto-Fix-Pipeline), `dach-hash-timestamp` (SHA-256/512, RFC-3161 optional, Nachweisblatt), `dach-girocode` (EPC069-12, qrcode, zxing-wasm).
-- Web: Markdown-Outputs (`marked` + DOMPurify). Kategorien Vergleichen / Archivierung / DACH-Business & Recht.
-
-## Status Integration Welle 3 (Owner)
-
-- Uncommitted Arbeit seit `f99d54f` integriert: Packs `image` (17) + `image-ai` (7), PDF-Rest (`pdf-compare`, `pdf-a`, `pdf-aktenbundler`, `pdf-sign`), Pack `dach` (3), Format-KB (≥45), SEO-Routen, Verlauf, Lizenzen.
-- `gifenc` CJS→ESM lazy (`createRequire`/Default-Export), damit `neotools list` nicht mehr bricht.
-- `tools-image-ai` `raster.ts` re-exportiert `@neotools/tools-image` (`decode`/`encode`/`resample`/`boxBlur`/`pixelate`/`stripJpegSegments`). `image-alt-text` schreibt EXIF/XMP über den Metadaten-Writer.
-- Convert-SEO-Seiten auf real abgedeckte Bildpaare begrenzt (kein tga/ppm-Kartesisches Produkt).
-- Playwright: 12 Chromium-Smokes inkl. `d2`, `/image-convert` (PNG→JPG/`FFD8`), `/formats/jpg`+JSON-LD, `/verlauf` nach Tool-Lauf. Hydration-Wait (`data-tool-ready` / `data-reader-ready`) vor Datei-Upload.
-- `verifyRedactedPdf` ignoriert technische Info-Felder (`D:YYYYMMDD…`, pdf-lib Producer), damit CreationDate nicht als Telefonnummer fehlschlägt.
-- Bericht: `docs/reports/tools-image-ai.md`.
-
-## Offen für Welle 4
-
-- Office-/Media-/Speech-Packs (FFmpeg LGPL, Whisper, E-Rechnung).
+- LGPL-FFmpeg-WASM-Artefakt aus Docker/GH-Release einsetzen (Core > 2 MB, gitignored); bis dahin Quellcode-Angebot + GPL-Hinweis auf `/lizenzen`.
+- `audio-stems`: kein kompaktes MIT/Apache-ONNX.
 - HEIC-Decode in Node ohne optionales libheif; SVG-Raster ohne `@resvg` bleibt Browser-only.
-- PDF/A ist eine ehrliche Teilmenge (kein veraPDF); PAdES-TSA nur bei gesetzter URL.
-- Desktop-Updater und White-Label-Lizenzschlüssel bleiben Stubs.
-- Super-Res/Denoise bleiben Showcases ohne Qualitätsversprechen.
-
-## Status Pack `speech` (Welle 4)
-
-- Paket `@neotools/tools-speech` (`packages/tools-speech`): 12 Tools, Kategorie „Sprache & Untertitel“ / „Speech & Subtitles“.
-- Gemeinsame Modell-Registry nach `@neotools/models` extrahiert; `tools-image-ai` re-exportiert (Shim). CLI: `neotools models fetch speech-transcribe`.
-- Whisper (Transformers.js v3, WebGPU→WASM, Node ORT), Untertitel-Parser/Writer, Cutlist/Kapitel/Notes, OCR-Frames, Bleep-Liste, a11y-AD-Entwurf.
-- Decoder ohne FFmpeg: WAV/PCM, MP3, OGG/Opus, FLAC; Browser `decodeAudioData`; Node-Video → Hinweis + optional `@neotools/tools-media`.
-
-## Status Pack `dach` Phase 4 + Pack `pdf` Phase 4 + Pack `archive` (Welle 4)
-
-- **E-Rechnung Validierung:** XSD **nein** (Default; `scripts/fetch-schemas.mjs` lädt OASIS/KoSIT nach `assets/schemas/`, gitignored). Schematron/SaxonJS **nein** (optional, nicht gebündelt). Stattdessen: Wohlgeformtheit + Profil (CII/UBL, MINIMUM…XRECHNUNG) + EN-16931-BT-Tabelle + **~60 TypeScript-BR** (BR-01…BR-65 Kern, BR-CO-10/14/15/16/17, BR-DE-*, BR-IBAN-01) + Arithmetik. Kein falsch-grün.
-- **Tools DACH:** `dach-erechnung-validate` / `generate` (CII+UBL+PDF/A-3b Factur-X, `verify`-Hook) / `paper-to-erechnung` / `receipt-split` / `receipt-export` (DATEV EXTF 700) / `statement-camt` (CAMT.053+MT940) / `gobd` / `deadline` (§§ 187–193 BGB) / `team-presets` (Zod+Ed25519).
-- **`applyTeamPresets(registry, presets)`** (`packages/engine/src/presets.ts`): Defaults unter Caller-Optionen mergen, `locked[toolId]` erzwingen, `hiddenTools` weglassen, `watermarkText`/`batesPrefix` wenn Option existiert. `getAppliedPresets` / `requiredPipelines` für Agent P (Web/Docker lädt/enforced). Tool `dach-team-presets` validiert/normalisiert/signiert.
-- **PDF Phase 4:** `pdf-form-mailmerge` (CSV/XLSX→AcroForm), `pdf-attachment-stamp` (Anlage K/B, additiv zu Aktenbundler), `pdf-ua` (Check + Repair Lang/Titel/MarkInfo/Tabs/pdfuaid; **kein** Content-Stream-MCID-Tagging).
-- **Pack `archive`** `@neotools/tools-archive`, Kategorie `archive-pack` / „Archive & Ordner“: 11 Tools (ZIP/TAR/GZ nativ via fflate; 7z/RAR/ISO nur dynamisch libarchive.js). Zip-Slip-Block, Zip-Bomb-Ratio-Warnung, Sidecar-Wrangler, Hash-Duplikate, Space-Radar, Ordner-Diff, SHA-256-Manifest.
-- **Lizenzen:** fflate MIT, `@zip.js/zip.js` BSD-3, `@noble/ed25519`+`@noble/hashes` MIT, SheetJS Community Apache-2.0, libarchive.js MIT (dynamic), 7z-wasm LGPL-2.1 (dynamic, nicht gebündelt), KoSIT Apache-2.0 / SaxonJS MPL-2.0 / libxml2-wasm MIT (optional fetch, nicht Default). Keine AGPL, keine CDN-Schemas.
-- **Grenzen:** Keine volle XSD/Schematron-Kette offline; PDF-UA ohne echte Tags/MCIDs; 7z-Schreiben nicht nativ; Factur-X-XML nach pdf-a-Convert best-effort (`NeoFacturX`-Stream); Team-Presets-Enforcement im UI ist Agent P.
-- **Tests:** Generator→Validator grün; injizierte Summe/Leitweg/IBAN; PDF/A-3-Extraktion; DATEV-Header-Snapshot; CAMT/MT940-Struktur; BGB-Fristen; GoBD verify/tamper; Ed25519 + locked option; Mailmerge n→n; PDF-UA Repair weniger Befunde; ZIP/TAR, Zip-Slip, Bomb-Ratio, Sidecars, Ordner-Diff.
-- **Commit:** `feat(dach,archive,pdf): e-invoice, receipts, gobd, pdf-ua, archive pack (wave 4)` (Hash nach Commit).
+- PDF/A ehrliche Teilmenge (kein veraPDF); PDF-UA ohne echte MCIDs; PAdES-TSA nur bei URL.
+- WebLLM/`speech-chat-doc`, Volltext-OPFS, Super-Res/Denoise bleiben Showcases.
+- Desktop-Updater-Pubkey und signierte Bundles sind Platzhalter (`createUpdaterArtifacts` aus).
 

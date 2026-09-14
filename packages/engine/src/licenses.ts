@@ -68,6 +68,7 @@ export const PLATFORM_LICENSES: ToolLicense[] = [
   { name: 'zod-to-json-schema', license: 'MIT', url: 'https://github.com/StefanTerdell/zod-to-json-schema' },
   { name: 'chokidar', license: 'MIT', url: 'https://github.com/paulmillr/chokidar' },
   { name: 'libarchive.js (dynamic)', license: 'MIT', url: 'https://github.com/nika-begiashvili/libarchivejs' },
+  { name: '7z-wasm (dynamic, not bundled)', license: 'LGPL-2.1-or-later', url: 'https://github.com/use-strict/7z-wasm' },
   { name: '@zip.js/zip.js', license: 'BSD-3-Clause', url: 'https://github.com/gildas-lormeau/zip.js' },
   { name: 'KoSIT XRechnung rules (optional fetch)', license: 'Apache-2.0', url: 'https://github.com/itplr-kosit/xrechnung-schematron' },
   { name: 'SaxonJS (optional Schematron)', license: 'MPL-2.0', url: 'https://www.saxonica.com/saxon-js/index.xml' },

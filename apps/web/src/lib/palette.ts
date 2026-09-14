@@ -30,6 +30,8 @@ export function buildPaletteItems(
     { href: localePath(locale, '/guides'), title: locale === 'de' ? 'Anleitungen' : 'Guides', group: 'page' },
     { href: localePath(locale, '/spec'), title: locale === 'de' ? 'Plattform-Limits' : 'Platform limits', group: 'page' },
     { href: localePath(locale, '/pipeline'), title: 'Pipeline', group: 'page' },
+    { href: localePath(locale, locale === 'de' ? '/lizenz' : '/license'), title: locale === 'de' ? 'Lizenz' : 'License', group: 'page' },
+    { href: localePath(locale, '/watch'), title: locale === 'de' ? 'Watch-Ordner' : 'Watch folder', group: 'page' },
     { href: localePath(locale, '/no-upload'), title: locale === 'de' ? 'Kein Upload' : 'No upload', group: 'page' },
     { href: localePath(locale, locale === 'de' ? '/lizenzen' : '/licenses'), title: locale === 'de' ? 'Lizenzen' : 'Licenses', group: 'page' },
   ];

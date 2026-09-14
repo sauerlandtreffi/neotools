@@ -3,7 +3,9 @@
   "models": [
     {
       "id": "u2netp",
-      "tools": ["image-remove-background"],
+      "tools": [
+        "image-remove-background"
+      ],
       "kind": "onnx",
       "backend": "ort",
       "url": "https://huggingface.co/edgetools/u2netp/resolve/main/u2netp.onnx",
@@ -23,7 +25,9 @@
     },
     {
       "id": "isnet-general-q8",
-      "tools": ["image-remove-background"],
+      "tools": [
+        "image-remove-background"
+      ],
       "kind": "onnx",
       "backend": "ort",
       "url": "https://huggingface.co/SacredNoir/isnet-general-use-onnx/resolve/main/isnet-general-use-q8.onnx",
@@ -43,7 +47,9 @@
     },
     {
       "id": "yunet-face",
-      "tools": ["image-auto-blur"],
+      "tools": [
+        "image-auto-blur"
+      ],
       "kind": "onnx",
       "backend": "ort",
       "url": "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
@@ -63,7 +69,9 @@
     },
     {
       "id": "yolos-tiny",
-      "tools": ["image-auto-blur"],
+      "tools": [
+        "image-auto-blur"
+      ],
       "kind": "transformers",
       "backend": "transformers",
       "url": "https://huggingface.co/Xenova/yolos-tiny/resolve/main/onnx/model_quantized.onnx",
@@ -80,7 +88,9 @@
     },
     {
       "id": "swin2sr-x2",
-      "tools": ["image-upscale"],
+      "tools": [
+        "image-upscale"
+      ],
       "kind": "onnx",
       "backend": "ort",
       "url": "https://huggingface.co/Xenova/swin2SR-lightweight-x2-64/resolve/main/onnx/model_quantized.onnx",
@@ -99,7 +109,9 @@
     },
     {
       "id": "vit-gpt2-caption",
-      "tools": ["image-alt-text"],
+      "tools": [
+        "image-alt-text"
+      ],
       "kind": "transformers",
       "backend": "transformers",
       "url": "https://huggingface.co/Xenova/vit-gpt2-image-captioning/resolve/main/onnx/model_quantized.onnx",
@@ -120,7 +132,9 @@
     },
     {
       "id": "opus-mt-en-de",
-      "tools": ["image-alt-text"],
+      "tools": [
+        "image-alt-text"
+      ],
       "kind": "transformers",
       "backend": "transformers",
       "url": "https://huggingface.co/Xenova/opus-mt-en-de/resolve/main/onnx/model_quantized.onnx",
@@ -138,6 +152,423 @@
         "onnx/decoder_model_merged_quantized.onnx"
       ],
       "note": "English→German translation for alt text."
+    },
+    {
+      "id": "whisper-tiny",
+      "tools": [
+        "speech-transcribe"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "asr",
+      "dtype": "q4",
+      "device": "auto",
+      "url": "https://huggingface.co/onnx-community/whisper-tiny/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 77500000,
+      "license": "MIT",
+      "origin": "openai/whisper-tiny (MIT) via onnx-community/whisper-tiny",
+      "localName": "whisper-tiny",
+      "hfId": "onnx-community/whisper-tiny",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "added_tokens.json",
+        "special_tokens_map.json",
+        "normalizer.json",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx",
+        "onnx/encoder_model_fp16.onnx",
+        "onnx/decoder_model_merged_fp16.onnx",
+        "onnx/encoder_model_q4.onnx",
+        "onnx/decoder_model_merged_q4.onnx"
+      ],
+      "note": "Multilingual tiny. WebGPU fp16/q4, WASM q8/q4 fallback."
+    },
+    {
+      "id": "whisper-base",
+      "tools": [
+        "speech-transcribe"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "asr",
+      "dtype": "q4",
+      "device": "auto",
+      "url": "https://huggingface.co/onnx-community/whisper-base/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 145000000,
+      "license": "MIT",
+      "origin": "openai/whisper-base (MIT) via onnx-community/whisper-base",
+      "localName": "whisper-base",
+      "hfId": "onnx-community/whisper-base",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "added_tokens.json",
+        "special_tokens_map.json",
+        "normalizer.json",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx",
+        "onnx/encoder_model_fp16.onnx",
+        "onnx/decoder_model_merged_fp16.onnx",
+        "onnx/encoder_model_q4.onnx",
+        "onnx/decoder_model_merged_q4.onnx"
+      ]
+    },
+    {
+      "id": "whisper-small",
+      "tools": [
+        "speech-transcribe"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "asr",
+      "dtype": "q4",
+      "device": "auto",
+      "url": "https://huggingface.co/onnx-community/whisper-small/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 480000000,
+      "license": "MIT",
+      "origin": "openai/whisper-small (MIT) via onnx-community/whisper-small",
+      "localName": "whisper-small",
+      "hfId": "onnx-community/whisper-small",
+      "pack": "speech",
+      "sizeWarning": true,
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "added_tokens.json",
+        "special_tokens_map.json",
+        "normalizer.json",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx",
+        "onnx/encoder_model_fp16.onnx",
+        "onnx/decoder_model_merged_fp16.onnx",
+        "onnx/encoder_model_q4.onnx",
+        "onnx/decoder_model_merged_q4.onnx"
+      ]
+    },
+    {
+      "id": "distil-whisper-small-en",
+      "tools": [
+        "speech-transcribe"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "asr",
+      "dtype": "q4",
+      "device": "auto",
+      "url": "https://huggingface.co/onnx-community/distil-small.en/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 350000000,
+      "license": "MIT",
+      "origin": "distil-whisper/distil-small.en (MIT) via onnx-community/distil-small.en",
+      "localName": "distil-small.en",
+      "hfId": "onnx-community/distil-small.en",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx",
+        "onnx/encoder_model_q4.onnx",
+        "onnx/decoder_model_merged_q4.onnx"
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "tools": [
+        "speech-transcribe"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "asr",
+      "dtype": "q4",
+      "device": "webgpu",
+      "webgpuOnly": true,
+      "sizeWarning": true,
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/main/onnx/encoder_model_fp16.onnx",
+      "sizeBytes": 1620000000,
+      "license": "MIT",
+      "origin": "openai/whisper-large-v3-turbo (MIT) via onnx-community/whisper-large-v3-turbo",
+      "localName": "whisper-large-v3-turbo",
+      "hfId": "onnx-community/whisper-large-v3-turbo",
+      "pack": "speech",
+      "note": "Optional. WebGPU only. ~1.6 GB. Do not fetch unless needed.",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "onnx/encoder_model_fp16.onnx",
+        "onnx/decoder_model_merged_fp16.onnx",
+        "onnx/encoder_model_q4.onnx",
+        "onnx/decoder_model_merged_q4.onnx"
+      ]
+    },
+    {
+      "id": "pyannote-segmentation",
+      "tools": [
+        "pyannote-segmentation"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "segmentation",
+      "url": "https://huggingface.co/onnx-community/pyannote-segmentation-3.0/resolve/main/onnx/model.onnx",
+      "sizeBytes": 6000000,
+      "license": "MIT",
+      "origin": "pyannote/segmentation-3.0 (MIT) via onnx-community/pyannote-segmentation-3.0",
+      "localName": "pyannote-segmentation-3.0",
+      "hfId": "onnx-community/pyannote-segmentation-3.0",
+      "pack": "speech",
+      "note": "Optional diarization slot. Heuristic MFCC clustering is the default.",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "onnx/model.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-de-en",
+      "tools": [
+        "subtitles-translate",
+        "transcript-summary"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-de-en/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-de-en (Apache-2.0) via Xenova/opus-mt-de-en",
+      "localName": "opus-mt-de-en",
+      "hfId": "Xenova/opus-mt-de-en",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-en-fr",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-en-fr/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-en-fr (Apache-2.0) via Xenova",
+      "localName": "opus-mt-en-fr",
+      "hfId": "Xenova/opus-mt-en-fr",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-fr-en",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-fr-en/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-fr-en (Apache-2.0) via Xenova",
+      "localName": "opus-mt-fr-en",
+      "hfId": "Xenova/opus-mt-fr-en",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-en-es",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-en-es/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-en-es (Apache-2.0) via Xenova",
+      "localName": "opus-mt-en-es",
+      "hfId": "Xenova/opus-mt-en-es",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-es-en",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-es-en/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-es-en (Apache-2.0) via Xenova",
+      "localName": "opus-mt-es-en",
+      "hfId": "Xenova/opus-mt-es-en",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-en-it",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-en-it/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-en-it (Apache-2.0) via Xenova",
+      "localName": "opus-mt-en-it",
+      "hfId": "Xenova/opus-mt-en-it",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "opus-mt-it-en",
+      "tools": [
+        "subtitles-translate"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "translation",
+      "url": "https://huggingface.co/Xenova/opus-mt-it-en/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 80000000,
+      "license": "Apache-2.0",
+      "origin": "Helsinki-NLP/opus-mt-it-en (Apache-2.0) via Xenova",
+      "localName": "opus-mt-it-en",
+      "hfId": "Xenova/opus-mt-it-en",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "source.spm",
+        "target.spm",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
+    },
+    {
+      "id": "minilm-l6-v2",
+      "tools": [
+        "transcript-chapters"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "feature-extraction",
+      "url": "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx",
+      "sizeBytes": 23000000,
+      "license": "Apache-2.0",
+      "origin": "sentence-transformers/all-MiniLM-L6-v2 (Apache-2.0) via Xenova/all-MiniLM-L6-v2",
+      "localName": "all-MiniLM-L6-v2",
+      "hfId": "Xenova/all-MiniLM-L6-v2",
+      "pack": "speech",
+      "files": [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "onnx/model_quantized.onnx"
+      ]
+    },
+    {
+      "id": "distilbart-cnn-6-6",
+      "tools": [
+        "transcript-summary"
+      ],
+      "kind": "transformers",
+      "backend": "transformers",
+      "task": "summarization",
+      "url": "https://huggingface.co/Xenova/distilbart-cnn-6-6/resolve/main/onnx/encoder_model_quantized.onnx",
+      "sizeBytes": 330000000,
+      "license": "Apache-2.0",
+      "origin": "sshleifer/distilbart-cnn-6-6 (Apache-2.0) via Xenova/distilbart-cnn-6-6",
+      "localName": "distilbart-cnn-6-6",
+      "hfId": "Xenova/distilbart-cnn-6-6",
+      "pack": "speech",
+      "sizeWarning": true,
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json",
+        "merges.txt",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ]
     }
   ]
 }

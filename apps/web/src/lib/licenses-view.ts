@@ -46,5 +46,8 @@ export function thirdPartyNotices(items: readonly ToolLicense[]): string {
   lines.push(
     'Copyleft: LGPL/GPL components, if present, are used unmodified. Corresponding source is offered on request via the legal notice address.',
   );
+  lines.push(
+    'FFmpeg: official @ffmpeg/core is GPL-2.0-or-later (temporary, x264). Intended replacement is an LGPL-2.1-or-later WASM build without x264/x265 (packages/tools-media/scripts/build-ffmpeg-lgpl.sh). Source of the bundled core is offered on request via the legal notice address.',
+  );
   return `${lines.join('\n')}\n`;
 }
