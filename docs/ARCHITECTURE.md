@@ -1,10 +1,12 @@
-# NeoTools Architektur
+🇬🇧 English · [🇩🇪 Deutsch](./ARCHITECTURE.de.md)
 
-Verwandt: [BACKLOG.md](./BACKLOG.md) · [ROADMAP.md](./ROADMAP.md)
+# NeoTools Architecture
 
-Verbindliche Entscheidungen. Abweichung nur mit Changelog in diesem Dokument.
+Related: [BACKLOG.md](./BACKLOG.md) · [ROADMAP.md](./ROADMAP.md)
 
-## 1. Monorepo-Layout
+Binding decisions. Deviations only with a changelog entry in this document.
+
+## 1. Monorepo layout
 
 ```
 Neotools/
@@ -12,8 +14,8 @@ Neotools/
   package.json                 # private root, scripts: build, test, lint
   tsconfig.base.json           # strict: true, noUncheckedIndexedAccess, exactOptionalPropertyTypes
   packages/
-    engine/                    # Tool-Schema, Registry, Worker-Runtime, Pipeline, Fehlerprotokoll, platform-Adapter
-    format-kb/                 # Format-Wissensbasis (JSON), keine Runtime
+    engine/                    # tool schema, registry, worker runtime, pipeline, error protocol, platform adapters
+    format-kb/                 # format knowledge base (JSON), no runtime
     tools-pdf/
     tools-image/
     tools-media/               # ffmpeg.wasm LGPL, WebCodecs
@@ -23,27 +25,27 @@ Neotools/
     tools-archive/
     tools-dach/
   apps/
-    web/                       # Astro + TypeScript, Preact-Inseln, i18n de/en
-    cli/                       # Node, gleiche Registry
-    desktop/                   # Tauri 2 (Rust-Shell + web-UI)
+    web/                       # Astro + TypeScript, Preact islands, i18n de/en
+    cli/                       # Node, same registry
+    desktop/                   # Tauri 2 (Rust shell + web UI)
   deploy/
-    docker/                    # nginx-Image + optionaler API-Sidecar
+    docker/                    # nginx image + optional API sidecar
   docs/
 ```
 
-Workspace-Protokoll: `pnpm`. Kein npm/yarn-Lockfile. Jedes Paket hat `name: @neotools/<id>`, eigene `tsconfig` mit `extends`.
+Workspace protocol: `pnpm`. No npm/yarn lockfile. Every package has `name: @neotools/<id>` and its own `tsconfig` with `extends`.
 
-**Import-Richtung:** `apps/*` → `packages/engine` + Packs. Packs → nur `engine` + erlaubte Libs. Packs importieren einander nicht; Orchestrierung läuft über Pipeline-IDs.
+**Import direction:** `apps/*` → `packages/engine` + packs. Packs → only `engine` + approved libraries. Packs do not import each other; orchestration runs via pipeline IDs.
 
-**Isomorphie:** `packages/engine` und alle `run()`-Funktionen dürfen kein `window`/`fs` direkt anfassen. Zugriff nur über `Platform` (Abschnitt 3).
+**Isomorphism:** `packages/engine` and all `run()` functions must not touch `window`/`fs` directly. Access only via `Platform` (section 3).
 
 ---
 
-## 2. Tool-Schema
+## 2. Tool schema
 
-Ein Tool ist eine deklariative Einheit. UI, CLI-Subcommands, Pipelines, SEO-Seiten und Docs werden daraus generiert. Keine Tool-Seite ohne `defineTool`.
+A tool is a declarative unit. UI, CLI subcommands, pipelines, SEO pages and docs are generated from it. No tool page without `defineTool`.
 
-### 2.1 Typen
+### 2.1 Types
 
 ```ts
 import { z } from "zod";
@@ -57,7 +59,7 @@ export interface ToolInputs {
   multiple: boolean;
   min?: number;
   max?: number;
-  /** Semantischer Port-Name für Pipeline-Verdrahtung */
+  /** Semantic port name for pipeline wiring */
   port?: string;
 }
 
@@ -66,12 +68,12 @@ export interface ToolOutput {
   mime: string;
   filename: string;
   bytes: Uint8Array | Blob;
-  /** Optional: OPFS-Handle statt voller Bytes (große Dateien) */
+  /** Optional: OPFS handle instead of full bytes (large files) */
   opfsPath?: string;
 }
 
 export interface ToolError {
-  code: string;          // z. B. "PDF_ENCRYPTED", "INPUT_TYPE"
+  code: string;          // e.g. "PDF_ENCRYPTED", "INPUT_TYPE"
   message: LocaleText;
   fileId?: string;
   recoverable: boolean;
@@ -94,7 +96,7 @@ export interface ToolContext {
   progress(ev: ProgressEvent): void;
   cancel: CancelToken;
   log: ErrorJournal;
-  /** Nach Privacy-Ops Pflicht */
+  /** Mandatory after privacy ops */
   verify?: VerifyFn;
   provenance: ProvenanceBuilder;
 }
@@ -104,7 +106,7 @@ export interface ToolSeo {
   title: LocaleText;
   description: LocaleText;
   keywords: readonly string[];
-  /** Zusätzliche statische Seiten, z. B. Convert-Paare */
+  /** Additional static pages, e.g. convert pairs */
   aliases?: readonly string[];
 }
 
@@ -115,7 +117,7 @@ export interface ToolPreset<TOptions> {
 }
 
 export interface ToolDefinition<TOptions extends z.ZodTypeAny> {
-  id: string;                   // kebab-case, stabil
+  id: string;                   // kebab-case, stable
   category: string;
   pack: string;                 // "pdf" | "image" | …
   title: LocaleText;
@@ -124,9 +126,9 @@ export interface ToolDefinition<TOptions extends z.ZodTypeAny> {
   options: TOptions;
   presets?: readonly ToolPreset<z.infer<TOptions>>[];
   seo: ToolSeo;
-  /** Wenn true: Engine ruft verify() nach run() auf */
+  /** If true: the engine calls verify() after run() */
   privacySensitive?: boolean;
-  licenses: readonly string[];  // SPDX, für Lizenzseite
+  licenses: readonly string[];  // SPDX, for the license page
   run: (
     ctx: ToolContext,
     files: readonly InputFile[],
@@ -154,7 +156,7 @@ export function defineTool<T extends z.ZodTypeAny>(
 }
 ```
 
-### 2.2 Beispiel: `pdf-merge` vollständig
+### 2.2 Example: `pdf-merge` in full
 
 ```ts
 import { z } from "zod";
@@ -162,11 +164,11 @@ import { PDFDocument } from "pdf-lib";
 import { defineTool } from "@neotools/engine";
 
 const optionsSchema = z.object({
-  /** Reihenfolge der Input-IDs. Fehlt sie, gilt Upload-Reihenfolge. */
+  /** Order of input IDs. If missing, upload order applies. */
   order: z.array(z.string()).optional(),
-  /** Erste Seite jeder Datei als Outline-Eintrag */
+  /** First page of each file as an outline entry */
   outline: z.boolean().default(true),
-  /** Leere Seiten am Ende jeder Quelle verwerfen */
+  /** Drop empty pages at the end of each source */
   dropTrailingEmpty: z.boolean().default(false),
 });
 
@@ -291,39 +293,39 @@ export const pdfMerge = defineTool({
 });
 ```
 
-`addOutline` ist eine Engine-Hilfe um pdf-lib-Outline; falls die Library-API abweicht, kapseln in `packages/tools-pdf/src/lib/outline.ts`.
+`addOutline` is an engine helper around the pdf-lib outline; if the library API differs, encapsulate it in `packages/tools-pdf/src/lib/outline.ts`.
 
 ---
 
-## 3. Engine-Runtime
+## 3. Engine runtime
 
-### 3.1 Worker-Pool (Browser)
+### 3.1 Worker pool (browser)
 
-- Ein **Pool** von Web Workern, Größe `navigator.hardwareConcurrency` begrenzt auf 2–4 (WASM-Speicher).
-- RPC via **Comlink**. Jeder Worker lädt Packs lazy (`import()`), nicht das ganze Monorepo.
-- **Ein Job = ein Tool-Lauf** (oder ein Pipeline-Schritt). Kein Shared-Mutable zwischen Jobs.
-- **Progress:** Worker postet `ProgressEvent`; UI bindet an Job-ID.
-- **Cancel:** `AbortController` → Worker `cancel.throwIfAborted()` in Schleifen; bei hartem Abbruch `worker.terminate()` + Worker neu spawnen.
-- **Transfer:** `ArrayBuffer` per Transferable. Dateien > Schwelle (64 MiB) liegen in **OPFS**; Worker bekommt Pfad, nicht Bytes.
+- A **pool** of Web Workers, size `navigator.hardwareConcurrency` capped to 2–4 (WASM memory).
+- RPC via **Comlink**. Every worker loads packs lazily (`import()`), not the whole monorepo.
+- **One job = one tool run** (or one pipeline step). No shared mutable state between jobs.
+- **Progress:** the worker posts `ProgressEvent`; the UI binds to the job ID.
+- **Cancel:** `AbortController` → worker `cancel.throwIfAborted()` in loops; on hard abort `worker.terminate()` + respawn the worker.
+- **Transfer:** `ArrayBuffer` as transferable. Files above the threshold (64 MiB) live in **OPFS**; the worker receives a path, not bytes.
 
-### 3.2 Fehlerprotokoll
+### 3.2 Error protocol
 
-Jeder Lauf schreibt nach `ErrorJournal`:
+Every run writes to `ErrorJournal`:
 
-| Feld | Inhalt |
+| Field | Content |
 |---|---|
 | jobId | UUID |
-| toolId | kebab-id |
-| fileId / name | ohne Inhalt |
+| toolId | kebab ID |
+| fileId / name | without content |
 | inputHash | SHA-256 |
-| code | stabiler Fehlercode |
+| code | stable error code |
 | message | i18n |
 | recoverable | bool |
 | ts | ISO |
 
-Export als JSON. Keine Dateiinhalte, keine PII aus dem Dokument im Log.
+Export as JSON. No file contents, no PII from the document in the log.
 
-### 3.3 Isomorphie: `Platform`
+### 3.3 Isomorphism: `Platform`
 
 ```ts
 export interface Platform {
@@ -335,17 +337,17 @@ export interface Platform {
   sha256File(file: InputFile): Promise<string>;
   spawnWorker(spec: WorkerSpec): WorkerHandle;
   now(): number;
-  fetchAsset(url: string): Promise<ArrayBuffer>; // nur same-origin / file
+  fetchAsset(url: string): Promise<ArrayBuffer>; // same-origin / file only
 }
 ```
 
 | Adapter | FS | Worker |
 |---|---|---|
 | Browser | OPFS + Blob + File System Access | `new Worker(new URL(...), { type: "module" })` |
-| Node (CLI, API) | `node:fs/promises` | `worker_threads` + Comlink-Node |
-| Tauri | `fs` Plugin + OPFS in WebView | wie Browser; Native-Dialoge über invoke |
+| Node (CLI, API) | `node:fs/promises` | `worker_threads` + Comlink Node |
+| Tauri | `fs` plugin + OPFS in the WebView | like browser; native dialogs via invoke |
 
-WASM-Module und Modelle kommen aus `/assets/…` (self-hosted), nie von einem CDN.
+WASM modules and models come from `/assets/…` (self-hosted), never from a CDN.
 
 ### 3.4 Registry
 
@@ -356,44 +358,44 @@ getTool(id): ToolDefinition;
 listTools(filter?: { pack?: string; phase?: number }): ToolDefinition[];
 ```
 
-CLI, Astro-`getStaticPaths`, Pipeline-Resolver und Docs lesen dieselbe Registry.
+CLI, Astro `getStaticPaths`, pipeline resolver and docs read the same registry.
 
 ---
 
-## 4. Pipeline-Modell
+## 4. Pipeline model
 
 ```ts
 export interface PipelineStep {
-  id: string;              // lokal in der Pipeline
-  tool: string;            // Tool-ID
-  options: unknown;        // nach Zod des Tools validiert
-  /** stepId.port → dieser Input-Port */
+  id: string;              // local to the pipeline
+  tool: string;            // tool ID
+  options: unknown;        // validated against the tool's Zod schema
+  /** stepId.port → this input port */
   bind: Record<string, string>;
 }
 
 export interface PipelineConfig {
   version: 1;
   steps: PipelineStep[];
-  /** Optionale Team-Richtlinie */
+  /** Optional team policy */
   policyId?: string;
 }
 ```
 
-**Typkompatibilität:** Jedes Tool deklariert `inputs.accept` und implizite Output-MIMEs (aus `run` + `seo`/Manifest `emits: string[]`). Der Resolver verbindet nur, wenn der Output-MIME im nächsten `accept` liegt oder ein registrierter **Adapter-Schritt** existiert (`pdf-to-images` zwischen PDF und Bild-Tool).
+**Type compatibility:** every tool declares `inputs.accept` and implicit output MIMEs (from `run` + `seo`/manifest `emits: string[]`). The resolver only connects if the output MIME is in the next `accept` or a registered **adapter step** exists (`pdf-to-images` between a PDF and an image tool).
 
-**Serialisierung:** `PipelineConfig` ist reines JSON, keine Dateien. Teilen über **URL-Hash**:
+**Serialization:** `PipelineConfig` is plain JSON, no files. Sharing via **URL hash**:
 
 ```
 https://neotools.example/#pipeline=<base64url(json)>
 ```
 
-Hash bleibt clientseitig. Kein Server speichert die Config. Obergrenze ~8 KB; darüber Download einer `.neopipeline.json`.
+The hash stays client-side. No server stores the config. Upper limit ~8 KB; above that, download a `.neopipeline.json`.
 
-**Ausführung:** Sequentiell in Phase 1. Parallel nur bei unabhängigen Zweigen (Phase 2+, gleicher Cancel-Scope). Zwischenstände in OPFS, Undo = vorherigen Snapshot wiederherstellen.
+**Execution:** sequential in phase 1. Parallel only for independent branches (phase 2+, same cancel scope). Intermediate results in OPFS, undo = restore the previous snapshot.
 
 ---
 
-## 5. Pack- / Plugin-Mechanik
+## 5. Pack / plugin mechanics
 
 ### 5.1 Manifest
 
@@ -404,9 +406,9 @@ export interface PackManifest {
   title: LocaleText;
   tools: readonly string[];
   licenses: readonly PackLicense[];
-  assets: readonly string[];   // WASM, Modelle, relative URLs
+  assets: readonly string[];   // WASM, models, relative URLs
   lazy: boolean;
-  /** Docker-Build: Pack weglassbar */
+  /** Docker build: pack can be omitted */
   optional: boolean;
 }
 
@@ -414,60 +416,60 @@ export interface PackLicense {
   spdx: string;
   component: string;
   url: string;
-  note?: string;               // z. B. "FFmpeg LGPL-Build, kein x264"
+  note?: string;               // e.g. "FFmpeg LGPL build, no x264"
 }
 ```
 
-Community-Plugins: gleiches Manifest, geladen aus `/plugins/<id>/` (Self-Host) oder `node_modules/@neotools-plugin/*`. Kein remote Code zur Laufzeit von Dritt-Hosts.
+Community plugins: same manifest, loaded from `/plugins/<id>/` (self-host) or `node_modules/@neotools-plugin/*`. No remote code from third-party hosts at runtime.
 
-### 5.2 Lazy-Loading
+### 5.2 Lazy loading
 
-Web: `import("@neotools/tools-pdf")` erst auf der Tool-Seite oder wenn die Pipeline das Pack braucht. ffmpeg.wasm, Tesseract, ONNX, OpenCV **nie** im Initial-Bundle.
+Web: `import("@neotools/tools-pdf")` only on the tool page or when the pipeline needs the pack. ffmpeg.wasm, Tesseract, ONNX, OpenCV **never** in the initial bundle.
 
-### 5.3 Docker ohne Packs
+### 5.3 Docker without packs
 
 ```dockerfile
 # build-arg PACKS=pdf,forensics,dach
 ARG PACKS=pdf,image,media,speech,forensics,office,archive,dach
 ```
 
-Der Bundler (`apps/web`) erhält `import.meta.env.NEOTOOLS_PACKS`. Nicht gelistete Packs: kein JS, keine Modelle im Image. Lizenzseite listet nur enthaltene Packs.
+The bundler (`apps/web`) receives `import.meta.env.NEOTOOLS_PACKS`. Unlisted packs: no JS, no models in the image. The license page lists only included packs.
 
 ---
 
-## 6. Storage-Schichten
+## 6. Storage layers
 
-| Schicht | Inhalt | Lebensdauer |
+| Layer | Content | Lifetime |
 |---|---|---|
-| OPFS | Große Dateien, Pipeline-Zwischenstände, Verlauf, Undo-Snapshots | Nutzer-gesteuert; Quota-Warnung |
-| IndexedDB | Metadaten: Job, Hashes, Provenance-Kopf, Audit-Log, Presets | dauerhaft lokal |
-| Cache Storage | WASM-Engines, ONNX/Whisper/WebLLM-Modelle | Cache, versioniert über Asset-Hash im Dateinamen |
-| Memory | Aktueller Job < 64 MiB | Job-Ende |
+| OPFS | large files, pipeline intermediates, history, undo snapshots | user-controlled; quota warning |
+| IndexedDB | metadata: job, hashes, provenance header, audit log, presets | persistent locally |
+| Cache Storage | WASM engines, ONNX/Whisper/WebLLM models | cache, versioned via asset hash in the file name |
+| Memory | current job < 64 MiB | end of job |
 
-Keine Cookies für Tracking. Optional: self-hosted Plausible, ohne personenbezogene Event-Props.
+No cookies for tracking. Optional: self-hosted Plausible, without personal event props.
 
-**Verlauf:** IndexedDB zeigt Liste; Bytes liegen in OPFS unter `/history/<jobId>/`. Undo stellt den letzten Output wieder her, nicht den Input (Input bleibt unangetastet).
-
----
-
-## 7. Privacy-Verifikation
-
-Gilt nach jedem Lauf mit `privacySensitive: true` (`pdf-redact`, `pdf-sanitize`, `image-redact`, `image-auto-blur`, `image-metadata` Preset `strip-*`, Screenshot-Wash).
-
-Ablauf:
-
-1. Tool schreibt Output + maschinenlesbare **Fundstellen** (Seite, BBox, Muster-ID).
-2. Engine startet `forensics-verify`: erneuter Text-Extract, Regex der gleichen Muster, Stichproben-OCR auf geschwärzten Boxen (Pixel müssen unter Schwelle liegen, kein lesbarer Text).
-3. UI: Checkliste Fundstelle × Status (`entfernt` / `noch sichtbar` / `unsicher`). Nutzer bestätigt oder korrigiert.
-4. Erst nach Bestätigung gilt der Job als `shared-safe`. Download davor ist möglich, aber mit Banner.
-
-Verifikation läuft lokal, gleiches Worker-Modell. Fehlschlag ≠ stilles OK.
+**History:** IndexedDB shows the list; bytes live in OPFS under `/history/<jobId>/`. Undo restores the last output, not the input (the input stays untouched).
 
 ---
 
-## 8. Provenance-Manifest
+## 7. Privacy verification
 
-Optionales JSON, mit Output oder daneben:
+Applies after every run with `privacySensitive: true` (`pdf-redact`, `pdf-sanitize`, `image-redact`, `image-auto-blur`, `image-metadata` preset `strip-*`, screenshot wash).
+
+Flow:
+
+1. The tool writes the output + machine-readable **hits** (page, bbox, pattern ID).
+2. The engine starts `forensics-verify`: renewed text extraction, regex of the same patterns, sample OCR on redacted boxes (pixels must be below threshold, no readable text).
+3. UI: checklist hit × status (`removed` / `still visible` / `uncertain`). The user confirms or corrects.
+4. Only after confirmation does the job count as `shared-safe`. Download before that is possible, but with a banner.
+
+Verification runs locally, same worker model. Failure ≠ silent OK.
+
+---
+
+## 8. Provenance manifest
+
+Optional JSON, with or next to the output:
 
 ```ts
 interface ProvenanceManifest {
@@ -475,7 +477,7 @@ interface ProvenanceManifest {
   createdAt: string;
   tool: string;
   pipeline?: PipelineConfig;
-  options: unknown;            // keine Dateiinhalte
+  options: unknown;            // no file contents
   inputHashes: string[];
   outputHash: string;
   engineVersion: string;
@@ -483,58 +485,58 @@ interface ProvenanceManifest {
 }
 ```
 
-Kein PII, keine extrahierten Klarnamen. Nutzer kann Provenance abschalten (Team-Preset darf sie erzwingen).
+No PII, no extracted real names. The user can switch provenance off (a team preset may enforce it).
 
 ---
 
-## 9. SEO-Generierung
+## 9. SEO generation
 
-**Quellen:** `defineTool.seo` + `packages/format-kb`.
+**Sources:** `defineTool.seo` + `packages/format-kb`.
 
-Astro `getStaticPaths` erzeugt:
+Astro `getStaticPaths` generates:
 
-| Muster | Quelle |
+| Pattern | Source |
 |---|---|
-| `/tools/<id>` | jedes Tool, de + en |
-| `/formats/<format>` | KB-Eintrag (Container, Codec, Limits) |
-| `/convert/<a>-to-<b>` | KB-Kante, nur wenn ein Tool die Kante bedient |
-| `/spec/<platform>` | KB-Spec (WhatsApp, beA, …) |
-| `/guides/<slug>` | manuelle MDX, verlinkt Tool-IDs |
+| `/tools/<id>` | every tool, de + en |
+| `/formats/<format>` | KB entry (container, codec, limits) |
+| `/convert/<a>-to-<b>` | KB edge, only if a tool serves the edge |
+| `/spec/<platform>` | KB spec (WhatsApp, beA, …) |
+| `/guides/<slug>` | manual MDX, links tool IDs |
 
-Keine Doorway-Pages ohne hinterlegtes Tool. `hreflang` de/en. Canonical pro Locale.
+No doorway pages without a backing tool. `hreflang` de/en. Canonical per locale.
 
-Format-KB-Felder (Minimum): `id`, `mimes`, `extensions`, `tools[]`, `limits[]` (Größe, Codec, fps), `notes` i18n. Spec-Check und Export-Pack-Presets **lesen** die KB, sie duplizieren keine Magic Numbers.
+Format KB fields (minimum): `id`, `mimes`, `extensions`, `tools[]`, `limits[]` (size, codec, fps), `notes` i18n. Spec check and export pack presets **read** the KB; they do not duplicate magic numbers.
 
 ---
 
 ## 10. i18n
 
-- Locales: `de` (Default), `en`.
-- UI-Strings: JSON unter `apps/web/src/i18n/{de,en}/*.json`.
-- Tool-`title`/`description`/`seo` leben **in der Tool-Definition**, nicht in den UI-JSON-Dateien.
-- CLI: `--lang de|en`, Default `LANG`.
-- Routing: `/de/...`, `/en/...` oder Prefix-frei de + `/en` — eine Variante im Web-App-Gerüst festnageln, nicht mischen.
+- Locales: `de` (default), `en`.
+- UI strings: JSON under `apps/web/src/i18n/{de,en}/*.json`.
+- Tool `title`/`description`/`seo` live **in the tool definition**, not in the UI JSON files.
+- CLI: `--lang de|en`, default `LANG`.
+- Routing: `/de/...`, `/en/...` or prefix-free de + `/en` — pin one variant in the web app scaffolding, do not mix.
 
 ---
 
 ## 11. Desktop (Tauri 2)
 
-| Thema | Festlegung |
+| Topic | Decision |
 |---|---|
-| Shell | Tauri 2, WebView = dieselbe `apps/web`-Build (oder `dist` eingebettet) |
-| Dateizuordnung | `.pdf` → App; Windows-Registry / macOS `CFBundleDocumentTypes` / Linux `.desktop` |
-| Deep-Link | `neotools://tool/<id>?pipeline=…` |
-| Updater | Tauri updater, Ed25519-signierte Bundles, eigener Endpoint (Self-Host oder Projekt-CDN, kein Telemetriezwang) |
-| Signierung Windows | Authenticode (OV/EV), MSI + NSIS `.exe` |
-| Signierung macOS | Developer ID + Notarization; später |
-| PDF-Reader-Modus | Phase 1: Anzeige (pdfjs-dist), Suche, Speichern, Schwärzung. Formulare/Signatur/Kommentare: Folge-WPs |
-| Native FS | große PDFs nicht durch die WebView-Kopie jagen; `fs.read` + OPFS-Spiegel |
+| Shell | Tauri 2, WebView = the same `apps/web` build (or embedded `dist`) |
+| File association | `.pdf` → app; Windows registry / macOS `CFBundleDocumentTypes` / Linux `.desktop` |
+| Deep link | `neotools://tool/<id>?pipeline=…` |
+| Updater | Tauri updater, Ed25519-signed bundles, own endpoint (self-host or project CDN, no forced telemetry) |
+| Signing Windows | Authenticode (OV/EV), MSI + NSIS `.exe` |
+| Signing macOS | Developer ID + notarization; later |
+| PDF reader mode | phase 1: display (pdfjs-dist), search, save, redaction. Forms/signature/comments: follow-up WPs |
+| Native FS | do not push large PDFs through the WebView copy; `fs.read` + OPFS mirror |
 
-Kein Electron.
+No Electron.
 
 ---
 
-## 12. PWA-Manifest (Pflichtfelder)
+## 12. PWA manifest (required fields)
 
 ```json
 {
@@ -562,13 +564,13 @@ Kein Electron.
 }
 ```
 
-Service Worker: Precache App-Shell + aktive Locale; Engines on demand in Cache Storage. Offline: alle bereits geladenen Packs.
+Service worker: precache app shell + active locale; engines on demand in Cache Storage. Offline: all packs already loaded.
 
 ---
 
 ## 13. CLI
 
-Paket: `@neotools/cli`, Binary `neotools`.
+Package: `@neotools/cli`, binary `neotools`.
 
 ```
 neotools run <tool> [options] <files…>
@@ -578,22 +580,22 @@ neotools list [--pack pdf]
 neotools inspect <file>          # forensics-identify
 ```
 
-Optionen: 1:1 die Zod-Felder als `--kebab-case`. `--json` für Maschinenausgabe. Exit-Codes: `0` OK, `2` Validierung, `3` Tool-Fehler, `4` Verify fehlgeschlagen, `130` Cancel.
+Options: the Zod fields 1:1 as `--kebab-case`. `--json` for machine output. Exit codes: `0` OK, `2` validation, `3` tool error, `4` verify failed, `130` cancel.
 
-`watch` = Node-`fs.watch` / chokidar, gleiche `run()`-Funktion. Team-Presets: `--policy ./richtlinie.json`.
+`watch` = Node `fs.watch` / chokidar, same `run()` function. Team presets: `--policy ./policy.json`.
 
 ---
 
-## 14. Docker / White-Label
+## 14. Docker / white-label
 
-Zwei Images:
+Two images:
 
-1. **`neotools-web`:** nginx, statische Astro-Ausgabe, `/assets` Modelle + WASM. Kein Node im Request-Pfad.
-2. **`neotools-api` (optional):** Node-Sidecar, gleiche Engine, REST:
+1. **`neotools-web`:** nginx, static Astro output, `/assets` models + WASM. No Node in the request path.
+2. **`neotools-api` (optional):** Node sidecar, same engine, REST:
 
-   `POST /v1/run/:tool` multipart; `POST /v1/pipeline`; synchron oder Job-Queue lokal.
+   `POST /v1/run/:tool` multipart; `POST /v1/pipeline`; synchronous or local job queue.
 
-`branding.json` (Mount):
+`branding.json` (mount):
 
 ```json
 {
@@ -606,31 +608,31 @@ Zwei Images:
 }
 ```
 
-nginx liefert Branding-Dateien; die Web-App liest `/branding.json` zur Boot-Zeit.
+nginx serves branding files; the web app reads `/branding.json` at boot time.
 
-**Lizenzschlüssel (Self-Host White-Label):** Offline-Prüfung. Payload (Org, Packs, Ablauf) + **Ed25519-Signatur** mit Projekt-Public-Key im Binary. Kein Phone-Home. Fehlt der Key: Build läuft als Community (Branding-Platzhalter, alle freien Packs).
+**License key (self-host white-label):** offline verification. Payload (org, packs, expiry) + **Ed25519 signature** with the project public key in the binary. No phone-home. If the key is missing: the build runs as Community (branding placeholders, all free packs).
 
 ---
 
-## 15. Lizenz-Compliance
+## 15. License compliance
 
-| Regel | Umsetzung |
+| Rule | Implementation |
 |---|---|
-| Lizenzseite | `/licenses` generiert aus allen geladenen `PackManifest.licenses` + Root-NOTICE |
-| FFmpeg | **Nur LGPL-Build**, kein x264/x265, kein GPL-Enable. H.264-Encode über **WebCodecs** (Browser) oder verweigern mit klarer Meldung |
-| AGPL | Ghostscript, MuPDF, iText **verboten** — auch nicht optional |
-| SheetJS | Community only, kein Pro |
-| Modelle | Selbst hosten; Lizenz je Modell in Manifest (z. B. Whisper Apache-2.0, Kokoro) |
-| Tesseract traineddata | deu+eng im Image, weitere Sprachen optionaler Download same-origin |
-| Community-Plugins | müssen Manifest + SPDX mitbringen, sonst kein Load |
+| License page | `/licenses` generated from all loaded `PackManifest.licenses` + root NOTICE |
+| FFmpeg | **LGPL build only**, no x264/x265, no GPL enable. H.264 encoding via **WebCodecs** (browser) or refuse with a clear message |
+| AGPL | Ghostscript, MuPDF, iText **forbidden** — not even optionally |
+| SheetJS | Community only, no Pro |
+| Models | self-host; license per model in the manifest (e.g. Whisper Apache-2.0, Kokoro) |
+| Tesseract traineddata | deu+eng in the image, further languages as optional same-origin download |
+| Community plugins | must ship manifest + SPDX, otherwise no load |
 
-CI-Job: `pnpm licenses:check` scheitert bei AGPL/unbekannter SPDX im Graph.
+CI job: `pnpm licenses:check` fails on AGPL/unknown SPDX in the graph.
 
 ---
 
-## 16. Sicherheits-Header
+## 16. Security headers
 
-Multi-Thread-WASM (ffmpeg, ONNX, wasm-bindgen) braucht Isolation:
+Multi-threaded WASM (ffmpeg, ONNX, wasm-bindgen) needs isolation:
 
 ```
 Cross-Origin-Opener-Policy: same-origin
@@ -638,7 +640,7 @@ Cross-Origin-Embedder-Policy: require-corp
 Cross-Origin-Resource-Policy: same-origin
 ```
 
-CSP (Skizze):
+CSP (sketch):
 
 ```
 default-src 'self';
@@ -653,38 +655,38 @@ base-uri 'self';
 frame-ancestors 'none';
 ```
 
-Kein `unsafe-eval` außer WASM. Keine Dritt-Pixel. File-Picker und Clipboard nur über User-Geste.
+No `unsafe-eval` except WASM. No third-party pixels. File picker and clipboard only via user gesture.
 
-Tauri: `dangerousRemoteDomainIpcAccess` aus; IPC-Whitelist.
-
----
-
-## 17. Teststrategie
-
-| Lage | Werkzeug | Was |
-|---|---|---|
-| Engine, Schema, Pipeline-Resolver, Platform-Mocks | **Vitest** | Zod-Rejects, Cancel, Progress-Reihenfolge, MIME-Bindung, Journal ohne PII |
-| Pack `run()` | Vitest + **Golden-Files** | Pro Tool: `tests/goldens/<id>/in.*` → Hash oder strukturierter Compare des Outputs. Keine Binär-Goldens für lossy Codecs: SSIM/Größe-Band |
-| Privacy-Pfad | Vitest | Redact: String darf in Extract nicht mehr vorkommen; Verify muss `fail` wenn Box zu hell |
-| Web | **Playwright** | Smoke je Welle: Upload → Option → Download; i18n-Switch; PWA-Manifest vorhanden |
-| CLI | Vitest spawn | `neotools run pdf-merge a.pdf b.pdf` Exit 0, Datei nicht leer |
-| Docker | smoke-compose | `/` 200, COOP/COEP gesetzt, `/licenses` enthält pdf-lib und nicht Ghostscript |
-
-Golden-Update nur mit explizitem `GOLDEN_UPDATE=1` und Review. Testdateien: synthetisch, keine echten Ausweise/Rechnungen mit Klardaten.
+Tauri: `dangerousRemoteDomainIpcAccess` off; IPC whitelist.
 
 ---
 
-## 18. Abhängigkeiten (Runtime, self-hosted)
+## 17. Test strategy
 
-| Bereich | Lib | Verbot / Auflage |
+| Layer | Tool | What |
 |---|---|---|
-| PDF | pdf-lib, pdfjs-dist v4/5, qpdf-WASM, optional PDFium-WASM | kein MuPDF, kein iText, kein Ghostscript |
-| OCR | Tesseract.js deu+eng | Modelle lokal |
-| Bild | jSquash, heic-decode, UTIF | OpenCV.js nur lazy (Dokument-Foto) |
-| Video | ffmpeg.wasm **LGPL**, mp4box.js, mp4-muxer, WebCodecs | kein x264/x265 |
-| ML | ONNX Runtime Web (WebGPU), Transformers.js v3, kokoro-js, WebLLM | kein CDN |
-| Office | SheetJS Community, mammoth/docx | kein SheetJS Pro |
-| Archiv | JSZip/fflate, libarchive.js oder 7z-wasm | |
+| Engine, schema, pipeline resolver, platform mocks | **Vitest** | Zod rejects, cancel, progress order, MIME binding, journal without PII |
+| Pack `run()` | Vitest + **golden files** | per tool: `tests/goldens/<id>/in.*` → hash or structured compare of the output. No binary goldens for lossy codecs: SSIM/size band |
+| Privacy path | Vitest | redact: the string must no longer appear in the extract; verify must `fail` if the box is too bright |
+| Web | **Playwright** | smoke per wave: upload → option → download; i18n switch; PWA manifest present |
+| CLI | Vitest spawn | `neotools run pdf-merge a.pdf b.pdf` exit 0, file not empty |
+| Docker | smoke-compose | `/` 200, COOP/COEP set, `/licenses` contains pdf-lib and not Ghostscript |
+
+Golden update only with an explicit `GOLDEN_UPDATE=1` and review. Test files: synthetic, no real ID cards/invoices with real data.
+
+---
+
+## 18. Dependencies (runtime, self-hosted)
+
+| Area | Lib | Ban / condition |
+|---|---|---|
+| PDF | pdf-lib, pdfjs-dist v4/5, qpdf WASM, optional PDFium WASM | no MuPDF, no iText, no Ghostscript |
+| OCR | Tesseract.js deu+eng | models local |
+| Image | jSquash, heic-decode, UTIF | OpenCV.js only lazily (document photo) |
+| Video | ffmpeg.wasm **LGPL**, mp4box.js, mp4-muxer, WebCodecs | no x264/x265 |
+| ML | ONNX Runtime Web (WebGPU), Transformers.js v3, kokoro-js, WebLLM | no CDN |
+| Office | SheetJS Community, mammoth/docx | no SheetJS Pro |
+| Archive | JSZip/fflate, libarchive.js or 7z-wasm | |
 | Codes | zxing-wasm | |
 
-Alles aus `/assets` oder Bundle. Keine Laufzeit-CDN-Abhängigkeit.
+Everything from `/assets` or the bundle. No runtime CDN dependency.
