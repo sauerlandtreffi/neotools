@@ -1,0 +1,27 @@
+import type { ToolLicense } from '@neotools/engine';
+
+export const OFFICE_LICENSES: ToolLicense[] = [
+  { name: 'pdf-lib', license: 'MIT', url: 'https://github.com/Hopding/pdf-lib' },
+  { name: '@pdf-lib/fontkit', license: 'MIT', url: 'https://github.com/Hopding/fontkit' },
+  { name: 'fflate', license: 'MIT', url: 'https://github.com/101arrowz/fflate' },
+  { name: 'mammoth', license: 'BSD-2-Clause', url: 'https://github.com/mwilliamson/mammoth.js' },
+  { name: 'marked', license: 'MIT', url: 'https://github.com/markedjs/marked' },
+  { name: 'highlight.js', license: 'BSD-3-Clause', url: 'https://github.com/highlightjs/highlight.js' },
+  { name: 'parse5', license: 'MIT', url: 'https://github.com/inikulin/parse5' },
+  { name: 'SheetJS Community (xlsx 0.18.x)', license: 'Apache-2.0', url: 'https://github.com/SheetJS/sheetjs' },
+  { name: 'Papa Parse', license: 'MIT', url: 'https://github.com/mholt/PapaParse' },
+  { name: 'iconv-lite', license: 'MIT', url: 'https://github.com/ashtuchkin/iconv-lite' },
+  { name: 'yaml', license: 'ISC', url: 'https://github.com/eemeli/yaml' },
+  { name: 'fast-xml-parser', license: 'MIT', url: 'https://github.com/NaturalIntelligence/fast-xml-parser' },
+  { name: 'opentype.js', license: 'MIT', url: 'https://github.com/opentypejs/opentype.js' },
+  { name: 'fonteditor-core', license: 'MIT', url: 'https://github.com/ecomfe/fonteditor-core' },
+  { name: 'wawoff2', license: 'MIT', url: 'https://github.com/fontello/wawoff2' },
+  { name: 'KaTeX', license: 'MIT', url: 'https://github.com/KaTeX/KaTeX' },
+  { name: 'qrcode', license: 'MIT', url: 'https://github.com/soldair/node-qrcode' },
+  { name: 'bwip-js', license: 'MIT', url: 'https://github.com/metafloor/bwip-js' },
+  { name: 'zxing-wasm', license: 'Apache-2.0', url: 'https://github.com/Sec-ant/zxing-wasm' },
+  { name: 'sql.js', license: 'MIT', url: 'https://github.com/sql-js/sql.js' },
+  { name: 'Source Sans 3', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-sans' },
+  { name: 'Source Serif 4', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-serif' },
+  { name: 'Source Code Pro', license: 'OFL-1.1', url: 'https://github.com/adobe-fonts/source-code-pro' },
+];
