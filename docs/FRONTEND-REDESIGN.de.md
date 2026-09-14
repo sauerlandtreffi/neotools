@@ -1270,3 +1270,117 @@ Nutzer klickt Chip IBAN
 ---
 
 *Ende des Konzepts. Umsetzung beginnt mit W0/DS-01 und ENG-01; kein Cosmetics-Pass auf dem Katalog ersetzt den Workspace.*
+
+---
+
+## 11. App-first-Pivot (2026-09-14, ersetzt §2.2, §3 und die Landing-Pläne ab W3)
+
+**Feedback:** „Nur noch in Workspace denken. Ich möchte ein Programm, keine Website, die mit Informationen vollballert. Die App startet auf der Website, der Fokus liegt auf der App, und darunter erklärt sich die App – wunderschön, mit Wow-Effekt.“
+
+### 11.1 Entscheidungen (keine offenen Fragen)
+
+| # | Entscheidung |
+|---|--------------|
+| 1 | `/` (und `/en`) **ist die App above the fold**: die echte `WorkspaceApp`-Shell, eingebettet mit `100dvh − Top-Bar`, Leerzustand = Drop-Fläche + zuletzt verwendete Sessions + Statusleiste mit Lokal-Badge. Ein ruhiger Satz in der Top-Bar („Dateien lokal bearbeiten. Nichts verlässt deinen Rechner.“), Scroll-Hinweis „Was steckt drin ↓“. Sonst nichts im ersten Viewport. |
+| 2 | Die erste Datei **expandiert die Shell in den Vollbild-Workspace** (`data-expanded="true"`, Seite darunter ausgeblendet, `body`-Scroll gesperrt). URL bleibt `/`; Deep-Link-Zustand wird wie bisher nach `?tool=&file=&session=` gespiegelt. „Zurück zur Übersicht“ über Menü *Ansicht → Übersicht* oder `Esc` bei leerer Auswahl – Session bleibt (OPFS), kein Datenverlust. |
+| 3 | **Workspace je Dateityp**, erkannt per Magic Bytes (`identifyBytes` aus `tools-forensics`, nicht Endung): `pdf`, `image`, `audio`, `video`, `office`, `archive`, `data`, `unbekannt → Identify`. Jeder Workspace listet **alle** Registry-Tools, die den MIME akzeptieren (`workspaceToolsFor`), gruppiert nach Verb: Umwandeln · Bearbeiten · Schützen/Schwärzen · Prüfen/Analysieren · Exportieren. Nichts hartkodiert. |
+| 4 | **Shell wie ein Programm**: Menüleiste (Datei · Bearbeiten · Ansicht · Werkzeuge · Hilfe, echte Menüs mit Shortcuts) · links Session-Bin · Mitte Canvas · rechts Inspector (Tool-Optionen, Schrittstapel, Verifikation) · unten Statusleiste (Dateiinfo, Lokal-Badge, Job-Fortschritt, Sprache/Theme). 12–14 px UI-Schrift, Icon-Buttons mit Tooltips, ein-/ausklappbare Panels persistiert in `localStorage`. Dark und Light gleichwertig. |
+| 5 | **Darunter = die Erklärung** (der SEO-Inhalt von `/`): je Workspace eine Sektion als **Live-Mock** (echte Komponenten im Demo-Zustand mit winzigen mitgelieferten Beispieldateien, scroll-getrieben: Drop → Analyse-Leiste → Schwärzung → Siegel grün → Export), „Alles läuft hier“ (Datenfluss-Diagramm + Live-Zähler *0 Requests an Fremdserver* aus `performance.getEntriesByType('resource')`), „Alle Werkzeuge“ (durchsuchbares Raster aus der Registry, Klick → App mit Tool), „Für Kanzleien, Steuerberater, Behörden“, „Für Creator“, Desktop-/Self-Hosting-Karten, schlanker Footer nach `/info/...`. Anmutung Linear/Raycast/Arc: große ruhige Typografie, eine Display-Größe pro Sektion, Glows nur am Akzent. Reduced Motion → statische Frames. |
+| 6 | **Informationen wandern aus** nach `/info/...` (`/en/info/...`) mit eigenem schlichtem Doku-Layout (`InfoBase.astro`): `/info/tools/{id}`, `/info/formats[/{id}]`, `/info/convert[/{pair}]`, `/info/guides[/{slug}]`, `/info/vergleich/{x}` (`/en/info/compare/{x}`), `/info/preise`, `/info/ueber`, `/info/impressum`, `/info/datenschutz`, `/info/lizenzen`, `/info/lizenz`, `/info/no-upload`, `/info/spec[/…]`. Alte URLs leiten um (Astro `redirects`, statisches Meta-Refresh + Canonical). Sitemap = nur `/` + `/info/**`. |
+| 7 | `/{toolId}` wird **App-Deep-Link**: rendert `/` mit expandierter Shell und vorgewähltem Tool (Ein-Satz-Beschreibung im Inspector), `noindex`, Canonical → `/info/tools/{id}`. `/app`, `/workspace`, `/reader`, `/verlauf`, `/pipeline`, `/watch` leiten in die App (`/?panel=history`, `/?panel=pipeline`, `/?panel=watch`). `ToolApp` als Route entfällt. |
+| 8 | **Design-Tokens neu auf App-Ästhetik**: neutrale Graustufen, Mint nur als reduzierter Akzent, Papier-Beige raus, 4-px-Raster, Radius 6–8 px, 1-px-Trennlinien statt Schatten-Karten, nur funktionale Motion, System-UI-Schriftstapel (`Inter`-Fallback nur lokal, kein CDN). Eigenes SVG-Icon-Set (`Icons.tsx`, Lucide-kompatible Metrik, ISC). |
+| 9 | Reihenfolge: Shell/Leerzustand embedded + Expand → Info-Umzug + Redirects → PDF-Workspace → Erklärsektionen mit Live-Mocks → generischer Workspace für alle Typen → Bild → Audio/Video. Nach jedem Block Commit + Push. |
+
+### 11.2 Wireframes
+
+**`/` — erster Viewport (Leerzustand, eingebettete Shell)**
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools   Datei  Bearbeiten  Ansicht  Werkzeuge  Hilfe   Dateien lokal    │
+│                                              bearbeiten. Nichts verlässt … ⌘K ☾│
+├──────────────┬───────────────────────────────────────────────┬───────────────┤
+│ SESSIONS     │                                               │ INSPECTOR     │
+│ ▸ akte 09-14 │        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐      │               │
+│ ▸ scan 09-12 │                                               │ Datei ablegen │
+│              │      Datei öffnen · hierher ziehen · einfügen  │ – der passende│
+│              │                [ Datei wählen ]               │ Workspace     │
+│              │        └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘      │ lädt.         │
+│              │                                               │               │
+│ + Neue Session                                               │               │
+├──────────────┴───────────────────────────────────────────────┴───────────────┤
+│ ● Lokal · Netz 0 B                                DE · EN   ⚙  Was steckt drin ↓│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**`/` — expandierter PDF-Workspace (nach dem ersten Drop)**
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools   Datei  Bearbeiten  Ansicht  Werkzeuge  Hilfe   akte-mueller ⌘K ☾│
+├──────────┬──────────────────────────────────────────────────┬────────────────┤
+│ BIN      │ Umwandeln ▾ Bearbeiten ▾ Schützen ▾ Prüfen ▾ Export│ INSPECTOR     │
+│ ▣ akte   │ ─────────────────────────────────────────────────│ ┌ Schwärzen ──┐│
+│ ▢ scan   │ ⚠ 3 IBAN gefunden               [Jetzt schwärzen]│ │ Modus ● auto││
+│          │ ┌───┐ ┌──────────────────────────────────────┐   │ │ Muster …    ││
+│          │ │ 1 │ │                                      │   │ │ [Anwenden ⌘↵]│
+│          │ ├───┤ │        Seiten-Canvas (pdf.js)        │   │ └─────────────┘│
+│          │ │ 2 │ │                                      │   │ SCHRITTE       │
+│          │ ├───┤ │                                      │   │ ● Original     │
+│          │ │ 3 │ └──────────────────────────────────────┘   │ ○ Schwärzen ✓  │
+│          │ └───┘  ‹ 1 / 3 ›   − 100 % +   🔍               │ ○ Komprimieren │
+├──────────┴──────────────────────────────────────────────────┴────────────────┤
+│ akte-mueller.pdf · PDF · 2 KB · 3 Seiten   ● Lokal · Netz 0 B  ▶ compress 40 %│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**`/` — Bild-Workspace** (gleiche Shell; Canvas = zoombare Bitmap, Tools = Familie image)
+
+```
+│ BIN      │ Umwandeln ▾ Bearbeiten ▾ Schützen ▾ Prüfen ▾ Export│ INSPECTOR     │
+│ ▣ foto   │ ┌──────────────────────────────────────────────┐ │ Skalieren       │
+│          │ │                                              │ │ Breite [1600]   │
+│          │ │     Bitmap, Schachbrett, Zoom 50 %           │ │ Format ● webp   │
+│          │ │                                              │ │ [Anwenden ⌘↵]   │
+│          │ └──────────────────────────────────────────────┘ │ SCHRITTE        │
+│          │   − 50 % +   Einpassen   1:1    3024×4032 · 2,1 MB│ ● Original      │
+```
+
+**`/` — unter dem Fold (Erklärung)**
+
+```
+  ─────────────────────────────  scroll  ─────────────────────────────
+  PDF.                                  ┌──────────────────────────┐
+  Schwärzen, komprimieren, signieren –  │  Live-Mock des PDF-      │
+  in einem Tab, nie hochgeladen.        │  Workspace (echte Komp.) │
+  [Im Workspace ausprobieren ↑]         │  Drop→Analyse→Schwärzen→✓│
+                                        └──────────────────────────┘
+  Bild. …  Audio. …  Video. …  Office & Daten. …  Archiv. …  Forensik & DACH. …
+  Alles läuft hier.   [Browser ▭]→[WASM ⚙]→[deine Platte ▤]   0 Requests an Fremdserver
+  Alle 235 Werkzeuge.  [suchen…] [PDF][Bild][Audio][Video][Office][Daten][Archiv]  Raster → App
+  Für Kanzleien · Steuerberater · Behörden        Für Creator
+  Desktop-App · Self-Hosting · CLI   (drei Karten)
+  Footer → /info: Preise · Vergleich · Guides · Impressum · Datenschutz · Lizenzen · GitHub
+```
+
+**`/info/...` — Doku-Layout**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools  Info     Tools · Formate · Guides · Vergleich · …│
+├──────────────────────────────────────────────────────────────┤
+│  # PDF schwärzen                     [Im Workspace öffnen →] │
+│  Fließtext … FAQ … verwandte Formate … Guides …              │
+├──────────────────────────────────────────────────────────────┤
+│ Footer: Impressum · Datenschutz · Lizenzen · No-Upload       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Mobile (≤ 768 px)**: Top-Bar reduziert auf ◧ + ☰ (Menüs als Sheet), Bin/Inspector als Bottom-Sheets über Tab-Bar (Bin · Optionen · Schritte · Export), Thumb-Leiste horizontal über dem Canvas, Statusleiste nur Lokal-Badge. Erklärsektionen stapeln, Mocks skalieren auf Breite.
+
+### 11.3 Definition of Done (Pivot)
+
+- `/` zeigt im ersten Viewport die Drop-Zone ohne Scrollen; keine Hero-`h1`, keine Zähler, kein Feature-Raster above the fold.
+- PDF / Bild / unbekannte Datei fallen lassen lädt den passenden Workspace mit ≥ 15 / ≥ 8 / ≥ 3 Tools in der Leiste; Deep-Link `/pdf-redact` öffnet die expandierte Shell mit dem Tool.
+- Scrollen zeigt ≥ 5 Erklärsektionen; „Im Workspace ausprobieren“ öffnet den PDF-Workspace ohne Navigation; Tool-Raster klickbar; Reduced Motion rendert statisch.
+- Alte URLs leiten um; `/info/**` indexierbar, App-Routen `noindex`; Sitemap nur `/` + `/info/**`; null Fremd-Origin-Requests.

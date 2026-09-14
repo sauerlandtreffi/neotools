@@ -1270,3 +1270,117 @@ User clicks chip IBAN
 ---
 
 *End of the concept. Implementation starts with W0/DS-01 and ENG-01; no cosmetics pass on the catalog replaces the workspace.*
+
+---
+
+## 11. App-first pivot (2026-09-14, supersedes §2.2, §3 and W3+ landing plans)
+
+**Feedback:** "Think workspace only. I want a program, not a website that floods you with information. The app is started on the website, the focus is the app, and below it the app explains itself — beautifully."
+
+### 11.1 Decisions (no open questions)
+
+| # | Decision |
+|---|----------|
+| 1 | `/` (and `/en`) **is the app above the fold**: the real `WorkspaceApp` shell, embedded at `100dvh − top bar`, empty state = drop area + recent sessions + status bar with local badge. One quiet sentence in the top bar ("Edit files locally. Nothing leaves your machine."), a scroll hint "What's inside ↓". Nothing else in the first viewport. |
+| 2 | The first file dropped **expands the shell to full screen** (`data-expanded="true"`, page below hidden, `body` scroll locked). URL stays `/`; deep-link state is mirrored into `?tool=&file=&session=` as before. "Back to overview" via menu *View → Overview* or `Esc` on an empty selection — the session is kept (OPFS), nothing is lost. |
+| 3 | **Workspace per file type**, chosen by magic bytes (`identifyBytes` from `tools-forensics`, not the extension): `pdf`, `image`, `audio`, `video`, `office`, `archive`, `data`, `unknown → identify`. Every workspace lists **all** registry tools that accept the MIME (`workspaceToolsFor`), grouped by verb: Convert · Edit · Protect/Redact · Inspect/Analyse · Export. Nothing hard-coded. |
+| 4 | **Shell like a program**: menu bar (File · Edit · View · Tools · Help, real menus with shortcuts) · left session bin · centre canvas · right inspector (tool options, step stack, verification) · bottom status bar (file info, local badge, job progress, language/theme). 12–14 px UI type, icon buttons with tooltips, collapsible panels persisted in `localStorage`. Dark and light equal. |
+| 5 | **Below the fold = the explanation** (the SEO content of `/`): one section per workspace rendered as a **live mock** (real components in demo state with tiny bundled sample files, scroll-driven: drop → analysis bar → redaction → seal turns green → export), "Everything runs here" (data-flow diagram + live counter *0 requests to foreign servers* from `performance.getEntriesByType('resource')`), "All tools" (searchable grid from the registry, click → opens the app with the tool), "For law firms, tax advisors, public bodies", "For creators", desktop + self-hosting cards, slim footer to `/info/...`. Linear/Raycast/Arc attitude: large quiet type, one display size per section, accent glows only. Reduced motion → static frames. |
+| 6 | **Information moves out** to `/info/...` (`/en/info/...`) with its own plain docs layout (`InfoBase.astro`): `/info/tools/{id}`, `/info/formats[/{id}]`, `/info/convert[/{pair}]`, `/info/guides[/{slug}]`, `/info/vergleich/{x}` (`/en/info/compare/{x}`), `/info/preise`, `/info/ueber`, `/info/impressum`, `/info/datenschutz`, `/info/lizenzen`, `/info/lizenz`, `/info/no-upload`, `/info/spec[/…]`. Old URLs redirect (Astro `redirects`, static meta-refresh + canonical). Sitemap = `/` + `/info/**` only. |
+| 7 | `/{toolId}` becomes an **app deep-link**: renders `/` with the shell expanded and the tool pre-selected (one-sentence description in the inspector), `noindex`, canonical → `/info/tools/{id}`. `/app`, `/workspace`, `/reader`, `/verlauf`, `/pipeline`, `/watch` redirect into the app (`/?panel=history`, `/?panel=pipeline`, `/?panel=watch`). `ToolApp` is retired as a route. |
+| 8 | **Design tokens re-aimed at app aesthetics**: neutral greys, mint only as accent (reduced), paper beige removed, 4 px grid, radius 6–8 px, 1 px separators instead of shadow cards, functional motion only, system UI font stack (`Inter` fallback only local, no CDN). Own SVG icon set (`Icons.tsx`, Lucide-compatible metrics, ISC). |
+| 9 | Order of work: shell/empty state embedded + expand → info move + redirects → PDF workspace → explanation sections with live mocks → generic workspace for every type → image → audio/video. Commit + push after every block. |
+
+### 11.2 Wireframes
+
+**`/` — first viewport (empty state, embedded shell)**
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools   File  Edit  View  Tools  Help        Edit files locally. Nothing│
+│                                                    leaves your machine.  ⌘K ☾│
+├──────────────┬───────────────────────────────────────────────┬───────────────┤
+│ SESSIONS     │                                               │ INSPECTOR     │
+│ ▸ akte 09-14 │        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐      │               │
+│ ▸ scan 09-12 │                                               │ Drop a file — │
+│              │           Open file · drag here · paste        │ the matching  │
+│              │                  [ Choose file ]              │ workspace     │
+│              │        └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘      │ loads.        │
+│              │                                               │               │
+│ + New session│                                               │               │
+├──────────────┴───────────────────────────────────────────────┴───────────────┤
+│ ● Local · Net 0 B                                    DE · EN   ⚙  What's inside ↓│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**`/` — expanded PDF workspace (after the first drop)**
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools   File  Edit  View  Tools  Help      akte-mueller · 3 p      ⌘K ☾ │
+├──────────┬──────────────────────────────────────────────────┬────────────────┤
+│ BIN      │ Convert ▾  Edit ▾  Protect ▾  Inspect ▾  Export  │ INSPECTOR      │
+│ ▣ akte   │ ─────────────────────────────────────────────────│ ┌ Redact ─────┐│
+│ ▢ scan   │ ⚠ 3 IBAN found                    [Redact now]  │ │ mode ● auto ││
+│          │ ┌───┐ ┌──────────────────────────────────────┐   │ │ patterns …  ││
+│          │ │ 1 │ │                                      │   │ │ [Apply ⌘↵]  ││
+│          │ ├───┤ │        page canvas (pdf.js)          │   │ └─────────────┘│
+│          │ │ 2 │ │                                      │   │ STEPS          │
+│          │ ├───┤ │                                      │   │ ● Original     │
+│          │ │ 3 │ └──────────────────────────────────────┘   │ ○ Redact ✓ seal│
+│          │ └───┘  ‹ 1 / 3 ›   − 100 % +   🔍               │ ○ Compress     │
+├──────────┴──────────────────────────────────────────────────┴────────────────┤
+│ akte-mueller.pdf · PDF · 2 KB · 3 pages    ● Local · Net 0 B   ▶ compress 40 %│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**`/` — image workspace** (same shell; canvas = zoomable bitmap, tools = image family)
+
+```
+│ BIN      │ Convert ▾  Edit ▾  Protect ▾  Inspect ▾  Export  │ INSPECTOR      │
+│ ▣ foto   │ ┌──────────────────────────────────────────────┐ │ Resize          │
+│          │ │                                              │ │ width  [1600]   │
+│          │ │        bitmap, checkerboard, zoom 50 %       │ │ format ● webp   │
+│          │ │                                              │ │ [Apply ⌘↵]      │
+│          │ └──────────────────────────────────────────────┘ │ STEPS           │
+│          │   − 50 % +   fit   1:1      3024×4032 · 2.1 MB   │ ● Original      │
+```
+
+**`/` — below the fold (explanation)**
+
+```
+  ─────────────────────────────  scroll  ─────────────────────────────
+  PDF.                                  ┌──────────────────────────┐
+  Redact, compress, sign —              │  live mock of the PDF    │
+  in one tab, never uploaded.           │  workspace (real comps)  │
+  [Try it in the workspace ↑]           │  drop→analyse→redact→✓   │
+                                        └──────────────────────────┘
+  Image. …   Audio. …   Video. …   Office & data. …   Archive. …   Forensics & DACH. …
+  Everything runs here.   [browser ▭]→[WASM ⚙]→[your disk ▤]   0 requests to foreign servers
+  All 235 tools.   [search…] [PDF][Image][Audio][Video][Office][Data][Archive]  grid → app
+  For law firms · tax advisors · public bodies      For creators
+  Desktop app · Self-hosting · CLI   (three cards)
+  footer → /info: pricing · compare · guides · imprint · privacy · licences · GitHub
+```
+
+**`/info/...` — docs layout**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ◧ NeoTools  Info     Tools · Formats · Guides · Compare · … │
+├──────────────────────────────────────────────────────────────┤
+│  # Redact PDF                        [Open in workspace →]   │
+│  prose … FAQ … related formats … guides …                    │
+├──────────────────────────────────────────────────────────────┤
+│ footer: imprint · privacy · licences · no-upload             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Mobile (≤ 768 px)**: top bar collapses to ◧ + ☰ (menus as a sheet), bin/inspector as bottom sheets via tab bar (Bin · Options · Steps · Export), thumb rail horizontal above the canvas, status bar reduced to the local badge. Explanation sections stack, mocks scale to width.
+
+### 11.3 Definition of done (pivot)
+
+- `/` first viewport shows the drop zone without scrolling; no hero `h1`, no counters, no feature grid above the fold.
+- Dropping a PDF / image / unknown file loads the matching workspace with ≥ 15 / ≥ 8 / ≥ 3 tools in the bar; deep-link `/pdf-redact` opens the expanded shell with the tool.
+- Scrolling reveals ≥ 5 explanation sections; "Try it in the workspace" opens the PDF workspace without navigation; the tool grid is clickable; reduced-motion renders statically.
+- Old URLs redirect; `/info/**` indexable, app routes `noindex`; sitemap only `/` + `/info/**`; zero foreign-origin requests.
