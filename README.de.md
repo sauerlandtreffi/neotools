@@ -1,11 +1,15 @@
+🇩🇪 Deutsch · [🇬🇧 English](./README.md)
+
 # NeoTools
 
 Lokale Werkzeuge für PDFs, Bilder, Video/Audio, Sprache, Office, Archive, Forensik, Creator-Formate und DACH-Recht — im Browser, als CLI, per Docker, REST-API oder Desktop-App.  
 Kein Upload, kein Wasserzeichen, kein Tracking, keine CDN-Laufzeitabhängigkeit.
 
-Vorbild: ihatepdf.cv / ihatefiles.com. Differenzierung: **isomorphe Engine** (Browser + Node), White-Label-Self-Hosting, Datenschutz-Tools (Sanitize, Metadaten, Verify), Desktop-Dateizuordnung.
+Repository: <https://github.com/sauerlandtreffi/neotools> · Lizenz: MIT
 
-UI-Sprache: **Deutsch** (ohne Prefix), Englisch unter `/en/...`.
+Anders als Cloud-PDF-Dienste verarbeitet NeoTools alles lokal. Differenzierung: **isomorphe Engine** (Browser + Node), White-Label-Self-Hosting, Datenschutz-Tools (Sanitize, Metadaten, Verify), Desktop-Dateizuordnung.
+
+UI-Sprache: **Deutsch** (ohne Prefix), Englisch unter `/en/...`. Ein gemeinsamer `/app`-Arbeitsbereich (Dropzone, Verlauf, Pipeline-Builder in einer Ansicht) ist in Arbeit.
 
 **235 Tools in 10 Packs** — Stand Welle 5 (Launch-Vorbereitung):
 
@@ -13,16 +17,16 @@ UI-Sprache: **Deutsch** (ohne Prefix), Englisch unter `/en/...`.
 | ----------- | ----: | -------------------------- | ------------------------------------------------------------------ |
 | `pdf`       |    24 | `packages/tools-pdf`       | Merge, Redact + Verify, Sanitize, OCR, PDF/A, UA, PAdES, Mailmerge |
 | `forensics` |    10 | `packages/tools-forensics` | Identify, Hidden-Data, Fake-Ext, Fingerprint, Share-Safe           |
-| `image`     |    40 | `packages/tools-image`     | jSquash-Codecs, Doc-Repair, LUT, Film-Scan, Passfoto, SVG-Tracer   |
-| `a11y`      |     4 | `packages/tools-image-ai`  | ONNX/Transformers: Alt-Text, Easy-Read, Sign-Friendly              |
-| `creator`   |    23 | `packages/tools-creator`   | Plattform-Packs, Spec-Check, Audiogram, Collage, Sticker, Mockups  |
+| `image`     |    35 | `packages/tools-image`     | jSquash-Codecs, Doc-Repair, LUT, Film-Scan, Passfoto, SVG-Tracer   |
+| `image-ai`  |     9 | `packages/tools-image-ai`  | ONNX/Transformers.js: Hintergrund, Gesichter, Alt-Text, Easy-Read  |
+| `creator`   |    22 | `packages/tools-creator`   | Plattform-Packs, Spec-Check, Audiogram, Collage, Sticker, Mockups  |
 | `dach`      |    12 | `packages/tools-dach`      | beA/ERV, E-Rechnung, GoBD, GiroCode, RFC-3161                      |
-| `speech`    |    11 | `packages/tools-speech`    | Whisper lokal: Transkript, Untertitel, Kapitel, Übersetzung        |
+| `speech`    |    12 | `packages/tools-speech`    | Whisper lokal: Transkript, Untertitel, Kapitel, Übersetzung        |
 | `office`    |    32 | `packages/tools-office`    | DOCX/XLSX/CSV/E-Book/Fonts/SQL, SheetJS Community, OFL-Fonts       |
 | `media`     |    68 | `packages/tools-media`     | FFmpeg-WASM (LGPL-Build) + WebCodecs: Video/Audio-Convert, Edit    |
 | `archive`   |    11 | `packages/tools-archive`   | ZIP/TAR nativ, 7z dynamisch, Ordner-Konvertierung, Sidecars        |
 
-Zähler aus der Registry: `node apps/cli/dist/cli.js list --json`. `audio-stems` bleibt registriert, aber nicht im Web-Grid (kein lizenzsauberes kleines Modell). Weitere KI-Bild-Tools aus `tools-image-ai` (Hintergrund, Gesichter, Super-Res/Denoise-Showcases) laufen unter dem Pack `image`.
+Zähler aus der Registry: `node apps/cli/dist/cli.js list --json`. `audio-stems` bleibt registriert, aber nicht im Web-Grid (kein lizenzsauberes kleines Modell).
 
 ## Quickstart
 
@@ -65,7 +69,7 @@ pnpm --filter @neotools/web exec playwright install chromium --with-deps
 
 Die Smokes laufen gegen einen kleinen Static-Server (`apps/web/e2e/server.mjs`), nicht gegen `astro preview`: Preview wendet `public/_headers` nicht an. Der Server setzt dieselben COOP/COEP/`credentialless`-Header wie nginx / Vercel.
 
-**Git:** Branch `main`, kein Remote. Lokal `user.name`/`user.email` nur im Repo (`NeoTools Bot` / `bot@neotools.local`). Ignoriert u. a.:
+**Git:** Branch `main`, Remote `origin` = <https://github.com/sauerlandtreffi/neotools>. Lokal `user.name`/`user.email` nur im Repo (`NeoTools Bot` / `bot@neotools.local`). Ignoriert u. a.:
 
 - `node_modules/`, `dist/`, `.astro/` — Build/Install-Artefakte
 - `apps/desktop/src-tauri/target/`, `apps/desktop/src-tauri/gen/` — Cargo/Tauri-Ausgabe
@@ -102,13 +106,13 @@ packages/parsers        @neotools/parsers         JPEG/PNG/TIFF-Parser (geteilt)
 packages/models         @neotools/models          ONNX/Whisper-Katalog (kein CDN)
 packages/tools-pdf      @neotools/tools-pdf       24 PDF-Tools (pdf-lib, pdfjs, qpdf-WASM, PAdES, PDF/A, UA)
 packages/tools-forensics @neotools/tools-forensics 10 Forensik-Tools
-packages/tools-image    @neotools/tools-image     Bild-Tools (jSquash, eigene Codecs, LUT, Film-Scan, SVG-Tracer)
-packages/tools-image-ai @neotools/tools-image-ai  KI/CV-Bild- und A11y-Tools (ONNX, Transformers.js)
-packages/tools-creator  @neotools/tools-creator   23 Creator/Social-Tools (baut auf tools-image + tools-media)
+packages/tools-image    @neotools/tools-image     35 Bild-Tools (jSquash, eigene Codecs, LUT, Film-Scan, SVG-Tracer)
+packages/tools-image-ai @neotools/tools-image-ai  9 KI/CV-Bild- und A11y-Tools (ONNX, Transformers.js)
+packages/tools-creator  @neotools/tools-creator   22 Creator/Social-Tools (baut auf tools-image + tools-media)
 packages/tools-dach     @neotools/tools-dach      12 DACH-Tools (beA/ERV, E-Rechnung, GoBD, GiroCode)
 packages/tools-office   @neotools/tools-office    32 Office/E-Book/Daten-Tools
 packages/tools-media    @neotools/tools-media     68 Video/Audio-Tools (FFmpeg LGPL-Build, WebCodecs)
-packages/tools-speech   @neotools/tools-speech    11 Sprache/Untertitel-Tools (Whisper)
+packages/tools-speech   @neotools/tools-speech    12 Sprache/Untertitel-Tools (Whisper)
 packages/tools-archive  @neotools/tools-archive   11 Archiv/Ordner-Tools
 packages/plugins/3d-lite @neotools-plugin/3d-lite Community-Plugin-Beispiel (Manifest, Caps-Sandbox; nicht registriert)
 apps/web                Astro 5 + Preact + Tailwind 4, Worker via Comlink (1202 statische Seiten)
@@ -148,7 +152,7 @@ Seiten für den Launch (alle statisch, Inhalte aus `branding.json`):
 | Seite                                                                                           | Englisch        | Inhalt                                                                                                     |
 | ----------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
 | `/preise`                                                                                       | `/en/pricing`   | Community (alle Tools, kostenlos), Pro, Enterprise/Self-Host — Preise aus `pricing.*`, sonst „auf Anfrage“ |
-| `/vergleich/ilovepdf`, `/vergleich/smallpdf`, `/vergleich/adobe-acrobat`, `/vergleich/ihatepdf` | `/en/compare/*` | Funktions-/Datenschutzvergleich: lokal vs. Upload, Wasserzeichen, Limits, Lizenzen                         |
+| `/vergleich/ilovepdf`, `/vergleich/smallpdf`, `/vergleich/adobe-acrobat`                          | `/en/compare/*` | Funktions-/Datenschutzvergleich: lokal vs. Upload, Wasserzeichen, Limits, Lizenzen                         |
 | `/ueber`                                                                                        | `/en/about`     | Projekt, Engine, Betreiber (`legal.operator`, `contact.*`)                                                 |
 | `/impressum`                                                                                    | `/en/imprint`   | **Vorlage** aus `legal.*` — leere Felder bleiben Platzhalter                                               |
 | `/datenschutz`                                                                                  | `/en/privacy`   | **Vorlage** aus `legal.*`, `hosting.*`, `desktop.*` (lokale Verarbeitung, keine Uploads, Update-Check)     |
@@ -193,6 +197,6 @@ node scripts/copy-wasm-assets.mjs        # qpdf / jSquash / tesseract-core
 
 ## Stand
 
-Wellen 1–5 sind in `main` (Details: [CHANGELOG.md](./CHANGELOG.md), [docs/ROADMAP.md](./docs/ROADMAP.md)). Welle 5 brachte den adversarial Security-Review mit Fix-Mandat ([docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md), F1–F24, keine offenen kritischen/hohen Findings), das Creator-Pack, 18 neue Bild- und 6 neue Media-Tools, den LGPL-FFmpeg-Build, die Launch-Seiten und 24 Guides. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`; `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
+Wellen 1–5 sind in `main` (Details: [CHANGELOG.md](./CHANGELOG.md), [docs/ROADMAP.md](./docs/ROADMAP.md)). Welle 5 brachte den adversarial Security-Review mit Fix-Mandat ([docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md), F1–F41, keine offenen kritischen/hohen Findings), das Creator-Pack, 18 neue Bild- und 6 neue Media-Tools, den LGPL-FFmpeg-Build, die Launch-Seiten und 24 Guides. Capabilities `qpdf`/`ocr` sind in Browser- und Node-Platform `true`; `@napi-rs/canvas` bleibt optional (OCR-Raster und pdf-to-images in Node).
 
-Offen: Community-Plugin-Loader (Phase 5), `audio-stems`-Modell, WebLLM/Volltext als Showcases, Desktop-Updater-Signatur, veraPDF-äquivalente PDF/A-Validierung.
+In Arbeit: `/app`-Arbeitsbereich. Offen: Community-Plugin-Loader (Phase 5), `audio-stems`-Modell, WebLLM/Volltext als Showcases, Desktop-Updater-Signatur, veraPDF-äquivalente PDF/A-Validierung.
